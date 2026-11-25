@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 	"slices"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 	"github.com/blinklabs-io/plutigo/data"
 
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
-	"github.com/chrisguiney/dxdingo/internal/convert"
 	"github.com/chrisguiney/dxdingo/internal/dispatch"
 )
 
@@ -104,45 +102,6 @@ func decodeUtxos(entries []*v1.UtxoEntry) (common.ResolvedUtxos, error) {
 
 // historySummary maps the request's era history onto dingo's hardfork
 // summary, the type its slot-to-time conversion lives on.
-func historySummary(h *v1.EraHistory) (*hardfork.Summary, error) {
-	if len(h.GetEras()) == 0 {
-		return nil, dispatch.Unsupported(errors.New("empty era history"))
-	}
-	seconds := func(name string, r *v1.Rational) (time.Duration, error) {
-		x, err := convert.Rat(r)
-		if err != nil {
-			return 0, dispatch.BadRequest(fmt.Errorf("%s: %w", name, err))
-		}
-		ns := new(big.Rat).Mul(x, big.NewRat(int64(time.Second), 1))
-		return time.Duration(new(big.Int).Quo(ns.Num(), ns.Denom()).Int64()), nil
-	}
-	s := &hardfork.Summary{SystemStart: time.Unix(h.GetSystemStartUnix(), 0).UTC()}
-	for _, e := range h.GetEras() {
-		start, err := seconds("start_time", e.GetStartTime())
-		if err != nil {
-			return nil, err
-		}
-		slotLen, err := seconds("slot_length", e.GetSlotLength())
-		if err != nil {
-			return nil, err
-		}
-		era := hardfork.EraSummary{
-			Start: hardfork.Bound{RelativeTime: start, Slot: e.GetStartSlot(), Epoch: e.GetStartEpoch()},
-			Params: hardfork.EraParams{
-				EpochSize: e.GetEpochLength(), SlotLength: slotLen, SafeZoneSlots: e.GetSafeZone(), GenesisWindow: e.GetSafeZone(),
-			},
-		}
-		if e.EndSlot != nil && e.EndEpoch != nil && e.GetEndTime() != nil {
-			end, err := seconds("end_time", e.GetEndTime())
-			if err != nil {
-				return nil, err
-			}
-			era.End = &hardfork.Bound{RelativeTime: end, Slot: e.GetEndSlot(), Epoch: e.GetEndEpoch()}
-		}
-		s.Eras = append(s.Eras, era)
-	}
-	return s, nil
-}
 
 // purposeProto converts a script purpose to the message the reference's
 // PlutusPurpose AsIxItem maps to.

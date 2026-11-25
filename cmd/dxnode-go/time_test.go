@@ -8,7 +8,7 @@ import (
 	"github.com/chrisguiney/dxdingo/internal/dispatch"
 )
 
-func u64(n uint64) *uint64 { return &n }
+func u64Ptr(n uint64) *uint64 { return &n }
 
 // Mainnet's first three eras. Byron: 21600-slot epochs of 20 s; Shelley is
 // epoch 208 at slot 4492800 (208 * 21600) and 89856000 s (4492800 * 20);
@@ -17,12 +17,12 @@ func u64(n uint64) *uint64 { return &n }
 func mainnetEras(closeLast bool) *v1.EraHistory {
 	byron := &v1.EraSummary{
 		Era: v1.Era_ERA_BYRON, StartTime: rat("0", "1"), EpochLength: 21600, SlotLength: rat("20", "1"), SafeZone: 4320,
-		EndSlot: u64(4492800), EndEpoch: u64(208), EndTime: rat("89856000", "1"),
+		EndSlot: u64Ptr(4492800), EndEpoch: u64Ptr(208), EndTime: rat("89856000", "1"),
 	}
 	shelley := &v1.EraSummary{
 		Era: v1.Era_ERA_SHELLEY, StartSlot: 4492800, StartEpoch: 208, StartTime: rat("89856000", "1"),
 		EpochLength: 432000, SlotLength: rat("1", "1"), SafeZone: 129600,
-		EndSlot: u64(16588800), EndEpoch: u64(236), EndTime: rat("101952000", "1"),
+		EndSlot: u64Ptr(16588800), EndEpoch: u64Ptr(236), EndTime: rat("101952000", "1"),
 	}
 	allegra := &v1.EraSummary{
 		Era: v1.Era_ERA_ALLEGRA, StartSlot: 16588800, StartEpoch: 236, StartTime: rat("101952000", "1"),
@@ -30,7 +30,7 @@ func mainnetEras(closeLast bool) *v1.EraHistory {
 	}
 	if closeLast {
 		// Horizon one epoch in: slot 17020800, epoch 237, 102384000 s.
-		allegra.EndSlot, allegra.EndEpoch, allegra.EndTime = u64(17020800), u64(237), rat("102384000", "1")
+		allegra.EndSlot, allegra.EndEpoch, allegra.EndTime = u64Ptr(17020800), u64Ptr(237), rat("102384000", "1")
 	}
 	return &v1.EraHistory{Eras: []*v1.EraSummary{byron, shelley, allegra}, SystemStartUnix: 1506203091}
 }
