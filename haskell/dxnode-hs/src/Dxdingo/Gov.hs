@@ -29,11 +29,12 @@ import Cardano.Ledger.Coin (Coin (..), CompactForm (..))
 import Cardano.Ledger.Conway (ConwayEra)
 import Cardano.Ledger.Conway.Core
 import Cardano.Ledger.Conway.Governance
-import Cardano.Ledger.Conway.State (ConwayEraAccounts (..))
+import Cardano.Ledger.Conway.State (ConwayEraAccounts (..), VState (..))
 import Cardano.Ledger.Conway.Rules
   ( committeeAcceptedRatio
   , dRepAcceptedRatio
   , spoAcceptedRatio
+  , updateDormantDRepExpiry
   )
 import Cardano.Ledger.Credential (Credential (..))
 import Cardano.Ledger.DRep (DRep (..), DRepState (..))
@@ -431,6 +432,34 @@ rootsArg (Just e) =
     root Nothing = pure SNothing
     root m = SJust . GovPurposeId <$> actionIdArg m
 
+-- gov_drep_expiry ---------------------------------------------------------
+
+-- | 'updateDormantDRepExpiry': the pending dormant-epoch count is added to
+-- every DRep expiry unless the sum is below the current epoch. Lists the
+-- DReps whose expiry changed.
+govDRepExpiry :: GovDRepExpiryRequest -> Result GovDRepExpiryResponse
+govDRepExpiry req = do
+  entries <- traverse entry (req ^. #dreps)
+  let vs =
+        VState
+          { vsDReps = Map.fromList [(c, DRepState (EpochNo (r ^. #expiry)) SNothing (CompactCoin 0) Set.empty) | (c, r) <- entries]
+          , vsCommitteeState = def
+          , vsNumDormantEpochs = EpochNo (req ^. #dormantEpochs)
+          }
+      after = vsDReps (updateDormantDRepExpiry (EpochNo (req ^. #epoch)) vs)
+      changed =
+        [ r & #expiry .~ e
+        | (c, r) <- entries
+        , Just st <- [Map.lookup c after]
+        , let EpochNo e = drepExpiry st
+        , e /= r ^. #expiry
+        ]
+  pure (defMessage & #drepsChanged .~ sortOn (\r -> (fromEnum (r ^. #credential . #kind), r ^. #credential . #hash)) changed)
+  where
+    entry r = do
+      c <- credentialArg "dreps credential" (r ^. #maybe'credential)
+      pure (c, r)
+
 dispatch :: Call'Request -> Maybe Answer
 dispatch = \case
   Call'GovThresholds q -> Just (respond #govThresholds (govThresholds q))
@@ -439,6 +468,7 @@ dispatch = \case
   Call'GovCommitteeRatio q -> Just (respond #govCommitteeRatio (govCommitteeRatio q))
   Call'GovCommitteeQuorum q -> Just (respond #govCommitteeQuorum (govCommitteeQuorum q))
   Call'GovProposalTree q -> Just (respond #govProposalTree (govProposalTree q))
+  Call'GovDrepExpiry q -> Just (respond #govDrepExpiry (govDRepExpiry q))
   _ -> Nothing
 
 implemented :: [Text]
@@ -449,4 +479,5 @@ implemented =
   , "gov_committee_ratio"
   , "gov_committee_quorum"
   , "gov_proposal_tree"
+  , "gov_drep_expiry"
   ]

@@ -5,7 +5,16 @@
 
 module Test.Gov (tests) where
 
-import Cardano.Ledger.BaseTypes (BoundedRational (boundRational), ProtVer (..), StrictMaybe (..))
+import Cardano.Crypto.Hash (hashFromBytes)
+import Cardano.Ledger.BaseTypes (BoundedRational (boundRational), EpochNo (..), ProtVer (..), StrictMaybe (..))
+import Cardano.Ledger.Coin (CompactForm (..))
+import Cardano.Ledger.Conway.Rules (updateDormantDRepExpiry)
+import Cardano.Ledger.Conway.State (VState (..))
+import Cardano.Ledger.Credential (Credential (..))
+import Cardano.Ledger.DRep (DRepState (..))
+import Cardano.Ledger.Keys (KeyHash (..))
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Cardano.Ledger.Binary (natVersion)
 import Cardano.Ledger.Conway (ConwayEra)
 import Cardano.Ledger.Conway.Core (PParams, PParamsUpdate, emptyPParams, emptyPParamsUpdate, ppDRepVotingThresholdsL)
@@ -26,7 +35,7 @@ import Test.Util
 
 -- Same cases as dxnode-go (cmd/dxnode-go/gov_test.go).
 tests :: [Check]
-tests = thresholdTests ++ spoTests ++ drepTests ++ committeeTests ++ treeTests ++ divergenceTests
+tests = thresholdTests ++ spoTests ++ drepTests ++ committeeTests ++ treeTests ++ expiryTests ++ divergenceTests
 
 hex :: String -> BS.ByteString
 hex = BS.pack . go
@@ -452,6 +461,29 @@ treeTests =
           , firstBytes (r ^. #remaining) == remaining && firstBytes (r ^. #removed) == removed
           )
 
+-- DRep expiry --------------------------------------------------------------
+
+drepRecord :: Int -> Integer -> S.DRepRecord
+drepRecord b e = defMessage & #credential .~ cred b & #deposit .~ 500 & #expiry .~ fromInteger e & #anchorUrl .~ "https://x"
+
+expiryCall :: Integer -> Integer -> [S.DRepRecord] -> Reply
+expiryCall epoch dormant dreps =
+  call (#govDrepExpiry .~ (defMessage & #epoch .~ fromInteger epoch & #dormantEpochs .~ fromInteger dormant & #dreps .~ dreps))
+
+-- The dormant count is added to each expiry unless the sum is below the
+-- current epoch.
+expiryTests :: [Check]
+expiryTests =
+  [ ( "drep expiry: sums, the current-epoch boundary and zero expiry"
+    , let r = expiryCall 20 3 [drepRecord 1 30, drepRecord 3 17, drepRecord 4 0] ^. #govDrepExpiry . #drepsChanged
+       in [(BS.head (d ^. #credential . #hash), d ^. #expiry, d ^. #deposit, d ^. #anchorUrl) | d <- r]
+            == [(1, 33, 500, "https://x"), (3, 20, 500, "https://x")]
+    )
+  , ( "drep expiry: no dormant epochs changes nothing"
+    , null (expiryCall 20 0 [drepRecord 1 30] ^. #govDrepExpiry . #drepsChanged)
+    )
+  ]
+
 -- Divergences ----------------------------------------------------------------
 
 -- The reference library called directly, bypassing the adapter. The
@@ -465,6 +497,15 @@ divergenceTests =
     )
   , ( "divergence: the ledger rejects an empty parameter update as malformed"
     , not (ppuWellFormed (ProtVer (natVersion @10) 0) (emptyPParamsUpdate :: PParamsUpdate ConwayEra))
+    )
+  , ( "divergence: an expired DRep keeps its expiry when the dormant count does not reach the epoch"
+    , let vs =
+            VState
+              (Map.singleton (KeyHashObj (KeyHash (maybe (error "hash") id (hashFromBytes (BS.replicate 28 0xd2))))) (DRepState (EpochNo 10) SNothing (CompactCoin 0) Set.empty))
+              def
+              (EpochNo 3) ::
+            VState ConwayEra
+       in map drepExpiry (Map.elems (vsDReps (updateDormantDRepExpiry (EpochNo 20) vs))) == [EpochNo 10]
     )
   ]
   where

@@ -158,6 +158,7 @@ test-suite dxnode-hs-test
     , cardano-ledger-binary
     , cardano-ledger-conway
     , cardano-ledger-core
+    , containers
     , data-default
     , dxnode-hs
     , dxnode-hs:proto

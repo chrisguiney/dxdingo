@@ -1,0 +1,32 @@
+# several DReps in canonical order
+gov_drep_expiry:  {
+  epoch:  25
+  dreps:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+    }
+    deposit:  500000000
+    expiry:  40
+    anchor_url:  "https://example.com/drep"
+  }
+  dreps:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05\x05"
+    }
+    deposit:  500000000
+    expiry:  26
+    anchor_url:  "https://example.com/drep"
+  }
+  dreps:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07"
+    }
+    deposit:  500000000
+    expiry:  100
+    anchor_url:  "https://example.com/drep"
+  }
+  dormant_epochs:  2
+}

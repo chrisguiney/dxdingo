@@ -1,0 +1,14 @@
+# an expiry that lands exactly on the current epoch moves
+gov_drep_expiry:  {
+  epoch:  20
+  dreps:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03"
+    }
+    deposit:  500000000
+    expiry:  17
+    anchor_url:  "https://example.com/drep"
+  }
+  dormant_epochs:  3
+}

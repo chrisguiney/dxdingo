@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"math/big"
 	"testing"
 
+	"github.com/blinklabs-io/dingo/dxoracle"
 	"github.com/blinklabs-io/dingo/ledger/governance"
 	"github.com/blinklabs-io/gouroboros/cbor"
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
@@ -33,5 +36,29 @@ func TestDivergenceEmptyParameterChangeDRepThreshold(t *testing.T) {
 	}
 	if got.Sign() == 0 {
 		t.Fatal("dingo now matches the reference; move the corpus case out of corpus/divergences")
+	}
+}
+
+// gov.drep-expiry, an expired DRep during dormancy. The reference keeps an
+// expiry whose sum with the dormant count is still below the current epoch
+// (Rules/Certs.hs updateDormantDRepExpiry). Dingo's store bumps every nonzero
+// expiry by one per dormant epoch and has no epoch input, so the expired
+// DRep's expiry advances toward the current epoch and can eventually reach it,
+// reviving the DRep. A chain reaches this with a DRep that expires and then
+// sees dormant epochs.
+func TestDivergenceExpiredDRepIsBumpedDuringDormancy(t *testing.T) {
+	oracle, err := scratchOracle()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := oracle.DRepDormancy(context.Background(), dxoracle.DRepDormancyInput{
+		Dreps:         []dxoracle.DRep{{Tag: 0, Key: bytes.Repeat([]byte{0xd2}, 28), ExpiryEpoch: 10, Active: true}},
+		DormantEpochs: 3,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got[0].ExpiryEpoch != 13 {
+		t.Fatalf("dingo expiry = %d, want 13 (bumped although 13 < current epoch 20); re-derive the divergence", got[0].ExpiryEpoch)
 	}
 }

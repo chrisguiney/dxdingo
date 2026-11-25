@@ -16,12 +16,12 @@ func TestGenerateGovCorpus(t *testing.T) {
 // govDivergenceCases holds confirmed mismatches; cmd/dxnode-go/divergence_gov_test.go
 // and the divergence checks in Test/Gov.hs call the libraries directly.
 func govDivergenceCases() []entry {
-	return []entry{
+	return append(govDivergenceExpiry(), []entry{
 		{"gov_thresholds_pc_empty_update", "an update touching no group: the reference threshold is zero, dingo falls back to the governance group; the ledger rejects such an update as malformed",
 			&v1.Call{Request: &v1.Call_GovThresholds{GovThresholds: &v1.GovThresholdsRequest{
 				ProtocolVersion: gpv(10), Pparams: govParams(10, 3), Committee: govCommittee(false), Action: govHex("8400f6a0f6"), Epoch: 50,
 			}}}},
-	}
+	}...)
 }
 
 func govHex(s string) []byte {
@@ -228,7 +228,35 @@ func govCases() []entry {
 		q("gov_committee_quorum_bootstrap", "protocol 9 waives the minimum", 9, two),
 		q("gov_committee_quorum_zero_threshold", "a zero quorum in bootstrap with no members", 9, &v1.Committee{Threshold: rat("0", "1")}),
 	)
-	return append(cases, govTreeCases()...)
+	cases = append(cases, govTreeCases()...)
+	return append(cases, govExpiryCases()...)
+}
+
+func govExpiryCase(name, why string, epoch, dormant uint64, dreps ...*v1.DRepRecord) entry {
+	return entry{name, why, &v1.Call{Request: &v1.Call_GovDrepExpiry{GovDrepExpiry: &v1.GovDRepExpiryRequest{
+		Epoch: epoch, DormantEpochs: dormant, Dreps: dreps,
+	}}}}
+}
+
+func gdrep(b byte, expiry uint64) *v1.DRepRecord {
+	return &v1.DRepRecord{Credential: gcred(b), Deposit: 500_000_000, Expiry: expiry, AnchorUrl: "https://example.com/drep"}
+}
+
+// govExpiryCases: the dormant count is added to each expiry.
+func govExpiryCases() []entry {
+	return []entry{
+		govExpiryCase("gov_drep_expiry_three_dormant", "each active DRep moves by the dormant count", 20, 3, gdrep(1, 30), gdrep(2, 45)),
+		govExpiryCase("gov_drep_expiry_reaches_epoch", "an expiry that lands exactly on the current epoch moves", 20, 3, gdrep(3, 17)),
+		govExpiryCase("gov_drep_expiry_none_dormant", "no dormant epochs: nothing changes", 20, 0, gdrep(1, 30)),
+		govExpiryCase("gov_drep_expiry_zero_expiry", "a zero expiry stays zero while the sum is below the epoch", 20, 3, gdrep(4, 0)),
+		govExpiryCase("gov_drep_expiry_mixed", "several DReps in canonical order", 25, 2, gdrep(9, 40), gdrep(5, 26), gdrep(7, 100)),
+	}
+}
+
+func govDivergenceExpiry() []entry {
+	return []entry{
+		govExpiryCase("gov_drep_expiry_expired_drep", "an expired DRep: the reference keeps 10 (10+3 < 20), dingo bumps it to 13", 20, 3, gdrep(2, 10)),
+	}
 }
 
 func gtx(b byte) []byte { return bytes.Repeat([]byte{b}, 32) }

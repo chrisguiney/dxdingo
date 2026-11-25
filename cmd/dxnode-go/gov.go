@@ -24,6 +24,7 @@ func registerGov(r *dispatch.Registry) {
 	dispatch.Register(r, govCommitteeRatio)
 	dispatch.Register(r, govCommitteeQuorum)
 	dispatch.Register(r, govProposalTree)
+	dispatch.Register(r, govDRepExpiry)
 }
 
 func ratOrNil(r *big.Rat) *v1.Rational {

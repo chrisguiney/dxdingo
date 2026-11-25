@@ -155,7 +155,15 @@ message GovProposalExpiryResponse {
   uint64 unclaimed_to_treasury = 4;
 }
 
+// gov_drep_expiry applies accrued dormancy: dormant_epochs epochs passed with
+// no active proposal, and a proposal now arrives at epoch. The reference adds
+// the count to every DRep expiry in one step (updateDormantDRepExpiry); dingo
+// bumps expiries by one at each dormant boundary. The response lists DReps
+// whose expiry changed, ordered by credential kind then hash. Neither node
+// reports the counter after: the reference resets a pending count, dingo keeps
+// a cumulative one.
 message GovDRepExpiryRequest {
+  // The epoch of the proposal that ends the dormancy.
   uint64 epoch = 1;
   ProtocolParameters pparams = 2;
   repeated DRepRecord dreps = 3;

@@ -1,0 +1,13 @@
+# a zero expiry stays zero while the sum is below the epoch
+gov_drep_expiry:  {
+  epoch:  20
+  dreps:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04"
+    }
+    deposit:  500000000
+    anchor_url:  "https://example.com/drep"
+  }
+  dormant_epochs:  3
+}
