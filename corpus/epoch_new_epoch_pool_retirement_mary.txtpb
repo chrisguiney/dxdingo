@@ -1,0 +1,91 @@
+# a pool retiring at the boundary is removed, its deposit refunds its registered reward account and its delegator is undelegated; the mark is taken before POOLREAP and the old mark becomes the set (mary)
+epoch_new_epoch: {
+  context: {
+    era: ERA_MARY
+    epoch: 11
+  }
+  pparams: {
+    min_fee_a: 44
+    min_fee_b: 155381
+    max_block_body_size: 65536
+    max_tx_size: 16384
+    max_block_header_size: 1100
+    key_deposit: 2000000
+    pool_deposit: 500000000
+    max_epoch: 18
+    n_opt: 150
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+    rho: {
+      numerator: "3"
+      denominator: "1000"
+    }
+    tau: {
+      numerator: "1"
+      denominator: "5"
+    }
+    d: {
+      numerator: "0"
+      denominator: "1"
+    }
+    extra_entropy: {}
+    protocol_version: {
+      major: 4
+    }
+    min_utxo_value: 1000000
+    min_pool_cost: 340000000
+  }
+  state: {
+    accounts: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+      }
+    }
+    accounts: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+      }
+      balance: 5
+      pool_id: "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0"
+    }
+    pools: {
+      pool_id: "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0"
+      stage: POOL_STAGE_CURRENT
+      cost: 340000000
+      margin: {
+        numerator: "1"
+        denominator: "100"
+      }
+      reward_account: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+      }
+      deposit: 500
+      retiring_epoch: 11
+    }
+    pots: {
+      reserves: 10000000000
+      treasury: 1000000
+    }
+  }
+  snapshots: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03"
+    }
+    amount: 100
+    pool_id: "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0"
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    }
+    amount: 40
+  }
+}

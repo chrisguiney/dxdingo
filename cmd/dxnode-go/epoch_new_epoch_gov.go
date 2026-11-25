@@ -27,23 +27,12 @@ func newEpochHasGovernance(req *v1.EpochNewEpochRequest) bool {
 
 // newEpochGovState describes the governance part of req as the rows dingo's
 // RATIFY reads at the boundary into the epoch before req's. The domain is
-// gov_ratify's, taken at that epoch, with one more exclusion: a proposal for
-// a hard fork is UNSUPPORTED, since enacting it changes the protocol version
-// and runs the HARDFORK rule, which the response does not model.
+// gov_ratify's, taken at that epoch.
 func newEpochGovState(ctx context.Context, req *v1.EpochNewEpochRequest, pp *conway.ConwayProtocolParameters) (*dxoracle.GovState, error) {
 	st := req.GetState()
 	prior := req.GetContext().GetEpoch() - 1
 	if err := checkRatifyProposals(st.GetProposals(), prior); err != nil {
 		return nil, err
-	}
-	for _, p := range st.GetProposals() {
-		a, err := decodeGovAction(p.GetAction())
-		if err != nil {
-			return nil, err
-		}
-		if a.Type == lcommon.GovActionTypeHardForkInitiation {
-			return nil, dispatch.Unsupported(errors.New("a hard fork proposal changes the protocol version"))
-		}
 	}
 	rows, _, err := govRows(pp, st, prior, nil)
 	if err != nil {

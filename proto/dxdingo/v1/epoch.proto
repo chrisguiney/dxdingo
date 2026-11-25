@@ -32,6 +32,12 @@ message EpochNewEpochRequest {
   // or votes that arrived after the snapshot are not representable.
   repeated PoolStake pool_distribution = 9;
   repeated DRepStake drep_distribution = 10;
+  // Shelley through Babbage: the move-instantaneous-rewards certificates the
+  // ended epoch carried, as in EpochMirRequest. MIR applies at the boundary
+  // after the reward update and before the snapshot.
+  repeated MirEntry mir = 11;
+  uint64 reserves_to_treasury = 12;
+  uint64 treasury_to_reserves = 13;
 }
 
 message EpochNewEpochResponse {

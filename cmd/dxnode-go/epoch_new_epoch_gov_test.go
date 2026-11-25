@@ -108,10 +108,11 @@ func TestEpochNewEpochGovWithdrawalAndExpiry(t *testing.T) {
 // of its purpose; the proposal left behind keeps the DReps active.
 func TestEpochNewEpochGovParameterChange(t *testing.T) {
 	t.Parallel()
-	got := mustNewEpoch(t, govNewEpochRequest(t, []*v1.Proposal{
+	req := govNewEpochRequest(t, []*v1.Proposal{
 		govProposal(1, pcAction(0), 15, 400, 0x62),
 		govProposal(3, actInfo, 15, 0, 0x50),
-	}, allVote(1, v1.Vote_VOTE_YES)))
+	}, allVote(1, v1.Vote_VOTE_YES))
+	got := mustNewEpoch(t, req)
 	if g := idsOf(got.GetEnacted()); !bytes.Equal(g, []byte{1}) {
 		t.Errorf("enacted %v, want [1]", g)
 	}
@@ -124,6 +125,17 @@ func TestEpochNewEpochGovParameterChange(t *testing.T) {
 	}
 	if d.GetTreasuryDelta() != 0 {
 		t.Errorf("treasury delta %d, want 0", d.GetTreasuryDelta())
+	}
+	// pcAction sets key 2, max_block_body_size, to 0x16000 = 90112.
+	after := d.GetPparamsAfter()
+	if after == nil {
+		t.Fatal("pparams_after unset, want the enacted parameters")
+	}
+	if after.GetMaxBlockBodySize() != 90112 {
+		t.Errorf("max block body size %d, want 90112", after.GetMaxBlockBodySize())
+	}
+	if after.GetMinFeeA() != req.GetPparams().GetMinFeeA() || after.GetProtocolVersion().GetMajor() != req.GetPparams().GetProtocolVersion().GetMajor() {
+		t.Errorf("unrelated parameters changed: %v", after)
 	}
 }
 
@@ -166,9 +178,8 @@ func TestEpochNewEpochGovRejected(t *testing.T) {
 	}
 }
 
-// A hard fork changes the protocol version and runs HARDFORK, which the
-// response does not model; the pool distribution must hold stake; a
-// proposal that left the set before the previous epoch is not representable.
+// The pool distribution must hold stake; a proposal that left the set before
+// the previous epoch is not representable.
 func TestEpochNewEpochGovDomain(t *testing.T) {
 	t.Parallel()
 	unsupported := v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED
@@ -176,9 +187,6 @@ func TestEpochNewEpochGovDomain(t *testing.T) {
 		mutate func(*v1.EpochNewEpochRequest)
 		code   v1.HarnessErrorCode
 	}{
-		"hard fork proposal": {func(r *v1.EpochNewEpochRequest) {
-			r.State.Proposals = []*v1.Proposal{govProposal(1, hfAction(0), 15, 0, 0x50)}
-		}, unsupported},
 		"no pool stake": {func(r *v1.EpochNewEpochRequest) { r.PoolDistribution = nil }, unsupported},
 		"expired before the previous epoch": {func(r *v1.EpochNewEpochRequest) {
 			r.State.Proposals = []*v1.Proposal{govProposal(1, actInfo, 7, 0, 0x50)}
@@ -195,5 +203,57 @@ func TestEpochNewEpochGovDomain(t *testing.T) {
 				t.Fatalf("err = %v, want code %v", err, tc.code)
 			}
 		})
+	}
+}
+
+// hardForkRequest is govNewEpochRequest at protocol 9 with a hard fork to 10
+// accepted by every voter, and three DRep delegations: 0x71 to the registered
+// DRep d1, 0x72 to a DRep nobody registered, 0x73 to always abstain.
+func hardForkRequest(t *testing.T) *v1.EpochNewEpochRequest {
+	t.Helper()
+	req := govNewEpochRequest(t, []*v1.Proposal{
+		govProposal(1, hfAction(0), 15, 400, 0x62),
+		govProposal(3, actInfo, 15, 0, 0x50),
+	}, allVote(1, v1.Vote_VOTE_YES))
+	req.Pparams.ProtocolVersion = &v1.ProtocolVersion{Major: 9}
+	req.State.Accounts = append(req.State.Accounts,
+		&v1.Account{Credential: cred(0x71), Drep: drepCred(cred(0xd1))},
+		&v1.Account{Credential: cred(0x72), Drep: drepCred(cred(0xdd))},
+		&v1.Account{Credential: cred(0x73), Drep: &v1.DRep{Target: &v1.DRep_AlwaysAbstain{AlwaysAbstain: true}}},
+	)
+	return req
+}
+
+// Enacting a hard fork to protocol 10 changes the version and runs HARDFORK
+// (Conway Rules/HardFork.hs, updateDRepDelegations): a delegation to a DRep
+// that is not registered is cleared, the others stay. Every other parameter is
+// as before. The refund of the proposal's 400 reaches 0x62.
+func TestEpochNewEpochGovHardForkClearsDanglingDRepDelegations(t *testing.T) {
+	t.Parallel()
+	req := hardForkRequest(t)
+	got := mustNewEpoch(t, req)
+	if g := idsOf(got.GetEnacted()); !bytes.Equal(g, []byte{1}) {
+		t.Errorf("enacted %v, want [1]", g)
+	}
+	d := got.GetDelta()
+	after := d.GetPparamsAfter()
+	if v := after.GetProtocolVersion(); v.GetMajor() != 10 || v.GetMinor() != 0 {
+		t.Errorf("protocol version %v, want 10.0", v)
+	}
+	if after.GetMaxBlockBodySize() != req.GetPparams().GetMaxBlockBodySize() || after.GetMinFeeA() != req.GetPparams().GetMinFeeA() {
+		t.Errorf("unrelated parameters changed: %v", after)
+	}
+	if root := d.GetEnactStateAfter().GetPrevHardFork(); root == nil || root.GetTxId()[0] != 1 {
+		t.Errorf("hard fork root %v, want proposal 1", root)
+	}
+	byCred := map[byte]*v1.Account{}
+	for _, a := range d.GetAccountsChanged() {
+		byCred[a.GetCredential().GetHash()[0]] = a
+	}
+	if len(byCred) != 2 || byCred[0x62].GetBalance() != 411 || byCred[0x72] == nil {
+		t.Fatalf("accounts changed %v, want 0x62=411 and 0x72", d.GetAccountsChanged())
+	}
+	if byCred[0x72].GetDrep() != nil {
+		t.Errorf("0x72 delegation %v, want cleared", byCred[0x72].GetDrep())
 	}
 }

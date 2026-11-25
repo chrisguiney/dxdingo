@@ -8,6 +8,10 @@ import (
 	"sort"
 
 	"github.com/blinklabs-io/dingo/dxoracle"
+	"github.com/blinklabs-io/dingo/ledger/eras"
+	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
+	"github.com/blinklabs-io/gouroboros/ledger/conway"
+	"google.golang.org/protobuf/proto"
 
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
 	"github.com/chrisguiney/dxdingo/internal/dispatch"
@@ -32,27 +36,59 @@ import (
 // test enacts what it accepted and drops what it expired; enacted, expired
 // and the governance-driven parts of the delta are what that boundary did.
 // The domain is gov_ratify's taken at the previous epoch, and a hard fork
-// proposal is UNSUPPORTED. UTxO state, parameter proposals, genesis
-// delegations and registration pointers are UNSUPPORTED, since the request
-// carries no state for them to read. The response reports only the pots both
+// proposal enacted at the boundary runs HARDFORK: the response's pparams_after
+// carries the new protocol version and a delegation to a DRep nobody
+// registered is cleared at protocol 10. The instant stake is instant_stake or,
+// when state.utxo is given instead, what stake_instant_stake derives from the
+// UTxO table (both together are UNSUPPORTED; a table before Conway is
+// UNSUPPORTED too, see pointers below). Before Conway the update system
+// and MIR are in the domain: state.pparam_proposals are adopted at the
+// boundary when globals.quorum genesis keys agree (the epoch length must be
+// the scratch ledger's 432000) and are reported as pparams_after; mir, with
+// reserves_to_treasury and treasury_to_reserves, is applied after the reward
+// update and before SNAP. Genesis delegations are UNSUPPORTED because
+// neither node reads them at NEWEPOCH (they only validate a proposal when it
+// is made), registration pointers because dingo's instant stake leaves
+// pointer addresses out while the reference counts them before Conway. The response reports only the pots both
 // ledgers keep: reserves and treasury. Dingo keeps no fee, deposit or
 // donation pot, so those deltas are left unset on both sides.
 func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.EpochNewEpochResponse, error) {
-	if req.GetContext().GetEra() != v1.Era_ERA_CONWAY {
-		return nil, unsupportedf("NEWEPOCH is answered for Conway only")
+	era := req.GetContext().GetEra()
+	desc, ok := newEpochEras[era]
+	if !ok {
+		return nil, unsupportedf("NEWEPOCH is answered for Shelley through Conway")
 	}
+	conwayEra := era == v1.Era_ERA_CONWAY
 	st := req.GetState()
-	if len(st.GetUtxo()) > 0 || len(st.GetPparamProposals()) > 0 || len(st.GetGenesisDelegations()) > 0 {
-		return nil, unsupportedf("UTxO, parameter proposals and genesis delegations are not read")
+	if len(st.GetGenesisDelegations()) > 0 {
+		return nil, unsupportedf("genesis delegations are not read")
+	}
+	instant := req.GetInstantStake()
+	if len(st.GetUtxo()) > 0 && !conwayEra {
+		return nil, unsupportedf("a UTxO table is read for Conway only: before it pointer addresses carry stake")
+	}
+	if len(st.GetUtxo()) > 0 {
+		if len(instant) > 0 {
+			return nil, unsupportedf("a UTxO table and instant_stake both give the instant stake")
+		}
+		derived, err := instantStake(ctx, &v1.StakeInstantStakeRequest{Utxo: st.GetUtxo()})
+		if err != nil {
+			return nil, err
+		}
+		if derived.GetRejection() != nil {
+			return &v1.EpochNewEpochResponse{Rejection: derived.GetRejection()}, nil
+		}
+		instant = derived.GetStake()
 	}
 	if req.GetContext().GetEpoch() < 5 {
 		return nil, unsupportedf("epoch below 5 has no reward round to run")
 	}
-	pp, err := govFullPParams(req.GetPparams())
+	pp, err := newEpochPParams(era, req.GetPparams())
 	if err != nil {
 		return nil, err
 	}
 	in := dxoracle.NewEpochInput{
+		Era:       &desc,
 		Epoch:     req.GetContext().GetEpoch() - 1,
 		PParams:   pp,
 		Reserves:  st.GetPots().GetReserves(),
@@ -62,9 +98,19 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 	if in.PriorMark, in.PriorSet, in.PriorGo, err = priorSnapshots(req.GetSnapshots()); err != nil {
 		return nil, err
 	}
+	var rej *v1.Rejection
+	if in.PParamUpdates, in.UpdateQuorum, rej, err = newEpochUpdates(req, era); err != nil || rej != nil {
+		return &v1.EpochNewEpochResponse{Rejection: rej}, err
+	}
+	if in.MIRs, err = newEpochMIRs(req, era); err != nil {
+		return nil, err
+	}
 	var gov *dxoracle.GovState
+	if !conwayEra && newEpochHasGovernance(req) {
+		return nil, unsupportedf("governance state does not exist before Conway")
+	}
 	if newEpochHasGovernance(req) {
-		if gov, err = newEpochGovState(ctx, req, pp); err != nil {
+		if gov, err = newEpochGovState(ctx, req, pp.(*conway.ConwayProtocolParameters)); err != nil {
 			return nil, err
 		}
 		in.Gov = gov
@@ -90,6 +136,9 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		}
 		if a.GetDrep() != nil && a.GetDrep().GetTarget() == nil {
 			return nil, dispatch.BadRequest(errors.New("accounts: drep target unset"))
+		}
+		if !conwayEra && a.GetDrep() != nil {
+			return nil, unsupportedf("accounts: a DRep delegation does not exist before Conway")
 		}
 		drep, err := delegation(a.GetDrep())
 		if err != nil {
@@ -128,7 +177,7 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		in.Pools = append(in.Pools, pool)
 	}
 	totals := map[string]uint64{}
-	for _, e := range req.GetInstantStake() {
+	for _, e := range instant {
 		if _, err := rewardCredential("instant_stake", e.GetCredential()); err != nil {
 			return nil, err
 		}
@@ -147,7 +196,6 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		}
 	}
 	if req.GetRewardUpdate() != nil {
-		var rej *v1.Rejection
 		if in.Rewards, rej, err = pendingRewards(ctx, req); err != nil || rej != nil {
 			return &v1.EpochNewEpochResponse{Rejection: rej}, err
 		}
@@ -162,7 +210,7 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 	}
 	for i, a := range out.Accounts {
 		before := in.Accounts[i]
-		if a.Reward == before.Reward && bytes.Equal(a.Pool, before.Pool) {
+		if a.Reward == before.Reward && bytes.Equal(a.Pool, before.Pool) && a.Drep.Type == before.Drep.Type && bytes.Equal(a.Drep.Key, before.Drep.Key) {
 			continue
 		}
 		cred := protoCredential(a.Tag, a.Key)
@@ -174,6 +222,28 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		return credKeyRewardsStake(delta.AccountsChanged[i].GetCredential()) < credKeyRewardsStake(delta.AccountsChanged[j].GetCredential())
 	})
 	delta.PoolsRemoved = out.PoolsRemoved
+	if ops, ok := pparamEras[era]; ok {
+		got, err := ops.to(out.PParams)
+		if err != nil {
+			return nil, err
+		}
+		was, err := ops.to(pp)
+		if err != nil {
+			return nil, err
+		}
+		if !proto.Equal(got, was) {
+			delta.PparamsAfter = got
+		}
+	}
+	if conwayEra {
+		after, ok := out.PParams.(*conway.ConwayProtocolParameters)
+		if !ok {
+			return nil, errors.New("NEWEPOCH left parameters of an unexpected type")
+		}
+		if got, was := conwayPParamsToProto(after), conwayPParamsToProto(pp.(*conway.ConwayProtocolParameters)); !proto.Equal(got, was) {
+			delta.PparamsAfter = got
+		}
+	}
 	resp := &v1.EpochNewEpochResponse{Delta: delta}
 	if out.Gov != nil {
 		applyNewEpochGov(req, gov, out.Gov, resp)
@@ -208,4 +278,18 @@ func drepProto(d dxoracle.Delegation) *v1.DRep {
 		return &v1.DRep{Target: &v1.DRep_Credential{Credential: protoCredential(1, d.Key)}}
 	}
 	return nil
+}
+
+// newEpochEras are the eras NEWEPOCH is answered in.
+var newEpochEras = map[v1.Era]eras.EraDesc{
+	v1.Era_ERA_SHELLEY: eras.ShelleyEraDesc, v1.Era_ERA_ALLEGRA: eras.AllegraEraDesc, v1.Era_ERA_MARY: eras.MaryEraDesc,
+	v1.Era_ERA_ALONZO: eras.AlonzoEraDesc, v1.Era_ERA_BABBAGE: eras.BabbageEraDesc, v1.Era_ERA_CONWAY: eras.ConwayEraDesc,
+}
+
+// newEpochPParams reads the parameters as the era's table.
+func newEpochPParams(era v1.Era, pp *v1.ProtocolParameters) (lcommon.ProtocolParameters, error) {
+	if ops, ok := pparamEras[era]; ok {
+		return ops.from(pp)
+	}
+	return govFullPParams(pp)
 }

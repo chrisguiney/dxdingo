@@ -5,6 +5,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoMonoLocalBinds #-}
 
 -- | Epoch functions, answered by running the real ledger STS rules (POOLREAP
 -- and MIR through 'applySTSOpts') over states built from the request tables.
@@ -28,6 +30,7 @@ import Cardano.Ledger.Address (AccountId (..))
 import Cardano.Ledger.BaseTypes
   ( EpochNo (..)
   , Globals (..)
+  , ShelleyBase
   , Network (..)
   , StrictMaybe (..)
   , mkActiveSlotCoeff
@@ -63,6 +66,7 @@ import Cardano.Ledger.Shelley.LedgerState
   ( EpochState
   , LedgerState
   , NewEpochState (..)
+  , StashedAVVMAddresses
   , esLStateL
   , utxosGovStateL
   , esSnapshotsL
@@ -92,6 +96,7 @@ import Control.State.Transition
   , TRC (..)
   , ValidationPolicy (..)
   , applySTSOpts
+  , STS (..)
   )
 import Cardano.Ledger.BaseTypes (Nonce (..), ProtVer (..), EpochInterval (..))
 import Cardano.Ledger.Binary (decodeFull, getVersion, mkVersion)
@@ -99,10 +104,11 @@ import Cardano.Ledger.Core
 import Cardano.Ledger.Shelley.Core (ppDL, ppExtraEntropyL, ppMinUTxOValueL)
 import Cardano.Ledger.Shelley.PParams (ProposedPPUpdates (..))
 import qualified Data.ByteString.Lazy as BSL
+import Cardano.Ledger.Shelley.Governance (FuturePParams (PotentialPParamsUpdate), ShelleyGovState (..), solidifyFuturePParams)
 import Cardano.Ledger.Conway.Governance
-  ( GovAction (HardForkInitiation, InfoAction, NoConfidence, UpdateCommittee), GovActionId (..), GovActionIx (..), GovActionState (..)
+  ( GovAction (InfoAction, NoConfidence, UpdateCommittee), GovActionId (..), GovActionIx (..), GovActionState (..)
   , GovRelation (..), ProposalProcedure (..), Proposals, RatifyState (..), DRepPulsingState (DRComplete), ConwayGovState
-  , cgsCommitteeL, cgsConstitutionL, cgsDRepPulsingStateL, cgsProposalsL, govStatePrevGovActionIds, proposalsAddAction, proposalsIds, unGovPurposeId )
+  , cgsCommitteeL, cgsConstitutionL, cgsDRepPulsingStateL, cgsFuturePParamsL, cgsProposalsL, govStatePrevGovActionIds, predictFuturePParams, proposalsAddAction, proposalsIds, unGovPurposeId )
 import Cardano.Ledger.Conway.State (vsDRepsL, vsCommitteeStateL, certVStateL, dRepDelegationAccountStateL)
 import Cardano.Ledger.Address (AccountAddress (..))
 import Cardano.Ledger.BaseTypes (Anchor (..), Url, textToUrl)
@@ -110,13 +116,13 @@ import Cardano.Ledger.DRep (DRep (..), DRepState (..))
 import Cardano.Ledger.Hashes (unsafeMakeSafeHash)
 import Cardano.Ledger.TxIn (TxId (..))
 import Cardano.Ledger.Shelley.LedgerState (allObligations)
-import Data.Default (def)
+import Data.Default (Default, def)
 import Data.Foldable (fold, toList)
 import Data.Functor.Identity (runIdentity)
 import qualified Data.ByteString as BS
 import qualified Data.List as L
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Ratio ((%))
 import Dxdingo.Convert (rational)
 import qualified Data.Sequence.Strict as StrictSeq
@@ -131,7 +137,7 @@ import Dxdingo.Answer (Answer, respond)
 import Dxdingo.Domain
 import Dxdingo.Gov (actionIdProto, committeeArg, committeeProto, constitutionArg, constitutionProto, ratifyTables, sortedIds)
 import Dxdingo.Rewards (rewardUpdateWith, sortRewards)
-import Dxdingo.Stake (credentialOf, poolHashOf, poolStateOf, currentPools)
+import Dxdingo.Stake (credentialOf, poolHashOf, poolStateOf, currentPools, instantStake)
 import qualified Proto.Dxdingo.V1.Rewards as RW
 import qualified Data.VMap as VMap
 import Cardano.Ledger.Conway.State (ConwayInstantStake (..))
@@ -982,19 +988,63 @@ pendingRewardUpdate req = case req ^. #maybe'rewardUpdate of
 -- the real reward calculation produces it from blocks_previous, the GO
 -- snapshot, the pools and pots (pots.fees is the fee pot it pays out), under
 -- the scratch ledger's Globals; blocks_previous is read only with a
--- reward_update. Governance is gov_ratify's domain at the previous epoch, and
--- a hard fork proposal is UNSUPPORTED. A UTxO table, parameter proposals and
--- genesis delegations are UNSUPPORTED, and the fee, deposit and donation
--- pots are not reported because dingo keeps none.
+-- reward_update. Governance is gov_ratify's domain at the previous epoch.
+-- Enacted parameter changes and hard forks are reported as the delta's
+-- pparams_after: the EPOCH rule adopts the parameters the pulser's RATIFY
+-- reached, and a protocol version change runs HARDFORK, which at protocol 10
+-- clears delegations to DReps that are not registered (an account row whose
+-- DRep changed is reported). The instant stake is instant_stake or, when
+-- state.utxo is given instead, what stake_instant_stake derives from the
+-- UTxO table (a rejection of that derivation is the response's; both together
+-- are UNSUPPORTED). The fee, deposit and donation pots are not reported
+-- because dingo keeps none.
+--
+-- Before Conway ('newEpochPre'): pending reward update, MIR (mir and the two
+-- pot transfers, as epoch_mir), the classic update system (pparam_proposals
+-- under globals.quorum, as epoch_pparam_update, reported as pparams_after),
+-- SNAP and POOLREAP. UNSUPPORTED, with the reason: genesis delegations
+-- (neither node reads them at NEWEPOCH: they only validate a proposal when it
+-- is made, Shelley/Rules/Ppup.hs, and UPEC adopts by quorum alone,
+-- Shelley/Rules/Upec.hs); registration pointers, and with them a UTxO table,
+-- because the reference counts pointer-addressed stake before Conway through
+-- the accounts' pointers (ShelleyAccountState) while stake_instant_stake, the
+-- Conway derivation shared with dxnode-go, drops pointer addresses and
+-- dxoracle seeds registrations without a certificate position
+-- (dxoracle/epoch_new_epoch.go, seedNewEpoch); governance state and DRep
+-- delegations, which do not exist; an epoch below 5; proposals under another
+-- epoch length than the scratch ledger's 432000; and the Conway-only fields.
 newEpoch :: E.EpochNewEpochRequest -> Result E.EpochNewEpochResponse
 newEpoch req = do
-  unless (req ^. #context . #era == P.ERA_CONWAY) $ unsupported "NEWEPOCH is answered for Conway only"
+  unless (req ^. #context . #era `elem` [P.ERA_SHELLEY, P.ERA_ALLEGRA, P.ERA_MARY, P.ERA_ALONZO, P.ERA_BABBAGE, P.ERA_CONWAY]) $
+    unsupported "NEWEPOCH is answered for Shelley through Conway"
   let st = req ^. #state
-  when
-    ( not (null (st ^. #utxo))
-        || not (null (st ^. #pparamProposals)) || not (null (st ^. #genesisDelegations))
-    )
-    $ unsupported "UTxO, parameter proposals and genesis delegations are not read"
+  when (not (null (st ^. #genesisDelegations))) $
+    unsupported "genesis delegations are not read"
+  when (not (null (st ^. #utxo)) && req ^. #context . #era /= P.ERA_CONWAY) $
+    unsupported "a UTxO table is read for Conway only: before it pointer addresses carry stake"
+  when (not (null (st ^. #utxo)) && not (null (req ^. #instantStake))) $
+    unsupported "a UTxO table and instant_stake both give the instant stake"
+  derived <- if null (st ^. #utxo) then pure Nothing else Just <$> instantStake (defMessage & #utxo .~ (st ^. #utxo))
+  case derived >>= (^. #maybe'rejection) of
+    Just rj -> pure (defMessage & #rejection .~ rj)
+    Nothing -> newEpochOver req (maybe (req ^. #instantStake) (^. #stake) derived)
+
+-- | The boundary over a request whose instant stake is the given entries.
+newEpochOver :: E.EpochNewEpochRequest -> [S.StakeEntry] -> Result E.EpochNewEpochResponse
+newEpochOver req instantEntries = case req ^. #context . #era of
+  P.ERA_SHELLEY -> shelleyPParams @ShelleyEra (req ^. #maybe'pparams) >>= newEpochPre @ShelleyEra shelleyPParamsProto req instantEntries
+  P.ERA_ALLEGRA -> shelleyPParams @AllegraEra (req ^. #maybe'pparams) >>= newEpochPre @AllegraEra shelleyPParamsProto req instantEntries
+  P.ERA_MARY -> shelleyPParams @MaryEra (req ^. #maybe'pparams) >>= newEpochPre @MaryEra shelleyPParamsProto req instantEntries
+  P.ERA_ALONZO -> alonzoPParams (req ^. #maybe'pparams) >>= newEpochPre @AlonzoEra alonzoPParamsProto req instantEntries
+  P.ERA_BABBAGE -> babbagePParams (req ^. #maybe'pparams) >>= newEpochPre @BabbageEra babbagePParamsProto req instantEntries
+  _ -> newEpochConway req instantEntries
+
+-- | NEWEPOCH over Conway state.
+newEpochConway :: E.EpochNewEpochRequest -> [S.StakeEntry] -> Result E.EpochNewEpochResponse
+newEpochConway req instantEntries = do
+  let st = req ^. #state
+  unless (null (st ^. #pparamProposals)) $ unsupported "parameter proposals do not exist in Conway"
+  unless (null (req ^. #mir) && req ^. #reservesToTreasury == 0 && req ^. #treasuryToReserves == 0) $ unsupported "MIR does not exist in Conway"
   let epoch = req ^. #context . #epoch
   when (epoch < 5) $ unsupported "epoch below 5 has no reward round to run"
   pp <- conwayPParams (req ^. #maybe'pparams)
@@ -1005,7 +1055,7 @@ newEpoch req = do
     unless (p ^. #stage == S.POOL_STAGE_CURRENT) $ unsupported "pools: stage is not current"
   pools <- traverse (mkPool delegatorsOf) (st ^. #pools)
   when (Map.size (Map.fromList [(pid, ()) | (pid, _, _) <- pools]) /= length pools) $ badRequest "pools: repeated pool"
-  instant <- foldlM addInstant Map.empty (req ^. #instantStake)
+  instant <- foldlM addInstant Map.empty instantEntries
   let totals = Map.unionWith (+) instant (Map.map (\(_, b, _, _) -> toInteger b) accts)
   when (any (> toInteger (maxBound :: Word64)) (Map.elems totals)) $ unsupported "stake of one credential exceeds Word64"
   pending <- pendingRewardUpdate req
@@ -1054,6 +1104,7 @@ newEpoch req = do
           applySTSOpts @(NEWEPOCH ConwayEra) opts (TRC ((), nes0, EpochNo epoch))
       es1 = nesEs nes1
       cas1 = es1 ^. chainAccountStateL
+      ppAfter = es1 ^. curPParamsEpochStateL
       acctsAfter = es1 ^. esLStateL . lsCertStateL . certDStateL . accountsL . accountsMapL
       poolsAfter = es1 ^. esLStateL . lsCertStateL . certPStateL . psStakePoolsL
       changed =
@@ -1061,9 +1112,9 @@ newEpoch req = do
             & #balance .~ unCompactCoin (a ^. balanceAccountStateL)
             & #poolId .~ maybe BS.empty (\(KeyHash h) -> hashToBytes h) (a ^. stakePoolDelegationAccountStateL)
             & #maybe'drep .~ (drepToProto <$> (a ^. dRepDelegationAccountStateL))
-        | (c, (_, bal, mp, _)) <- Map.toList accts
+        | (c, (_, bal, mp, dr)) <- Map.toList accts
         , Just a <- [Map.lookup c acctsAfter]
-        , unCompactCoin (a ^. balanceAccountStateL) /= bal || a ^. stakePoolDelegationAccountStateL /= mp
+        , unCompactCoin (a ^. balanceAccountStateL) /= bal || a ^. stakePoolDelegationAccountStateL /= mp || a ^. dRepDelegationAccountStateL /= dr
         ]
       removed = [hashToBytes h | (pid@(KeyHash h), _, _) <- pools, not (pid `Map.member` poolsAfter)]
       rowsOf k ss =
@@ -1082,6 +1133,7 @@ newEpoch req = do
                & #poolsRemoved .~ L.sort removed
                & #reservesDelta .~ deltaOf (casReserves cas1) (pots ^. #reserves)
                & #treasuryDelta .~ deltaOf (casTreasury cas1) (pots ^. #treasury)
+               & (if ppAfter == pp then id else #pparamsAfter .~ conwayPParamsProto ppAfter)
                & maybe id (govDelta st es1) gov
            )
       & maybe id govVerdict gov
@@ -1104,6 +1156,233 @@ newEpoch req = do
       c <- credentialOf "instant_stake" (e ^. #credential)
       pure (Map.insertWith (+) c (toInteger (e ^. #amount)) acc)
 
+-- | NEWEPOCH over Shelley through Babbage state, with the rule of the era
+-- ('EraRule' "NEWEPOCH"): the pending reward update is applied, then SNAP,
+-- POOLREAP and the Shelley EPOCH step run over a state built from the
+-- request, and the response reports what changed as for Conway.
+--
+-- Domain, shared with dxnode-go: the update system, MIR, pointers and
+-- governance are not in it. A parameter proposal or a genesis delegation, a
+-- DRep delegation, a pointer and every governance table are UNSUPPORTED.
+newEpochPreRun ::
+  forall era.
+  ( EraGov era
+  , EraStake era
+  , EraCertState era
+  , ShelleyEraAccounts era
+  , STS (EraRule "NEWEPOCH" era)
+  , BaseM (EraRule "NEWEPOCH" era) ~ ShelleyBase
+  , State (EraRule "NEWEPOCH" era) ~ NewEpochState era
+  , Signal (EraRule "NEWEPOCH" era) ~ EpochNo
+  , Environment (EraRule "NEWEPOCH" era) ~ ()
+  , Default (StashedAVVMAddresses era)
+  , Default (EpochState era)
+  , Default (LedgerState era)
+  , EraPParams era
+  , AtMostEra "Babbage" era
+  , GovState era ~ ShelleyGovState era
+  ) =>
+  (PParams era -> S.ProtocolParameters) ->
+  E.EpochNewEpochRequest ->
+  [S.StakeEntry] ->
+  PParams era ->
+  ShelleyGovState era ->
+  Result E.EpochNewEpochResponse
+newEpochPreRun toProto req instantEntries pp govSt = do
+  let st = req ^. #state
+      epoch = req ^. #context . #epoch
+  unless (null (st ^. #dreps) && null (st ^. #proposals) && null (st ^. #votes) && isNothing (st ^. #maybe'committee) && isNothing (st ^. #maybe'enactState)
+          && null (req ^. #poolDistribution) && null (req ^. #drepDistribution)) $
+    unsupported "governance state does not exist before Conway"
+  when (epoch < 5) $ unsupported "epoch below 5 has no reward round to run"
+  priors <- priorSnapshots (req ^. #snapshots)
+  accts <- foldlM addAccount Map.empty (st ^. #accounts)
+  let delegatorsOf pid = Set.fromList [c | (c, (_, _, Just p)) <- Map.toList accts, p == pid]
+  forM_ (st ^. #pools) $ \p -> unless (p ^. #stage == S.POOL_STAGE_CURRENT) $ unsupported "pools: stage is not current"
+  pools <- traverse (mkPool delegatorsOf) (st ^. #pools)
+  when (Map.size (Map.fromList [(pid, ()) | (pid, _, _) <- pools]) /= length pools) $ badRequest "pools: repeated pool"
+  instant <- foldlM addInstant Map.empty instantEntries
+  let totals = Map.unionWith (+) instant (Map.map (\(_, b, _) -> toInteger b) accts)
+  when (any (> toInteger (maxBound :: Word64)) (Map.elems totals)) $ unsupported "stake of one credential exceeds Word64"
+  pending <- pendingRewardUpdate req
+  ir <- instantaneousRewards req
+  let pots = st ^. #pots
+      ptr = Ptr (SlotNo32 0) (TxIx 0) (CertIx 0)
+      accountMap =
+        Map.foldrWithKey
+          (\c (dep, bal, mp) -> addAccountState c (mkShelleyAccountState ptr (CompactCoin dep) & balanceAccountStateL .~ CompactCoin bal & stakePoolDelegationAccountStateL .~ mp))
+          def
+          accts
+      cs =
+        (def :: CertState era)
+          & certPStateL . psStakePoolsL .~ Map.fromList [(pid, sps) | (pid, sps, _) <- pools]
+          & certPStateL . psRetiringL .~ Map.fromList [(pid, EpochNo e) | (pid, _, Just e) <- pools]
+          & certDStateL . accountsL .~ accountMap
+          & certDStateL . dsIRewardsL .~ ir
+      ls =
+        (def :: LedgerState era)
+          & lsCertStateL .~ cs
+          & lsUTxOStateL . utxosGovStateL .~ govSt
+          & lsUTxOStateL . utxosFeesL .~ maybe (Coin 0) (const (Coin (toInteger (pots ^. #fees)))) (req ^. #maybe'rewardUpdate)
+          & lsUTxOStateL . instantStakeL . instantStakeCredentialsL .~ Map.map (CompactCoin . fromInteger) (Map.filter (> 0) instant)
+      snapOf k = snapshotOfRows (Map.findWithDefault [] k priors)
+      mark0 = snapOf S.SNAPSHOT_KIND_MARK
+      before = SnapShots mark0 (calculatePoolDistr mark0) (snapOf S.SNAPSHOT_KIND_SET) (snapOf S.SNAPSHOT_KIND_GO) (Coin 0)
+      es0 =
+        (def :: EpochState era)
+          & esLStateL .~ ls
+          & esSnapshotsL .~ before
+          & chainAccountStateL .~ ChainAccountState (Coin (toInteger (pots ^. #treasury))) (Coin (toInteger (pots ^. #reserves)))
+          & curPParamsEpochStateL .~ pp
+          & prevPParamsEpochStateL .~ pp
+      nes0 = (def :: NewEpochState era) {nesEL = EpochNo (epoch - 1), nesEs = es0, nesPd = calculatePoolDistr mark0, nesRu = pending}
+      opts = ApplySTSOpts {asoAssertions = AssertionsOff, asoValidation = ValidateNone, asoEvents = EPReturn}
+      ((nes1, _failures), _events) =
+        runIdentity . (`runReaderT` globals {quorum = req ^. #globals . #quorum}) $
+          applySTSOpts @(EraRule "NEWEPOCH" era) opts (TRC ((), nes0, EpochNo epoch))
+      es1 = nesEs nes1
+      ppAfter = es1 ^. curPParamsEpochStateL
+      cas1 = es1 ^. chainAccountStateL
+      acctsAfter = es1 ^. esLStateL . lsCertStateL . certDStateL . accountsL . accountsMapL
+      poolsAfter = es1 ^. esLStateL . lsCertStateL . certPStateL . psStakePoolsL
+      changed =
+        [ defMessage & #credential .~ credProto c & #deposit .~ unCompactCoin (a ^. depositAccountStateL)
+            & #balance .~ unCompactCoin (a ^. balanceAccountStateL)
+            & #poolId .~ maybe BS.empty (\(KeyHash h) -> hashToBytes h) (a ^. stakePoolDelegationAccountStateL)
+        | (c, (_, bal, mp)) <- Map.toList accts
+        , Just a <- [Map.lookup c acctsAfter]
+        , unCompactCoin (a ^. balanceAccountStateL) /= bal || a ^. stakePoolDelegationAccountStateL /= mp
+        ]
+      removed = [hashToBytes h | (pid@(KeyHash h), _, _) <- pools, not (pid `Map.member` poolsAfter)]
+      rowsOf k ss =
+        L.sortOn (\e -> (fromEnum (e ^. #credential . #kind), e ^. #credential . #hash))
+          [ defMessage & #snapshot .~ k & #credential .~ credProto c & #amount .~ a & #poolId .~ hashToBytes ph
+          | (c, StakeWithDelegation nz (KeyHash ph)) <- VMap.toList (unActiveStake (ssActiveStake ss))
+          , let CompactCoin a = unNonZero nz
+          ]
+      snaps = es1 ^. esSnapshotsL
+      deltaOf after before' = fromInteger (unCoin after - toInteger before') :: Int64
+  pure $
+    defMessage
+      & #delta
+        .~ ( defMessage
+               & #accountsChanged .~ L.sortOn (credKey . (^. #credential)) changed
+               & #poolsRemoved .~ L.sort removed
+               & #reservesDelta .~ deltaOf (casReserves cas1) (pots ^. #reserves)
+               & #treasuryDelta .~ deltaOf (casTreasury cas1) (pots ^. #treasury)
+               & (if ppAfter == pp then id else #pparamsAfter .~ toProto ppAfter)
+           )
+      & #snapshots
+        .~ ( rowsOf S.SNAPSHOT_KIND_MARK (ssStakeMark snaps)
+               ++ rowsOf S.SNAPSHOT_KIND_SET (ssStakeSet snaps)
+               ++ rowsOf S.SNAPSHOT_KIND_GO (ssStakeGo snaps)
+           )
+  where
+    addAccount acc a = do
+      c <- credentialOf "accounts" (a ^. #credential)
+      when (c `Map.member` acc) $ badRequest "accounts: repeated credential"
+      mp <- if BS.null (a ^. #poolId) then pure Nothing else Just <$> poolHashOf "accounts" (a ^. #poolId)
+      when (isJust (a ^. #maybe'pointer)) $ unsupported "accounts: pointers are not read"
+      when (isJust (a ^. #maybe'drep)) $ unsupported "accounts: a DRep delegation does not exist before Conway"
+      pure (Map.insert c (a ^. #deposit, a ^. #balance, mp) acc)
+    addInstant acc e = do
+      c <- credentialOf "instant_stake" (e ^. #credential)
+      pure (Map.insertWith (+) c (toInteger (e ^. #amount)) acc)
+
+newEpochPre ::
+  forall era.
+  ( EraGov era
+  , EraStake era
+  , EraCertState era
+  , ShelleyEraAccounts era
+  , STS (EraRule "NEWEPOCH" era)
+  , BaseM (EraRule "NEWEPOCH" era) ~ ShelleyBase
+  , State (EraRule "NEWEPOCH" era) ~ NewEpochState era
+  , Signal (EraRule "NEWEPOCH" era) ~ EpochNo
+  , Environment (EraRule "NEWEPOCH" era) ~ ()
+  , Default (StashedAVVMAddresses era)
+  , Default (EpochState era)
+  , Default (LedgerState era)
+  , EraPParams era
+  , AtMostEra "Babbage" era
+  , GovState era ~ ShelleyGovState era
+  ) =>
+  (PParams era -> S.ProtocolParameters) ->
+  E.EpochNewEpochRequest ->
+  [S.StakeEntry] ->
+  PParams era ->
+  Result E.EpochNewEpochResponse
+newEpochPre toProto req instantEntries pp = do
+  let proposals = req ^. #state . #pparamProposals
+      epoch = req ^. #context . #epoch
+      epochLength = 432000
+  unless (null proposals || req ^. #globals . #epochLength == epochLength) $ unsupported "parameter proposals need the scratch ledger's epoch length"
+  decoded <- traverse proposal proposals
+  let slots = map (^. #addedSlot) proposals
+  when (or (zipWith (>) slots (drop 1 slots))) $ unsupported "proposals are not in chain order"
+  forM_ proposals $ \p -> do
+    let made = p ^. #addedSlot `div` epochLength
+        t = p ^. #targetEpoch
+    unless (made == t || made + 1 == t) $ unsupported "proposal targets neither its own epoch nor the next"
+  case sequence decoded of
+    Left msg -> pure (defMessage & #rejection .~ rejection "PPUP" "DeserialiseFailure" msg)
+    Right ups ->
+      let start = (epoch - 1) * epochLength
+          forEpoch = [(gk, slot, u) | (gk, t, slot, u) <- ups, epoch > 0, t == epoch - 1]
+          madeNow = Map.fromList [(gk, u) | (gk, slot, u) <- forEpoch, slot >= start]
+          carried = Map.fromList [(gk, u) | (gk, slot, u) <- forEpoch, slot < start]
+          kept = if all (hasLegalProtVerUpdate pp) carried then carried else Map.empty
+          cur = ProposedPPUpdates (Map.union madeNow kept)
+          -- The previous boundary left the future parameters potential and
+          -- TICK solidifies them once past the point of no return; UPEC
+          -- adopts only the solidified ones.
+          govSt =
+            ShelleyGovState
+              { sgsCurProposals = cur
+              , sgsFutureProposals = ProposedPPUpdates Map.empty
+              , sgsCurPParams = pp
+              , sgsPrevPParams = pp
+              , sgsFuturePParams = solidifyFuturePParams (PotentialPParamsUpdate (votedFuturePParams cur pp (req ^. #globals . #quorum)))
+              }
+       in newEpochPreRun toProto req instantEntries pp govSt
+  where
+    proposal p = do
+      when (BS.length (p ^. #genesisKeyHash) /= 28) $ badRequest "genesis key hash must be 28 bytes"
+      gk <- maybe (badRequest "genesis key hash must be 28 bytes") (pure . KeyHash) (hashFromBytes (p ^. #genesisKeyHash))
+      pure $ case decodeFull (eraProtVerLow @era) (BSL.fromStrict (p ^. #update)) of
+        Left e -> Left (T.pack (show e))
+        Right u -> Right (gk, p ^. #targetEpoch, p ^. #addedSlot, u)
+
+-- | The InstantaneousRewards the ended epoch's MIR certificates accumulated,
+-- with mir's domain: protocol versions 2 to 8, no negative or repeated entry,
+-- and pots and deltas that fit Word64.
+instantaneousRewards :: E.EpochNewEpochRequest -> Result InstantaneousRewards
+instantaneousRewards req = do
+  let ms = req ^. #mir
+  unless (null ms && req ^. #reservesToTreasury == 0 && req ^. #treasuryToReserves == 0) $ do
+    let major = req ^. #pparams . #protocolVersion . #major
+    when (major < 2 || major >= 9) $ unsupported "MIR exists in protocol versions 2 to 8"
+  forM_ ms $ \m -> do
+    unless (m ^. #source `elem` [E.MIR_SOURCE_RESERVES, E.MIR_SOURCE_TREASURY]) $ unsupported "mir source unspecified"
+    when (m ^. #amount < 0) $ unsupported "negative mir delta"
+  noDuplicates "mir entry" [(fromEnum (m ^. #source), credKey (m ^. #credential)) | m <- ms]
+  let total =
+        toInteger (req ^. #state . #pots . #reserves) + toInteger (req ^. #state . #pots . #treasury)
+          + sum [toInteger (m ^. #amount) | m <- ms]
+          + toInteger (req ^. #reservesToTreasury) + toInteger (req ^. #treasuryToReserves)
+  when (total > toInteger (maxBound :: Word64)) $ unsupported "pots and deltas overflow Word64"
+  entries <- traverse (\m -> (,,) (m ^. #source) <$> cred (m ^. #credential) <*> pure (Coin (toInteger (m ^. #amount)))) ms
+  let pot s = Map.fromListWith (<>) [(c, a) | (s', c, a) <- entries, s' == s]
+      r2t = toInteger (req ^. #reservesToTreasury)
+      t2r = toInteger (req ^. #treasuryToReserves)
+  pure
+    InstantaneousRewards
+      { iRReserves = pot E.MIR_SOURCE_RESERVES
+      , iRTreasury = pot E.MIR_SOURCE_TREASURY
+      , deltaReserves = DeltaCoin (t2r - r2t)
+      , deltaTreasury = DeltaCoin (r2t - t2r)
+      }
+
 -- | The governance part of a NEWEPOCH request: the state RATIFY decided over
 -- when the DRep pulser was started at the boundary into the previous epoch.
 data NewEpochGov = NewEpochGov
@@ -1117,17 +1396,14 @@ data NewEpochGov = NewEpochGov
 -- | Governance state is present when any of its tables or distributions is.
 -- It is decoded as for gov_ratify, taken at the previous epoch; RATIFY runs
 -- over it ('ratifyTables') and its result stands as the completed pulser the
--- EPOCH rule consumes. A hard fork proposal is UNSUPPORTED: enacting it
--- changes the protocol version, which runs the HARDFORK rule.
+-- EPOCH rule consumes.
 newEpochGov :: E.EpochNewEpochRequest -> PParams ConwayEra -> Result (Maybe NewEpochGov)
 newEpochGov req pp
   | not present = pure Nothing
   | otherwise = do
       let epoch = req ^. #context . #epoch
       constitution <- constitutionArg (st ^. #maybe'enactState >>= (^. #maybe'constitution))
-      (rs, props, gass) <- ratifyTables (epoch - 1) pp constitution st (req ^. #poolDistribution) (req ^. #drepDistribution)
-      when (any (isHardFork . pProcGovAction . gasProposalProcedure) gass) $
-        unsupported "a hard fork proposal changes the protocol version"
+      (rs, props, _) <- ratifyTables (epoch - 1) pp constitution st (req ^. #poolDistribution) (req ^. #drepDistribution)
       (committee, cs) <- committeeArg (st ^. #maybe'committee)
       dreps <- forM (st ^. #dreps) $ \d -> do
         c <- credentialOf "dreps credential" (d ^. #credential)
@@ -1138,6 +1414,13 @@ newEpochGov req pp
               & cgsCommitteeL .~ committee
               & cgsConstitutionL .~ constitution
               & cgsDRepPulsingStateL .~ DRComplete def rs
+              -- The previous boundary left the future parameters potential,
+              -- the NEWEPOCH ticks since predict the pulser's, and TICK
+              -- solidifies them once past the point of no return; the EPOCH
+              -- rule adopts only the solidified ones.
+              & cgsFuturePParamsL .~ PotentialPParamsUpdate Nothing
+              & predictFuturePParams
+              & cgsFuturePParamsL %~ solidifyFuturePParams
       pure (Just (NewEpochGov gs (Map.fromList dreps) cs props rs))
   where
     st = req ^. #state
@@ -1145,7 +1428,6 @@ newEpochGov req pp
       not (null (st ^. #dreps)) || not (null (st ^. #proposals)) || not (null (st ^. #votes))
         || isJust (st ^. #maybe'committee) || isJust (st ^. #maybe'enactState)
         || not (null (req ^. #poolDistribution)) || not (null (req ^. #drepDistribution))
-    isHardFork = \case HardForkInitiation {} -> True; _ -> False
 
 -- | The verdict RATIFY reached: the enacted actions in order and the expired
 -- ones in canonical order.

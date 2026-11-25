@@ -1,29 +1,37 @@
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 
 module Test.Epoch (tests) where
 
 import Cardano.Crypto.Hash (hashFromBytes)
-import Cardano.Ledger.BaseTypes (StrictMaybe (..))
+import Cardano.Ledger.BaseTypes (ProtVer (..), StrictMaybe (..), Version, natVersion)
+import Cardano.Ledger.Core (ppProtocolVersionL)
+import Cardano.Ledger.Shelley.Governance (FuturePParams (DefinitePParamsUpdate))
+import Cardano.Ledger.Conway.State (ConwayEraAccounts (mkConwayAccountState), dRepDelegationAccountStateL)
+import Cardano.Ledger.State (accountsL, accountsMapL, addAccountState)
+import Cardano.Ledger.Shelley.LedgerState (certDStateL)
 import Cardano.Ledger.Coin (Coin (..), CompactForm (..))
 import Cardano.Ledger.Conway (ConwayEra)
-import Cardano.Ledger.Conway.Governance (GovAction (InfoAction), GovRelation (..), RatifyEnv (..), RatifyState (..), Vote (VoteYes))
+import Cardano.Ledger.Conway.Governance (GovAction (InfoAction), GovRelation (..), RatifyEnv (..), RatifyState (..), Vote (VoteYes), cgsFuturePParamsL)
 import Cardano.Ledger.Conway.Rules (dRepAcceptedRatio)
 import Cardano.Ledger.Conway.State (VState (..), certVStateL, vsDRepsL)
 import Cardano.Ledger.Credential (Credential (..))
 import Cardano.Ledger.DRep (DRep (..), DRepState (..))
 import Cardano.Ledger.Keys (KeyHash (..))
-import Cardano.Ledger.Shelley.LedgerState (esLStateL, lsCertStateL)
+import Cardano.Ledger.Shelley.LedgerState (esLStateL, lsCertStateL, lsUTxOStateL, utxosGovStateL)
 import Cardano.Slotting.Slot (EpochNo (..))
 import qualified Data.ByteString as BS
 import Data.Default (def)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Dxdingo.Gov (epochStateOf, expiryParams, forestOf, runEpoch)
-import Data.Maybe (isNothing)
+import Data.Maybe (isJust, isNothing)
 import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import Lens.Micro ((&), (.~), (^.), (%~))
+import Lens.Micro (ix)
 import Proto.Dxdingo.V1.Envelope (HarnessErrorCode (..))
 import qualified Proto.Dxdingo.V1.Epoch as E
 import qualified Proto.Dxdingo.V1.State as S
@@ -106,10 +114,34 @@ tests =
   , ("new epoch: mark is read before POOLREAP", newRows S.SNAPSHOT_KIND_MARK == [(2, 45, 0xa0)])
   , ("new epoch: set is the previous mark", newRows S.SNAPSHOT_KIND_SET == [(3, 100, 0xa0)])
   , ("new epoch: go is empty", null (newRows S.SNAPSHOT_KIND_GO))
-  , ("new epoch: not Conway is UNSUPPORTED", newErr (newReq & #context . #era .~ P.ERA_BABBAGE) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: Byron is UNSUPPORTED", newErr (newReq & #context . #era .~ P.ERA_BYRON) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: Shelley retires the pool and refunds", preDelta P.ERA_SHELLEY shelleyPP == preWant)
+  , ("new epoch: Allegra retires the pool and refunds", preDelta P.ERA_ALLEGRA (shelleyPP & #protocolVersion . #major .~ 3) == preWant)
+  , ("new epoch: Mary retires the pool and refunds", preDelta P.ERA_MARY (shelleyPP & #protocolVersion . #major .~ 4) == preWant)
+  , ("new epoch: Alonzo retires the pool and refunds", preDelta P.ERA_ALONZO alonzoPP == preWant)
+  , ("new epoch: Babbage retires the pool and refunds", preDelta P.ERA_BABBAGE babbagePP == preWant)
+  , ("new epoch: Shelley rotates the snapshots", preRows P.ERA_SHELLEY shelleyPP == [(2, 45, 0xa0), (3, 100, 0xa0)])
+  , ("new epoch: Babbage rotates the snapshots", preRows P.ERA_BABBAGE babbagePP == [(2, 45, 0xa0), (3, 100, 0xa0)])
+  , ("new epoch: two keys agreeing at quorum 2 adopt the update", fmap (\p -> (p ^. #minFeeA, p ^. #maxBlockBodySize)) (preDeltaOf (updReq 2) ^. #maybe'pparamsAfter) == Just (100, 65536))
+  , ("new epoch: quorum 3 adopts nothing", isNothing (preDeltaOf (updReq 3) ^. #maybe'pparamsAfter))
+  , ("new epoch: an undecodable update is PPUP/DeserialiseFailure", [(f ^. #rule, f ^. #name) | f <- call (#epochNewEpoch .~ (updReq 2 & #state . #pparamProposals . ix 0 . #update .~ BS.pack [0xff])) ^. #epochNewEpoch . #rejection . #failures] == [("PPUP", "DeserialiseFailure")])
+  , ("new epoch: a MIR credit is paid before the pool refund", [(BS.head (a ^. #credential . #hash), a ^. #balance) | a <- mirDelta ^. #accountsChanged] == [(1, 650), (2, 5)] && (mirDelta ^. #reservesDelta, mirDelta ^. #treasuryDelta) == (-150, 0))
+  , ("new epoch: parameter proposals in Conway are UNSUPPORTED", newErr (newReq & #state . #pparamProposals .~ [defMessage]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: MIR in Conway is UNSUPPORTED", newErr (newReq & #mir .~ [entry E.MIR_SOURCE_RESERVES 1 1]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: genesis delegations are UNSUPPORTED", newErr (preReq P.ERA_BABBAGE babbagePP & #state . #genesisDelegations .~ [defMessage]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: proposals under another epoch length are UNSUPPORTED", newErr (updReq 2 & #globals . #epochLength .~ 100) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: proposals out of chain order are UNSUPPORTED", newErr (updReq 2 & #state . #pparamProposals . ix 0 . #addedSlot %~ (+ 100)) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: a short genesis key is BAD_REQUEST", newErr (updReq 2 & #state . #pparamProposals . ix 0 . #genesisKeyHash .~ BS.pack [1]) == HARNESS_ERROR_CODE_BAD_REQUEST)
+  , ("new epoch: a negative MIR delta is UNSUPPORTED", newErr (preMirReq & #mir .~ [entry E.MIR_SOURCE_RESERVES 1 (-5)]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: a DRep delegation before Conway is UNSUPPORTED", newErr (preReq P.ERA_BABBAGE babbagePP & #state . #accounts . traverse . #drep .~ G.keyDRep 0xd1) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: governance state before Conway is UNSUPPORTED", newErr (preReq P.ERA_BABBAGE babbagePP & #state . #dreps .~ [defMessage & #credential .~ cred 0xd1]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: a pointer before Conway is UNSUPPORTED", newErr (preReq P.ERA_BABBAGE babbagePP & #state . #accounts . traverse . #pointer .~ defMessage) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("new epoch: reward update is UNSUPPORTED", newErr (newReq & #rewardUpdate .~ defMessage) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("new epoch: proposals are UNSUPPORTED", newErr (newReq & #state . #proposals .~ [defMessage]) == HARNESS_ERROR_CODE_UNSUPPORTED)
-  , ("new epoch: UTxO is UNSUPPORTED", newErr (newReq & #state . #utxo .~ [defMessage]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: a UTxO table gives the instant stake instant_stake gives", call (#epochNewEpoch .~ utxoReq) == newReply)
+  , ("new epoch: a UTxO table before Conway is UNSUPPORTED", newErr (preReq P.ERA_BABBAGE babbagePP & #instantStake .~ [] & #state . #utxo .~ [utxoOf 1 (baseOutput 2 [0x0f])]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: a UTxO table and instant_stake together are UNSUPPORTED", newErr (utxoReq & #instantStake .~ [stakeOf 2 40]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: an output that does not decode is a DeserialiseFailure", [f ^. #name | f <- call (#epochNewEpoch .~ (utxoReq & #state . #utxo .~ [utxoOf 1 (BS.pack [0xff])])) ^. #epochNewEpoch . #rejection . #failures] == ["DeserialiseFailure"])
   , ("new epoch: repeated account is BAD_REQUEST", newErr (newReq & #state . #accounts %~ (\as -> as ++ take 1 as)) == HARNESS_ERROR_CODE_BAD_REQUEST)
   , ("new epoch: short pool id is BAD_REQUEST", newErr (newReq & #state . #pools %~ (\(x : xs) -> (x & #poolId .~ BS.pack [1]) : xs)) == HARNESS_ERROR_CODE_BAD_REQUEST)
   , ("new epoch: pointer is UNSUPPORTED", newErr (newReq & #state . #accounts %~ (\(x : xs) -> (x & #pointer .~ defMessage) : xs)) == HARNESS_ERROR_CODE_UNSUPPORTED)
@@ -135,15 +167,20 @@ tests =
   , ("new epoch gov: no committee change without a committee action", isNothing (govDelta wdReq ^. #maybe'committeeAfter))
   , ("new epoch gov: a parameter change is enacted and becomes the root", govIds (govOf pcReq) == ([1], [], [1]) && fmap (BS.head . (^. #txId)) (govDelta pcReq ^. #enactStateAfter . #maybe'prevPparamUpdate) == Just 1)
   , ("new epoch gov: a parameter change refunds its deposit", govBalances pcReq == [(0x62, 411)] && (govDelta pcReq ^. #treasuryDelta) == 0)
+  , ("new epoch gov: a parameter change reports the enacted parameters", ppAfter pcReq == Just (65536, 90112, 44))
+  , ("new epoch gov: no parameter change reports no parameters", isNothing (govDelta wdReq ^. #maybe'pparamsAfter))
   , ("new epoch gov: no confidence needs no committee vote and removes the committee", govIds (govOf ncReq) == ([1], [], [1]) && fmap (null . (^. #members)) (govDelta ncReq ^. #maybe'committeeAfter) == Just True)
   , ("new epoch gov: no confidence becomes the committee root", fmap (BS.head . (^. #txId)) (govDelta ncReq ^. #enactStateAfter . #maybe'prevCommittee) == Just 1)
   , ("new epoch gov: nothing accepted leaves the proposal", govIds (govOf rejReq) == ([], [], []) && null (govDelta rejReq ^. #accountsChanged) && (govDelta rejReq ^. #treasuryDelta) == 0)
-  , ("new epoch gov: a hard fork proposal is UNSUPPORTED", newErr (govReq [govProp 1 (G.hfAction 0) 15 0 0x50] []) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch gov: a hard fork is enacted and becomes the root", govIds (govOf hfReq) == ([1], [], [1]) && fmap (BS.head . (^. #txId)) (govDelta hfReq ^. #enactStateAfter . #maybe'prevHardFork) == Just 1)
+  , ("new epoch gov: a hard fork reports protocol 10.0 and no other change", fmap (\p -> (p ^. #protocolVersion . #major, p ^. #protocolVersion . #minor, p ^. #maxBlockBodySize, p ^. #minFeeA)) (govDelta hfReq ^. #maybe'pparamsAfter) == Just (10, 0, 65536, 44))
+  , ("new epoch gov: a hard fork to 10 clears a delegation to an unregistered DRep only", hfAccounts == [(0x62, 411, False), (0x72, 0, False)])
   , ("new epoch gov: no pool stake is UNSUPPORTED", newErr (govReq [govProp 3 G.actInfo 15 0 0x50] [] & #poolDistribution .~ []) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("new epoch gov: a proposal expired before the previous epoch is UNSUPPORTED", newErr (govReq [govProp 1 G.actInfo 7 0 0x50] []) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("new epoch gov: an undecodable action is BAD_REQUEST", newErr (govReq [govProp 1 (BS.pack [0xff]) 15 0 0x50] []) == HARNESS_ERROR_CODE_BAD_REQUEST)
   , ("new epoch: a parameter proposal is UNSUPPORTED", newErr (newReq & #state . #pparamProposals .~ [defMessage]) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("divergence: new epoch gov: the EPOCH rule leaves a DRep's expiry alone and counts a dormant epoch", dormantEpoch == Right (EpochNo 1, [EpochNo 100]))
+  , ("divergence: new epoch gov: HARDFORK clears dangling DRep delegations on a minor bump at 10", hardForkDangling 10 0 10 1 == Right Nothing && hardForkDangling 9 0 10 0 == Right Nothing && hardForkDangling 10 0 11 0 == Right (Just (DRepCredential drepKey)))
   , ("divergence: new epoch gov: a DRep that expired before the pulser's epoch counts nothing", drepRatio 9 10 == 0 && drepRatio 10 10 == 1)
   , ("divergence: snapshot rotate: stake delegated to an unregistered pool is active stake", unregisteredPoolStake == Just 42)
   , ("snapshot rotate: stake overflow is UNSUPPORTED", rotateErr (rotateReq & #instantStake %~ (++ [defMessage & #credential .~ cred 4 & #amount .~ maxBound])) == HARNESS_ERROR_CODE_UNSUPPORTED)
@@ -164,6 +201,40 @@ tests =
       & #snapshots .~ [rotEntry S.SNAPSHOT_KIND_MARK 3 100 0xa0]
       & #instantStake .~ [stakeOf 2 40]
     newReply = call (#epochNewEpoch .~ newReq)
+    -- The pool retirement boundary of newReq in each era before Conway:
+    -- hand-derived as for Conway, the pool is removed, its deposit 500 refunds
+    -- account 1 and account 2 is undelegated; the mark is credential 2's 45
+    -- (UTxO stake 40 and balance 5), the set the old mark.
+    -- The Babbage boundary with two genesis keys voting min_fee_a = 100 for
+    -- epoch 10, made during it; the reference adopts it when `quorum` keys
+    -- agree. The epoch length is the scratch ledger's 432000.
+    updReq q = preReq P.ERA_BABBAGE babbagePP
+      & #globals .~ (defMessage & #epochLength .~ 432000 & #quorum .~ q)
+      & #state . #pparamProposals .~
+          [ defMessage & #genesisKeyHash .~ h 1 & #targetEpoch .~ 10 & #addedSlot .~ 4320010 & #update .~ BS.pack [0xa1, 0x00, 0x18, 0x64]
+          , defMessage & #genesisKeyHash .~ h 2 & #targetEpoch .~ 10 & #addedSlot .~ 4320011 & #update .~ BS.pack [0xa1, 0x00, 0x18, 0x64] ]
+    preDeltaOf r = call (#epochNewEpoch .~ r) ^. #epochNewEpoch . #delta
+    -- 150 from the reserves to registered account 1 before POOLREAP refunds
+    -- 500 to it; the 77 to unregistered account 9 stays in the reserves.
+    preMirReq = preReq P.ERA_BABBAGE babbagePP
+      & #mir .~ [entry E.MIR_SOURCE_RESERVES 1 150, entry E.MIR_SOURCE_RESERVES 9 77]
+    mirDelta = preDeltaOf preMirReq
+    preReq era ppar = newReq & #context . #era .~ era & #pparams .~ ppar
+    preReply era ppar = call (#epochNewEpoch .~ preReq era ppar) ^. #epochNewEpoch
+    preDelta era ppar = let d = (preReply era ppar) ^. #delta in
+      ( d ^. #poolsRemoved
+      , [(BS.head (a ^. #credential . #hash), a ^. #balance, a ^. #poolId) | a <- d ^. #accountsChanged]
+      , (d ^. #reservesDelta, d ^. #treasuryDelta) )
+    preWant = ([h 0xa0], [(1, 500, BS.empty), (2, 5, BS.empty)], (0, 0))
+    preRows era ppar = [(BS.head (e ^. #credential . #hash), e ^. #amount, BS.head (e ^. #poolId)) | e <- (preReply era ppar) ^. #snapshots, e ^. #snapshot `elem` [S.SNAPSHOT_KIND_MARK, S.SNAPSHOT_KIND_SET]]
+    -- Outputs of 25 and 15 to credential 2's base address and 7 to
+    -- credential 1's: the 40 of credential 2 that newReq gives as
+    -- instant_stake. The output is a legacy output: the address (header 0,
+    -- payment part 0x70..., stake part the credential) and the coin.
+    utxoReq = newReq & #instantStake .~ []
+      & #state . #utxo .~ [utxoOf 1 (baseOutput 2 [0x18, 0x19]), utxoOf 2 (baseOutput 2 [0x0f]), utxoOf 3 (baseOutput 1 [0x07])]
+    baseOutput c coin = BS.pack ([0x82, 0x58, 0x39, 0x00] ++ replicate 28 0x70 ++ replicate 28 c ++ coin)
+    utxoOf i out = defMessage & #txin .~ (defMessage & #txId .~ BS.replicate 32 i & #index .~ 0) & #txout .~ out :: S.UtxoEntry
     newDelta = newReply ^. #epochNewEpoch . #delta
     newRemoved = newDelta ^. #poolsRemoved
     newAccounts = [(BS.head (a ^. #credential . #hash), a ^. #balance, a ^. #poolId) | a <- newDelta ^. #accountsChanged]
@@ -190,6 +261,19 @@ tests =
       es1 <- runEpoch (EpochNo 11) es0
       let vs = es1 ^. esLStateL . lsCertStateL . certVStateL
       pure (vsNumDormantEpochs vs, map drepExpiry (Map.elems (vsDReps vs)))
+    -- An account delegating to a DRep nobody registered, at protocol from
+    -- with the future parameters at to: the EPOCH rule runs HARDFORK when the
+    -- version changed and the account's delegation after is returned.
+    hardForkDangling fromMaj fromMin toMaj toMin = do
+      props <- forestOf (GovRelation SNothing SNothing SNothing SNothing) []
+      let pv maj mn = expiryParams & ppProtocolVersionL .~ ProtVer (natVersionOf maj) mn
+          acct = mkConwayAccountState (CompactCoin 0) & dRepDelegationAccountStateL .~ Just (DRepCredential drepKey)
+          es0 = epochStateOf (pv fromMaj fromMin) props (addAccountState (KeyHashObj (KeyHash (maybe (error "hash") id (hashFromBytes (BS.replicate 28 0x72))))) acct def) (Coin 0) (RatifyState def mempty mempty False)
+            & esLStateL . lsUTxOStateL . utxosGovStateL . cgsFuturePParamsL .~ DefinitePParamsUpdate (pv toMaj toMin)
+      es1 <- runEpoch (EpochNo 11) es0
+      pure (head [a ^. dRepDelegationAccountStateL | a <- Map.elems (es1 ^. esLStateL . lsCertStateL . certDStateL . accountsL . accountsMapL)])
+    natVersionOf :: Int -> Version
+    natVersionOf n = case n of { 9 -> natVersion @9; 10 -> natVersion @10; _ -> natVersion @11 }
     drepRatio expiry epoch =
       let env = (def :: RatifyEnv ConwayEra)
             { reDRepDistr = Map.singleton (DRepCredential drepKey) (CompactCoin 100)
@@ -222,9 +306,20 @@ tests =
     govIds r = (map (fromIntegral . BS.head . (^. #txId)) (r ^. #enacted) :: [Int], map (fromIntegral . BS.head . (^. #txId)) (r ^. #expired), map (fromIntegral . BS.head . (^. #txId)) (r ^. #delta . #proposalsRemoved))
     govBalances r = [(fromIntegral (BS.head (a ^. #credential . #hash)) :: Int, a ^. #balance) | a <- govDelta r ^. #accountsChanged]
     wdReq = govReq [govProp 1 (G.withdrawalAction [(0x61, 1000)]) 15 400 0x50, govProp 2 G.actInfo 9 300 0x62, govProp 3 G.actInfo 15 0 0x50] (G.allVote 1 P.VOTE_YES)
+    -- pcAction sets key 2, max_block_body_size, to 0x16000 = 90112 from 65536.
+    ppAfter r = (\p -> (newReq ^. #pparams . #maxBlockBodySize, p ^. #maxBlockBodySize, p ^. #minFeeA)) <$> govDelta r ^. #maybe'pparamsAfter
     pcReq = govReq [govProp 1 (G.pcAction 0) 15 400 0x62, govProp 3 G.actInfo 15 0 0x50] (G.allVote 1 P.VOTE_YES)
     ncReq = govReq [govProp 1 G.actNoConfidence 15 400 0x62, govProp 3 G.actInfo 15 0 0x50]
       [G.voteOn 1 P.VOTER_ROLE_DREP (G.cred 0xd1) P.VOTE_YES, G.spoVote 0xb1 P.VOTE_YES (G.actionId 1)]
+    -- Protocol 9 with a hard fork to 10 accepted by every voter; 0x71
+    -- delegates to the registered DRep d1, 0x72 to an unregistered DRep and
+    -- 0x73 to always abstain.
+    hfReq = govReq [govProp 1 (G.hfAction 0) 15 400 0x62, govProp 3 G.actInfo 15 0 0x50] (G.allVote 1 P.VOTE_YES)
+      & #pparams . #protocolVersion . #major .~ 9
+      & #state . #accounts %~ (++ [ defMessage & #credential .~ cred 0x71 & #drep .~ G.keyDRep 0xd1
+                                  , defMessage & #credential .~ cred 0x72 & #drep .~ G.keyDRep 0xdd
+                                  , defMessage & #credential .~ cred 0x73 & #drep .~ (defMessage & #alwaysAbstain .~ True) ])
+    hfAccounts = [(fromIntegral (BS.head (a ^. #credential . #hash)) :: Int, a ^. #balance, isJust (a ^. #maybe'drep)) | a <- govDelta hfReq ^. #accountsChanged]
     rejReq = govReq [govProp 1 (G.withdrawalAction [(0x61, 1000)]) 15 400 0x50] (take 3 (G.allVote 1 P.VOTE_YES))
     -- A pending reward round, the case of dxnode-go
     -- cmd/dxnode-go/epoch_new_epoch_test.go. Pool a0 holds all 4.4999e13

@@ -104,8 +104,6 @@ func epochNewEpochGovCases() []entry {
 			"a parameter change that follows the enacted root is accepted and enacted",
 			[]*v1.Proposal{ngProp(1, gaPC(8), 15, 400, 0x62), stay}, gall(1, yes))),
 		atLastChance, overBudget, rejected,
-		{"epoch_new_epoch_gov_hard_fork_unsupported", "a hard fork proposal changes the protocol version, which the boundary here does not model: outside the answered domain",
-			&v1.Call{Request: &v1.Call_EpochNewEpoch{EpochNewEpoch: ngRequest([]*v1.Proposal{ngProp(1, gaHF(0), 15, 0, 0x50), stay}, nil)}}},
 	}
 }
 

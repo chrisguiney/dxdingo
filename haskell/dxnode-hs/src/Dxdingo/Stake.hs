@@ -16,6 +16,7 @@ module Dxdingo.Stake
   , delegatedRows
   , snapShotOf
   , currentPools
+  , instantStake
   ) where
 
 import Cardano.Crypto.Hash (hashFromBytes, hashToBytes)

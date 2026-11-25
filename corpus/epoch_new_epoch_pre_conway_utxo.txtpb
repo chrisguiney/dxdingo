@@ -1,0 +1,101 @@
+# a UTxO table is read for Conway only: before it pointer addresses carry stake, which the nodes derive differently: outside the answered domain
+epoch_new_epoch: {
+  context: {
+    era: ERA_BABBAGE
+    epoch: 11
+  }
+  pparams: {
+    min_fee_a: 44
+    min_fee_b: 155381
+    max_block_body_size: 65536
+    max_tx_size: 16384
+    max_block_header_size: 1100
+    key_deposit: 2000000
+    pool_deposit: 500000000
+    max_epoch: 18
+    n_opt: 150
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+    rho: {
+      numerator: "3"
+      denominator: "1000"
+    }
+    tau: {
+      numerator: "1"
+      denominator: "5"
+    }
+    protocol_version: {
+      major: 7
+    }
+    min_pool_cost: 340000000
+    coins_per_utxo_byte: 4310
+    price_mem: {
+      numerator: "577"
+      denominator: "10000"
+    }
+    price_steps: {
+      numerator: "721"
+      denominator: "10000000"
+    }
+    max_tx_ex_mem: 14000000
+    max_tx_ex_steps: 10000000000
+    max_block_ex_mem: 62000000
+    max_block_ex_steps: 40000000000
+    max_value_size: 5000
+    collateral_percentage: 150
+    max_collateral_inputs: 3
+  }
+  state: {
+    utxo: {
+      txin: {
+        tx_id: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+        index: 1
+      }
+      txout: "\x82X9\x00pppppppppppppppppppppppppppp\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x18("
+    }
+    accounts: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+      }
+    }
+    accounts: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+      }
+      balance: 5
+      pool_id: "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0"
+    }
+    pools: {
+      pool_id: "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0"
+      stage: POOL_STAGE_CURRENT
+      cost: 340000000
+      margin: {
+        numerator: "1"
+        denominator: "100"
+      }
+      reward_account: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+      }
+      deposit: 500
+      retiring_epoch: 11
+    }
+    pots: {
+      reserves: 10000000000
+      treasury: 1000000
+    }
+  }
+  snapshots: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03"
+    }
+    amount: 100
+    pool_id: "\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0"
+  }
+}
