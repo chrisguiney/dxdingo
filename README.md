@@ -90,6 +90,7 @@ Reachable on a real chain:
 |---|---|---|
 | gov | dingo bumps DRep expiry for dormant epochs before RATIFY, so a DRep expired one epoch earlier still votes and dingo can enact a proposal the reference expires | ledger state |
 | gov | an already-expired DRep is bumped during dormant epochs | ledger state |
+| epoch | at the epoch boundary with no active proposal, dingo extends every DRep's expiry by one; the reference only counts a dormant epoch | ledger state |
 | chainsel | Genesis density: no rival suppression, an idle peer with no blocks is mishandled, no latest-slot cap | chain selection |
 | stake | a DRep with zero stake is left out of the stake distribution | query |
 | net | LocalTxMonitor `GetMeasures` and LocalStateQuery `DebugLedgerConfig` are missing; handshake and TxSubmission2 accept messages the reference rejects; list encodings differ; Byron transactions rejected | protocol |
