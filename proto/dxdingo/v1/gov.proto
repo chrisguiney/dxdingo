@@ -16,9 +16,13 @@ message GovThresholdsRequest {
   // Unset when there is no committee.
   Committee committee = 3;
   bytes action = 4;
+  // Selects which committee members are unexpired.
+  uint64 epoch = 5;
 }
 
-// An unset threshold means that role does not vote on the action.
+// An unset threshold means that role does not vote on the action, or, for
+// the committee, cannot approve it (no committee, or fewer active members
+// than the minimum committee size).
 message GovThresholdsResponse {
   Rejection rejection = 1;
   Rational spo = 2;
@@ -38,6 +42,8 @@ message GovSpoRatioRequest {
   repeated VoteRecord votes = 7;
 }
 
+// The reference function returns only the ratio; yes, no and abstain are
+// left unset by both nodes.
 message GovSpoRatioResponse {
   Rejection rejection = 1;
   Rational ratio = 2;
@@ -149,7 +155,15 @@ message GovProposalExpiryResponse {
   uint64 unclaimed_to_treasury = 4;
 }
 
+// gov_drep_expiry applies accrued dormancy: dormant_epochs epochs passed with
+// no active proposal, and a proposal now arrives at epoch. The reference adds
+// the count to every DRep expiry in one step (updateDormantDRepExpiry); dingo
+// bumps expiries by one at each dormant boundary. The response lists DReps
+// whose expiry changed, ordered by credential kind then hash. Neither node
+// reports the counter after: the reference resets a pending count, dingo keeps
+// a cumulative one.
 message GovDRepExpiryRequest {
+  // The epoch of the proposal that ends the dormancy.
   uint64 epoch = 1;
   ProtocolParameters pparams = 2;
   repeated DRepRecord dreps = 3;

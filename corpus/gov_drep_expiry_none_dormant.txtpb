@@ -1,0 +1,13 @@
+# no dormant epochs: nothing changes
+gov_drep_expiry:  {
+  epoch:  20
+  dreps:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    deposit:  500000000
+    expiry:  30
+    anchor_url:  "https://example.com/drep"
+  }
+}

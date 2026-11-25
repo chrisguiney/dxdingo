@@ -1,0 +1,14 @@
+# an expired DRep: the reference keeps 10 (10+3 < 20), dingo bumps it to 13
+gov_drep_expiry:  {
+  epoch:  20
+  dreps:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    }
+    deposit:  500000000
+    expiry:  10
+    anchor_url:  "https://example.com/drep"
+  }
+  dormant_epochs:  3
+}

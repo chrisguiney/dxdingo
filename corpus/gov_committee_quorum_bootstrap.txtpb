@@ -1,0 +1,105 @@
+# protocol 9 waives the minimum
+gov_committee_quorum:  {
+  epoch:  50
+  protocol_version:  {
+    major:  9
+  }
+  pparams:  {
+    protocol_version:  {
+      major:  9
+    }
+    pool_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      committee_normal:  {
+        numerator:  "13"
+        denominator:  "25"
+      }
+      committee_no_confidence:  {
+        numerator:  "53"
+        denominator:  "100"
+      }
+      hard_fork_initiation:  {
+        numerator:  "27"
+        denominator:  "50"
+      }
+      pp_security_group:  {
+        numerator:  "11"
+        denominator:  "20"
+      }
+    }
+    drep_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "61"
+        denominator:  "100"
+      }
+      committee_normal:  {
+        numerator:  "31"
+        denominator:  "50"
+      }
+      committee_no_confidence:  {
+        numerator:  "63"
+        denominator:  "100"
+      }
+      update_to_constitution:  {
+        numerator:  "16"
+        denominator:  "25"
+      }
+      hard_fork_initiation:  {
+        numerator:  "13"
+        denominator:  "20"
+      }
+      pp_network_group:  {
+        numerator:  "33"
+        denominator:  "50"
+      }
+      pp_economic_group:  {
+        numerator:  "67"
+        denominator:  "100"
+      }
+      pp_technical_group:  {
+        numerator:  "17"
+        denominator:  "25"
+      }
+      pp_gov_group:  {
+        numerator:  "69"
+        denominator:  "100"
+      }
+      treasury_withdrawal:  {
+        numerator:  "7"
+        denominator:  "10"
+      }
+    }
+    committee_min_size:  3
+  }
+  committee:  {
+    members:  {
+      cold:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11"
+      }
+      hot:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+      }
+      expiry:  100
+    }
+    members:  {
+      cold:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12"
+      }
+      hot:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+      }
+      expiry:  100
+    }
+    threshold:  {
+      numerator:  "2"
+      denominator:  "3"
+    }
+  }
+}

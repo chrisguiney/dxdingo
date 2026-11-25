@@ -1,0 +1,16 @@
+# a parent that is neither the root nor a proposal cannot form a forest
+gov_proposal_tree:  {
+  proposals:  {
+    id:  {
+      tx_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    action:  "\x84\x00\x82X \t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\x00\xa1\x02\x1a\x00\x01`\x00\xf6"
+    proposed_epoch:  1
+    expires_epoch:  10
+    deposit:  1000
+    return_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "PPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+    }
+  }
+}

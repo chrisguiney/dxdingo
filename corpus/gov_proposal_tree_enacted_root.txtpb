@@ -1,0 +1,50 @@
+# proposals following an enacted root: enacting 2 removes competitor 1 and its child 3
+gov_proposal_tree:  {
+  proposals:  {
+    id:  {
+      tx_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    action:  "\x84\x00\x82X \t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\x00\xa1\x02\x1a\x00\x01`\x00\xf6"
+    proposed_epoch:  1
+    expires_epoch:  10
+    deposit:  1000
+    return_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "PPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+    }
+  }
+  proposals:  {
+    id:  {
+      tx_id:  "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    }
+    action:  "\x84\x00\x82X \t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\x00\xa1\x02\x1a\x00\x01`\x00\xf6"
+    proposed_epoch:  1
+    expires_epoch:  10
+    deposit:  1000
+    return_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "PPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+    }
+  }
+  proposals:  {
+    id:  {
+      tx_id:  "\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03"
+    }
+    action:  "\x84\x00\x82X \x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x00\xa1\x02\x1a\x00\x01`\x00\xf6"
+    proposed_epoch:  1
+    expires_epoch:  10
+    deposit:  1000
+    return_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "PPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+    }
+  }
+  enact_state:  {
+    prev_pparam_update:  {
+      tx_id:  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+    }
+  }
+  enacted:  {
+    tx_id:  "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+  }
+}
