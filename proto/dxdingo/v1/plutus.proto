@@ -67,6 +67,8 @@ message PlutusScriptContextRequest {
   bytes redeemer = 4;
   // Nullable: spending datum.
   bytes datum = 5;
+  // The era and protocol version the context is built under.
+  LedgerContext context = 6;
 }
 
 message PlutusScriptContextResponse {

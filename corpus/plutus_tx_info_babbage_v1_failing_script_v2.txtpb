@@ -1,0 +1,173 @@
+# the TxInfo of a mainnet transaction in each language its era has
+plutus_tx_info: {
+  context: {
+    era: ERA_BABBAGE
+    protocol_version: {
+      major: 8
+    }
+    network_id: 1
+  }
+  plutus_version: PLUTUS_VERSION_V2
+  tx: "\x84\xa9\x00\x82\x82X Tw\xee\xc5[([ڜ\xe3\x9c\xfa\xa9QqC\xb3\xb32Ɖ\r\xb7=\x1b\x9d\xf2\xf0iV8|\x00\x82X Tw\xee\xc5[([ڜ\xe3\x9c\xfa\xa9QqC\xb3\xb32Ɖ\r\xb7=\x1b\x9d\xf2\xf0iV8|\x01\x01\x82\x82X9\x01\xed\x95\xfe\xd4\xf4\xea+\x019\x14׏\x0fGH8\x7fz\x19fD\xa7\xb4-\x99\xa7\xd0饯\x01K\xfe\xe1\xd5Q\x8e \x9e\x99\x17\x917\xd8\xedu\x83\x8a\xa8>P՘Y\x00\xfe\x1a\x03G;\xc0\x82X9\x01\xed\x95\xfe\xd4\xf4\xea+\x019\x14׏\x0fGH8\x7fz\x19fD\xa7\xb4-\x99\xa7\xd0饯\x01K\xfe\xe1\xd5Q\x8e \x9e\x99\x17\x917\xd8\xedu\x83\x8a\xa8>P՘Y\x00\xfe\x1a\x04\xf1\xc2\x1a\x02\x1a\x00\x03\xf9\xa9\x03\x1a\x04\x8aՇ\x08\x1a\x04\x8a\xca\xfb\x0bX \xab\xae\xe9\xe47\xb9;\x02\xf9\xf1ےO_I\xe8\xf7\xd6\xe5\x0e\xe3\xectyG\xde\xfc\xc2ЕZ\xaa\r\x81\x82X Y\xf1!\x84P'c\x8fw]^\x15L\xd1\xcb\x1f\x99Đ7v_+\x07\n4/\x1a~-\xe0V\x00\x0e\x81X\x1c\xed\x95\xfe\xd4\xf4\xea+\x019\x14׏\x0fGH8\x7fz\x19fD\xa7\xb4-\x99\xa7\xd0\xe9\x12\x81\x82X \x9a2E\x9b\xd4\xefk\xba\xfd\xeb\x8c\xf3\xb9\t\xd0\xe3\xe2\xec\x80nL\xc6&\x85)(\x0b\x0f\xc1\xd0o[\x00\xa3\x00\x81\x82X \x89\xa1\x17X\xef\x06ܔ\xba1\xc6\xc3\xf4\x89\x83ʪڽ\xc60\x99\xf0لη\x190\xa6\xb1\xe7X@8\xdd\x18,\xb5aX\xf6_UҳF\xdf\xec\"\xdb\xd1\x04\xdd#\xef\xf0#ZO@\xcd.\x19WQy\xfc{\xdd\r\x83J_ 9Jh\xc43\xa2v\x99\xe2\xbe[:ow\x1d[X\xac\x92\xdbs\xfd\x04\x04\x9f\xd8y\x9fX\x1c\xed\x95\xfe\xd4\xf4\xea+\x019\x14׏\x0fGH8\x7fz\x19fD\xa7\xb4-\x99\xa7\xd0\xe9\x9f\xd8y\x9f\xd8y\x9f\xd8y\x9fX\x1c\x88\x16\x14\xf4\xfaBP\x81\xc4s\xf1\x8bPTΒFW_\x82\xfd\xfbdr\xfd;\xf9\x8b\xff\xd8y\x9f\xd8y\x9f\xd8y\x9fX\x1cr%x\xfd\xf2\x9d!\x0cKz\x17.Ğ\x06\x95\r\xe9\xab&̕Nv`\xdb\x14\xa7\xff\xff\xff\xff\xa1@\xd8y\x9f\x00\xa1@\x1a\x00#?p\xff\xff\xd8y\x9f\xd8y\x9f\xd8y\x9fX\x1cp\xe6\x0f;^\xa7\x15>\n\xccz\x80>D\x01\xd4K\x8eѺ\xe1Ǻ\xaaѦ*r\xff\xd8y\x9f\xd8y\x9f\xd8y\x9fX\x1c\x1ex\xaa\xe7\xc9\x0c\xc3mbO{;\xb6\xd8kRim\xc8NI\x0f4>\xba\x89\x00_\xff\xff\xff\xff\xa1@\xd8y\x9f\x00\xa1@\x1a\x00\x10\xc8\xe0\xff\xff\xd8y\x9f\xd8y\x9f\xd8y\x9fX\x1c\xed\x95\xfe\xd4\xf4\xea+\x019\x14׏\x0fGH8\x7fz\x19fD\xa7\xb4-\x99\xa7\xd0\xe9\xff\xd8y\x9f\xd8y\x9f\xd8y\x9fX\x1c\xa5\xaf\x01K\xfe\xe1\xd5Q\x8e \x9e\x99\x17\x917\xd8\xedu\x83\x8a\xa8>P՘Y\x00\xfe\xff\xff\xff\xff\xa1X\x1c\xea\xa9r\x04PI\x18Y\x81\xac\xa9\xf4\xaa\xad8\xbc0wvœ\xe4\xa8IӀ*\x87\xd8y\x9f\x00\xa1NSmoothYeti3126\x01\xff\xff\xff\xff\xff\x05\x81\x84\x00\x00\xd8y\x80\x82\x1a\x00\x0c\x83\x92\x1a\x10'\x07p\xf5\xf6"
+  utxo: {
+    txin: {
+      tx_id: "Tw\xee\xc5[([ڜ\xe3\x9c\xfa\xa9QqC\xb3\xb32Ɖ\r\xb7=\x1b\x9d\xf2\xf0iV8|"
+    }
+    txout: "\xa3\x00X\x1dqj\t\xcb\"\xde\xfa\xf4\xa9jk\xe1\xefl\x07Fzɒ=\x17P\xa7\x92\x14\xa0lP:\x01\x1a\x00LK@\x02\x82\x00X \x98hp\xa7\x19\x8c\x81K\x0c:\xfc\xf9}\xe0\x9d>^\xb6_\xcf\xc0P8\x90r\xa4\xc6\xf4ր\x10("
+  }
+  utxo: {
+    txin: {
+      tx_id: "Tw\xee\xc5[([ڜ\xe3\x9c\xfa\xa9QqC\xb3\xb32Ɖ\r\xb7=\x1b\x9d\xf2\xf0iV8|"
+      index: 1
+    }
+    txout: "\xa2\x00X\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x01\x1a\x00LK@"
+  }
+  utxo: {
+    txin: {
+      tx_id: "\x9a2E\x9b\xd4\xefk\xba\xfd\xeb\x8c\xf3\xb9\t\xd0\xe3\xe2\xec\x80nL\xc6&\x85)(\x0b\x0f\xc1\xd0o["
+    }
+    txout: "\xa3\x00X\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x01\x1a\x00LK@\x03\xd8\x18J\x82\x01GF\x01\x00\x00\"&\x01"
+  }
+  era_history: {
+    eras: {
+      era: ERA_BYRON
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      end_slot: 4492800
+      end_epoch: 208
+      end_time: {
+        numerator: "89856000"
+        denominator: "1"
+      }
+      epoch_length: 21600
+      slot_length: {
+        numerator: "20"
+        denominator: "1"
+      }
+      safe_zone: 4320
+    }
+    eras: {
+      era: ERA_SHELLEY
+      start_slot: 4492800
+      start_epoch: 208
+      start_time: {
+        numerator: "89856000"
+        denominator: "1"
+      }
+      end_slot: 16588800
+      end_epoch: 236
+      end_time: {
+        numerator: "101952000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_ALLEGRA
+      start_slot: 16588800
+      start_epoch: 236
+      start_time: {
+        numerator: "101952000"
+        denominator: "1"
+      }
+      end_slot: 23068800
+      end_epoch: 251
+      end_time: {
+        numerator: "108432000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_MARY
+      start_slot: 23068800
+      start_epoch: 251
+      start_time: {
+        numerator: "108432000"
+        denominator: "1"
+      }
+      end_slot: 39916800
+      end_epoch: 290
+      end_time: {
+        numerator: "125280000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_ALONZO
+      start_slot: 39916800
+      start_epoch: 290
+      start_time: {
+        numerator: "125280000"
+        denominator: "1"
+      }
+      end_slot: 72316800
+      end_epoch: 365
+      end_time: {
+        numerator: "157680000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_BABBAGE
+      start_slot: 72316800
+      start_epoch: 365
+      start_time: {
+        numerator: "157680000"
+        denominator: "1"
+      }
+      end_slot: 133660800
+      end_epoch: 507
+      end_time: {
+        numerator: "219024000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_CONWAY
+      start_slot: 133660800
+      start_epoch: 507
+      start_time: {
+        numerator: "219024000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    system_start_unix: 1506203091
+  }
+}

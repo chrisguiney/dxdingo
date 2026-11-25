@@ -62,7 +62,11 @@ library
     , network-mux
     , ouroboros-consensus:{ouroboros-consensus, cardano, protocol} ^>=4.2
     , ouroboros-network:{api, protocols} ^>=1.2
+    , plutus-core
     , plutus-ledger-api
+    , plutus-tx
+    , sop-extras
+    , time
     , serialise
     , small-steps
     , time
@@ -165,8 +169,10 @@ test-suite dxnode-hs-test
     , cardano-ledger-conway
     , cardano-ledger-core
     , cardano-ledger-dijkstra
+    , cardano-slotting
     , containers
     , data-default
+    , time
     , dxnode-hs
     , ouroboros-consensus:cardano
     , dxnode-hs:proto

@@ -1,0 +1,7 @@
+# an empty list: every parameter missing
+plutus_cost_model: {
+  plutus_version: PLUTUS_VERSION_V2
+  protocol_version: {
+    major: 8
+  }
+}

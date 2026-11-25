@@ -10,6 +10,7 @@ tool (
 require (
 	github.com/blinklabs-io/dingo v0.0.0
 	github.com/blinklabs-io/gouroboros v0.220.4
+	github.com/blinklabs-io/plutigo v0.12.2
 	github.com/google/go-cmp v0.7.0
 	golang.org/x/crypto v0.59.0
 	google.golang.org/protobuf v1.36.12
@@ -42,7 +43,6 @@ require (
 	github.com/bits-and-blooms/bitset v1.25.0 // indirect
 	github.com/blinklabs-io/bursa v0.25.0 // indirect
 	github.com/blinklabs-io/go-bip39 v0.2.1 // indirect
-	github.com/blinklabs-io/plutigo v0.12.2 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.5.1 // indirect
 	github.com/btcsuite/btcd/btcutil v1.2.0 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.2.0 // indirect
