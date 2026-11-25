@@ -1,0 +1,12 @@
+# mainnet policy at a 16 KiB transaction
+byron_min_fee:  {
+  tx_fee_a:  {
+    numerator:  "155381"
+    denominator:  "1"
+  }
+  tx_fee_b:  {
+    numerator:  "43946"
+    denominator:  "1000000"
+  }
+  size:  16384
+}

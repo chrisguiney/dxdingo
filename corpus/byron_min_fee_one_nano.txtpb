@@ -1,0 +1,12 @@
+# smallest multiplier, 1e-9 per byte
+byron_min_fee:  {
+  tx_fee_a:  {
+    numerator:  "0"
+    denominator:  "1"
+  }
+  tx_fee_b:  {
+    numerator:  "1"
+    denominator:  "1000000000"
+  }
+  size:  1000000001
+}

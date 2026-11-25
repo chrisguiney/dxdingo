@@ -1,0 +1,12 @@
+# a is not an integer: UNSUPPORTED on both
+byron_min_fee:  {
+  tx_fee_a:  {
+    numerator:  "1"
+    denominator:  "2"
+  }
+  tx_fee_b:  {
+    numerator:  "43946"
+    denominator:  "1000000"
+  }
+  size:  10
+}

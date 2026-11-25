@@ -1,0 +1,12 @@
+# b*size = 5.5 rounds up to 6
+byron_min_fee:  {
+  tx_fee_a:  {
+    numerator:  "0"
+    denominator:  "1"
+  }
+  tx_fee_b:  {
+    numerator:  "1"
+    denominator:  "2"
+  }
+  size:  11
+}

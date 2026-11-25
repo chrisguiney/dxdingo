@@ -1,0 +1,5 @@
+# 16-byte seed: UNSUPPORTED on both
+crypto_vrf_prove:  {
+  skey:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  alpha:  "x"
+}

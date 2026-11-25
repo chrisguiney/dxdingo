@@ -1,0 +1,4 @@
+# empty Plutus binary: the preimage is the tag alone
+crypto_script_hash:  {
+  language:  SCRIPT_LANGUAGE_PLUTUS_V2
+}

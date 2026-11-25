@@ -1,0 +1,4 @@
+# native script bytes empty: both reject
+crypto_script_hash:  {
+  language:  SCRIPT_LANGUAGE_NATIVE
+}

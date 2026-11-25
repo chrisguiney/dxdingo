@@ -1,0 +1,5 @@
+# native script bytes not CBOR: both reject
+crypto_script_hash:  {
+  language:  SCRIPT_LANGUAGE_NATIVE
+  script:  "\xff\x00"
+}

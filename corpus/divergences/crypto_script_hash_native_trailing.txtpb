@@ -1,0 +1,5 @@
+# valid native script plus one trailing byte: the reference rejects (full decode), gouroboros hashes it
+crypto_script_hash:  {
+  language:  SCRIPT_LANGUAGE_NATIVE
+  script:  "\x82\x00X\x1c\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x00"
+}
