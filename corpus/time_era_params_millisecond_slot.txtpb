@@ -1,0 +1,17 @@
+# a 1 ms slot length
+time_era_params: {
+  era: ERA_SHELLEY
+  globals: {
+    network_magic: 764824073
+    epoch_length: 100
+    slot_length: {
+      numerator: "1"
+      denominator: "1000"
+    }
+    security_param: 10
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# a reaches at most 4 + 6 = 10 and b has 9: the bound is not met
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 101
+    slots: 102
+    slots: 103
+    slots: 104
+    tip_slot: 104
+  }
+  candidates: {
+    peer: "b"
+    slots: 101
+    slots: 102
+    slots: 103
+    slots: 104
+    slots: 105
+    slots: 106
+    slots: 107
+    slots: 108
+    slots: 109
+    tip_slot: 109
+  }
+}

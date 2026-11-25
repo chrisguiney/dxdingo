@@ -1,0 +1,22 @@
+# a's window is complete: 3 headers, head at the window end, versus 5
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 101
+    slots: 105
+    slots: 110
+    tip_slot: 110
+  }
+  candidates: {
+    peer: "b"
+    slots: 101
+    slots: 103
+    slots: 105
+    slots: 107
+    slots: 109
+    tip_slot: 109
+  }
+}

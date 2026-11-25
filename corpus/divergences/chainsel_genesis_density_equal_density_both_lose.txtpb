@@ -1,0 +1,20 @@
+# reference: densityDisconnect reports every peer with an equal-or-better rival, so both are disconnected; dingo reports a, then b has no rival (TestDivergenceDensityEqualDensityReportsOnePeer)
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 101
+    slots: 105
+    slots: 110
+    tip_slot: 110
+  }
+  candidates: {
+    peer: "b"
+    slots: 102
+    slots: 108
+    slots: 110
+    tip_slot: 110
+  }
+}

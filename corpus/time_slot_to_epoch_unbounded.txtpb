@@ -1,0 +1,146 @@
+# the last era has no end
+time_slot_to_epoch: {
+  era_history: {
+    eras: {
+      era: ERA_BYRON
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      end_slot: 4492800
+      end_epoch: 208
+      end_time: {
+        numerator: "89856000"
+        denominator: "1"
+      }
+      epoch_length: 21600
+      slot_length: {
+        numerator: "20"
+        denominator: "1"
+      }
+      safe_zone: 4320
+    }
+    eras: {
+      era: ERA_SHELLEY
+      start_slot: 4492800
+      start_epoch: 208
+      start_time: {
+        numerator: "89856000"
+        denominator: "1"
+      }
+      end_slot: 16588800
+      end_epoch: 236
+      end_time: {
+        numerator: "101952000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_ALLEGRA
+      start_slot: 16588800
+      start_epoch: 236
+      start_time: {
+        numerator: "101952000"
+        denominator: "1"
+      }
+      end_slot: 23068800
+      end_epoch: 251
+      end_time: {
+        numerator: "108432000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_MARY
+      start_slot: 23068800
+      start_epoch: 251
+      start_time: {
+        numerator: "108432000"
+        denominator: "1"
+      }
+      end_slot: 39916800
+      end_epoch: 290
+      end_time: {
+        numerator: "125280000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_ALONZO
+      start_slot: 39916800
+      start_epoch: 290
+      start_time: {
+        numerator: "125280000"
+        denominator: "1"
+      }
+      end_slot: 84844800
+      end_epoch: 394
+      end_time: {
+        numerator: "170208000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_BABBAGE
+      start_slot: 84844800
+      start_epoch: 394
+      start_time: {
+        numerator: "170208000"
+        denominator: "1"
+      }
+      end_slot: 133660800
+      end_epoch: 507
+      end_time: {
+        numerator: "219024000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    eras: {
+      era: ERA_CONWAY
+      start_slot: 133660800
+      start_epoch: 507
+      start_time: {
+        numerator: "219024000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 129600
+    }
+    system_start_unix: 1506203091
+  }
+  slot: 144524800
+}

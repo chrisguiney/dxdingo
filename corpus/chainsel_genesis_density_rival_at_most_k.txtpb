@@ -1,0 +1,20 @@
+# the rival needs more than k headers unless the window is complete
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 20
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 101
+    slots: 102
+    slots: 103
+    slots: 104
+    tip_slot: 104
+  }
+  candidates: {
+    peer: "b"
+    slots: 105
+    tip_slot: 105
+    idling: true
+  }
+}

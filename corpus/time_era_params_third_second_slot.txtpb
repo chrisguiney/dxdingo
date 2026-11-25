@@ -1,0 +1,17 @@
+# a slot length of 1/3 s is not whole milliseconds: unsupported
+time_era_params: {
+  era: ERA_SHELLEY
+  globals: {
+    network_magic: 764824073
+    epoch_length: 100
+    slot_length: {
+      numerator: "1"
+      denominator: "3"
+    }
+    security_param: 5
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# a reaches at most 3 + 7 = 10 headers and b has 10: meeting the bound exactly is enough
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 101
+    slots: 102
+    slots: 103
+    tip_slot: 103
+  }
+  candidates: {
+    peer: "b"
+    slots: 101
+    slots: 102
+    slots: 103
+    slots: 104
+    slots: 105
+    slots: 106
+    slots: 107
+    slots: 108
+    slots: 109
+    slots: 110
+    tip_slot: 110
+  }
+}
