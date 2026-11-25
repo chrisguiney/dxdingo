@@ -23,7 +23,6 @@ import Cardano.Slotting.Slot (SlotNo (..))
 import qualified Data.Bimap as Bimap
 import Ouroboros.Consensus.Byron.Crypto.DSIGN (ByronDSIGN, SigDSIGN (..), VerKeyDSIGN (..))
 import Ouroboros.Consensus.Byron.Ledger.PBFT (toPBftLedgerView)
-import Ouroboros.Consensus.Byron.Protocol (PBftByronCrypto)
 import Ouroboros.Consensus.Config.SecurityParam (SecurityParam (..))
 import Ouroboros.Consensus.Node.ProtocolInfo (NumCoreNodes (..))
 import Ouroboros.Consensus.Protocol.Abstract (ConsensusProtocol (updateChainDepState))
@@ -46,9 +45,8 @@ import Cardano.Chain.Common
   , mkLovelace
   , unsafeGetLovelace
   , rationalToLovelacePortion
-  , subLovelace
   )
-import Cardano.Chain.Slotting (EpochNumber (..), SlotNumber (..))
+import Cardano.Chain.Slotting (EpochNumber (..))
 import Cardano.Chain.UTxO
   ( ATxAux (..)
   , TxIn (..)
@@ -62,8 +60,6 @@ import Cardano.Chain.UTxO
 
   )
 import qualified Cardano.Chain.UTxO as UTxO
-import qualified Cardano.Chain.UTxO.UTxO as UTxO
-import qualified Cardano.Chain.UTxO.Validation as UTxO
 import Cardano.Chain.Update (ProtocolParameters (..), SoftforkRule (..))
 import Cardano.Chain.Block (BlockValidationMode (..))
 import Cardano.Chain.ValidationMode (ValidationMode (..))
@@ -92,7 +88,6 @@ import qualified Data.Text as T
 import Dxdingo.Answer (Answer, respond)
 import Dxdingo.Domain
 import Lens.Micro ((&), (.~), (^.))
-import Numeric.Natural (Natural)
 import Proto.Dxdingo.V1.Byron
 import Proto.Dxdingo.V1.Envelope (Call'Request (..))
 import qualified Proto.Dxdingo.V1.State as S

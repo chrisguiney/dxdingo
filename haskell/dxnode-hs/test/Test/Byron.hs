@@ -16,7 +16,6 @@ import Data.Char (digitToInt)
 import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import Lens.Micro ((&), (.~), (^.))
-import Proto.Dxdingo.V1.Byron
 import Proto.Dxdingo.V1.Envelope (HarnessErrorCode (..))
 import qualified Proto.Dxdingo.V1.State as S
 import Test.Util
