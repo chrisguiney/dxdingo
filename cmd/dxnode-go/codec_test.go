@@ -344,3 +344,53 @@ func TestCodecByronBlock(t *testing.T) {
 		mustReject(t, got.GetRejection(), what)
 	}
 }
+
+func TestCodecPParamsUpdate(t *testing.T) {
+	t.Parallel()
+	run := func(era v1.Era, hexStr string) *v1.CodecPParamsUpdateResponse {
+		t.Helper()
+		got, err := codecPParamsUpdate(context.Background(), &v1.CodecPParamsUpdateRequest{Era: era, Cbor: unhex(t, hexStr)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	// {0: 44, 1: 155381}: min fee A and B, nothing else.
+	got := run(v1.Era_ERA_SHELLEY, "a2 00 18 2c 01 1a 00025ef5")
+	mustAccept(t, got.GetRejection())
+	u := got.GetUpdate()
+	if u.GetMinFeeA() != 44 || u.GetMinFeeB() != 155381 || u.MaxTxSize != nil || u.MinPoolCost != nil || u.A0 != nil {
+		t.Fatalf("update = %v", u)
+	}
+	// An update that sets nothing sets nothing.
+	got = run(v1.Era_ERA_ALLEGRA, "a0")
+	mustAccept(t, got.GetRejection())
+	if u := got.GetUpdate(); u.MinFeeA != nil || u.MinFeeB != nil || u.ProtocolVersion != nil {
+		t.Fatalf("empty update = %v", u)
+	}
+	// {3: 16384} in Conway; {27: 7, 29: 6}: committee size and action lifetime.
+	if u := run(v1.Era_ERA_CONWAY, "a1 03 19 4000").GetUpdate(); u.GetMaxTxSize() != 16384 {
+		t.Fatalf("max tx size = %v", u)
+	}
+	if u := run(v1.Era_ERA_CONWAY, "a2 18 1b 07 18 1d 06").GetUpdate(); u.GetCommitteeMinSize() != 7 || u.GetGovActionLifetime() != 6 || u.CommitteeMaxTermLength != nil {
+		t.Fatalf("governance update = %v", u)
+	}
+	// {33: 15/1}: the reference-script fee per byte, as tag 30 [15, 1].
+	if u := run(v1.Era_ERA_CONWAY, "a1 18 21 d8 1e 82 0f 01").GetUpdate(); u.GetMinFeeRefScriptCostPerByte().GetNumerator() != "15" || u.GetMinFeeRefScriptCostPerByte().GetDenominator() != "1" {
+		t.Fatalf("ref script cost = %v", u)
+	}
+	// {23: 150, 24: 3}: Alonzo collateral percentage and inputs.
+	if u := run(v1.Era_ERA_ALONZO, "a2 17 18 96 18 18 03").GetUpdate(); u.GetCollateralPercentage() != 150 || u.GetMaxCollateralInputs() != 3 {
+		t.Fatalf("collateral = %v", u)
+	}
+	for name, tc := range map[string]struct {
+		era v1.Era
+		hex string
+	}{
+		"trailing byte": {v1.Era_ERA_CONWAY, "a1 03 19 4000 00"},
+		"truncated":     {v1.Era_ERA_CONWAY, "a1 03"},
+		"not a map":     {v1.Era_ERA_SHELLEY, "01"},
+	} {
+		mustReject(t, run(tc.era, tc.hex).GetRejection(), name)
+	}
+}

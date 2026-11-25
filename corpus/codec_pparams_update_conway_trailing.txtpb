@@ -1,0 +1,5 @@
+# trailing byte is rejected
+codec_pparams_update: {
+  era: ERA_CONWAY
+  cbor: "\xa1\x03\x19@\x00\x00"
+}

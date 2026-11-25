@@ -1,0 +1,5 @@
+# a three-entry PlutusV1 cost model: the reference rejects it in Alonzo, gouroboros accepts it (TestDivergenceCodecAlonzoCostModelLength)
+codec_pparams_update: {
+  era: ERA_ALONZO
+  cbor: "\xa1\x12\xa1\x00\x83\x01\x02\x03"
+}

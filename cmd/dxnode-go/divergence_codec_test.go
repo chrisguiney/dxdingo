@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/blinklabs-io/gouroboros/cbor"
 	"github.com/blinklabs-io/gouroboros/ledger"
+	"github.com/blinklabs-io/gouroboros/ledger/alonzo"
 )
 
 // Divergence confirmations call gouroboros directly, bypassing dxnode-go, so
@@ -52,5 +54,18 @@ func TestDivergenceCodecThreeElementTx(t *testing.T) {
 	}
 	if !bytes.Equal(tx.Cbor(), wire) || !tx.IsValid() {
 		t.Fatalf("Cbor() = %x, IsValid %v", tx.Cbor(), tx.IsValid())
+	}
+}
+
+// {18: {0: [1, 2, 3]}}: gouroboros takes a PlutusV1 cost model of any length
+// in an Alonzo update; the reference decoder rejects it.
+func TestDivergenceCodecAlonzoCostModelLength(t *testing.T) {
+	t.Parallel()
+	var u alonzo.AlonzoProtocolParameterUpdate
+	if _, err := cbor.DecodeExact(unhex(t, "a1 12 a1 00 83 01 02 03"), &u); err != nil {
+		t.Fatal(err)
+	}
+	if got := u.CostModels[0]; len(got) != 3 {
+		t.Fatalf("cost model = %v", got)
 	}
 }

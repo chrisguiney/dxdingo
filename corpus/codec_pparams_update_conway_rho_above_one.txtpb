@@ -1,0 +1,5 @@
+# rho is a UnitInterval: 2/1 is out of range
+codec_pparams_update: {
+  era: ERA_CONWAY
+  cbor: "\xa1\n\xd8\x1e\x82\x02\x01"
+}

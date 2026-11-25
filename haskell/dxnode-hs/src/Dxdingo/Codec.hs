@@ -26,6 +26,7 @@ module Dxdingo.Codec
   , codecBlockHeader
   , codecBlockBody
   , codecByronBlock
+  , codecPParamsUpdate
   ) where
 
 import qualified Cardano.Chain.Block as Byron
@@ -38,6 +39,14 @@ import Cardano.Crypto.ProtocolMagic (ProtocolMagicId (..))
 import Cardano.Ledger.BaseTypes (ProtVer (..))
 import Cardano.Ledger.Block (Block (..))
 import Cardano.Ledger.Keys (VKey (..))
+import Cardano.Ledger.Alonzo.PParams (AlonzoEraPParams, CoinPerWord (..), ppuCoinsPerUTxOWordL, ppuCollateralPercentageL, ppuCostModelsL, ppuMaxBlockExUnitsL, ppuMaxCollateralInputsL, ppuMaxTxExUnitsL, ppuMaxValSizeL, ppuPricesL)
+import Cardano.Ledger.Babbage.PParams (BabbageEraPParams, ppuCoinsPerUTxOByteL)
+import Cardano.Ledger.Conway.PParams (ConwayEraPParams, DRepVotingThresholds (..), PoolVotingThresholds (..), ppuCommitteeMaxTermLengthL, ppuCommitteeMinSizeL, ppuDRepActivityL, ppuDRepDepositL, ppuDRepVotingThresholdsL, ppuGovActionDepositL, ppuGovActionLifetimeL, ppuMinFeeRefScriptCostPerByteL, ppuPoolVotingThresholdsL)
+import Cardano.Ledger.Plutus.CostModels (costModelsValid, getCostModelParams)
+import Cardano.Ledger.Plutus.ExUnits (ExUnits (..), Prices (..))
+import Cardano.Ledger.Plutus.Language (Language (..))
+import Cardano.Ledger.BaseTypes (BoundedRational (unboundRational), EpochInterval (..), Nonce (..), StrictMaybe, strictMaybeToMaybe)
+import Cardano.Ledger.Compactible (fromCompact)
 import Cardano.Ledger.Binary (Annotator, EncCBOR, EncCBORGroup, byronProtVer, decodeFullAnnotatedBytes, getVersion)
 import Data.Typeable (Typeable)
 import Cardano.Protocol.Crypto (StandardCrypto)
@@ -112,6 +121,7 @@ import Dxdingo.Domain
 import Lens.Micro ((&), (.~), (^.))
 import Proto.Dxdingo.V1.Codec
 import Proto.Dxdingo.V1.Envelope (Call'Request (..))
+import qualified Proto.Dxdingo.V1.State as S
 import qualified Proto.Dxdingo.V1.Types as P
 
 -- * Shared
@@ -490,6 +500,130 @@ codecByronBlock req =
   where
     epochSlots = EpochSlots 21600
 
+-- * codec_pparams_update
+
+mb :: StrictMaybe a -> Maybe a
+mb = strictMaybeToMaybe
+
+coinW :: Coin -> Word64
+coinW = fromIntegral . unCoin
+
+-- | The parameters every era's update can set.
+baseUpdate :: EraPParams era => PParamsUpdate era -> S.ProtocolParameters
+baseUpdate u =
+  defMessage
+    & #maybe'minFeeA .~ (coinW <$> mb (u ^. ppuMinFeeAL))
+    & #maybe'minFeeB .~ (coinW <$> mb (u ^. ppuMinFeeBL))
+    & #maybe'maxBlockBodySize .~ (fromIntegral <$> mb (u ^. ppuMaxBBSizeL))
+    & #maybe'maxTxSize .~ (fromIntegral <$> mb (u ^. ppuMaxTxSizeL))
+    & #maybe'maxBlockHeaderSize .~ (fromIntegral <$> mb (u ^. ppuMaxBHSizeL))
+    & #maybe'keyDeposit .~ (coinW <$> mb (u ^. ppuKeyDepositL))
+    & #maybe'poolDeposit .~ (coinW <$> mb (u ^. ppuPoolDepositL))
+    & #maybe'maxEpoch .~ (fromIntegral . unEpochInterval <$> mb (u ^. ppuEMaxL))
+    & #maybe'nOpt .~ (fromIntegral <$> mb (u ^. ppuNOptL))
+    & #maybe'a0 .~ (rationalProto . unboundRational <$> mb (u ^. ppuA0L))
+    & #maybe'rho .~ (rationalProto . unboundRational <$> mb (u ^. ppuRhoL))
+    & #maybe'tau .~ (rationalProto . unboundRational <$> mb (u ^. ppuTauL))
+    & #maybe'minPoolCost .~ (coinW <$> mb (u ^. ppuMinPoolCostL))
+
+protVerOf :: ProtVer -> P.ProtocolVersion
+protVerOf = protVerProto
+
+-- | Shelley through Alonzo: decentralisation and extra entropy.
+shelleyUpdate :: (EraPParams era, AtMostEra "Alonzo" era, AtMostEra "Babbage" era) => PParamsUpdate era -> S.ProtocolParameters -> S.ProtocolParameters
+shelleyUpdate u p =
+  p
+    & #maybe'd .~ (rationalProto . unboundRational <$> mb (u ^. ppuDL))
+    & #maybe'extraEntropy .~ (nonceProto <$> mb (u ^. ppuExtraEntropyL))
+    & #maybe'protocolVersion .~ (protVerOf <$> mb (u ^. ppuProtocolVersionL))
+  where
+    nonceProto n = defMessage & #hash .~ (case n of NeutralNonce -> BS.empty; Nonce h -> hashToBytes h)
+
+alonzoUpdate :: AlonzoEraPParams era => PParamsUpdate era -> S.ProtocolParameters -> S.ProtocolParameters
+alonzoUpdate u p =
+  p
+    & #costModelPlutusV1 .~ models PlutusV1
+    & #costModelPlutusV2 .~ models PlutusV2
+    & #costModelPlutusV3 .~ models PlutusV3
+    & #costModelPlutusV4 .~ models PlutusV4
+    & #maybe'priceMem .~ (rationalProto . unboundRational . prMem <$> prices)
+    & #maybe'priceSteps .~ (rationalProto . unboundRational . prSteps <$> prices)
+    & #maybe'maxTxExMem .~ (fromIntegral . exUnitsMem <$> mb (u ^. ppuMaxTxExUnitsL))
+    & #maybe'maxTxExSteps .~ (fromIntegral . exUnitsSteps <$> mb (u ^. ppuMaxTxExUnitsL))
+    & #maybe'maxBlockExMem .~ (fromIntegral . exUnitsMem <$> mb (u ^. ppuMaxBlockExUnitsL))
+    & #maybe'maxBlockExSteps .~ (fromIntegral . exUnitsSteps <$> mb (u ^. ppuMaxBlockExUnitsL))
+    & #maybe'maxValueSize .~ (fromIntegral <$> mb (u ^. ppuMaxValSizeL))
+    & #maybe'collateralPercentage .~ (fromIntegral <$> mb (u ^. ppuCollateralPercentageL))
+    & #maybe'maxCollateralInputs .~ (fromIntegral <$> mb (u ^. ppuMaxCollateralInputsL))
+  where
+    prices = mb (u ^. ppuPricesL)
+    models l = maybe [] (maybe [] getCostModelParams . Map.lookup l . costModelsValid) (mb (u ^. ppuCostModelsL))
+
+conwayUpdate :: ConwayEraPParams era => PParamsUpdate era -> S.ProtocolParameters -> S.ProtocolParameters
+conwayUpdate u p =
+  p
+    & #maybe'poolVotingThresholds .~ (pool <$> mb (u ^. ppuPoolVotingThresholdsL))
+    & #maybe'drepVotingThresholds .~ (drep <$> mb (u ^. ppuDRepVotingThresholdsL))
+    & #maybe'committeeMinSize .~ (fromIntegral <$> mb (u ^. ppuCommitteeMinSizeL))
+    & #maybe'committeeMaxTermLength .~ (fromIntegral . unEpochInterval <$> mb (u ^. ppuCommitteeMaxTermLengthL))
+    & #maybe'govActionLifetime .~ (fromIntegral . unEpochInterval <$> mb (u ^. ppuGovActionLifetimeL))
+    & #maybe'govActionDeposit .~ (coinW <$> mb (u ^. ppuGovActionDepositL))
+    & #maybe'drepDeposit .~ (coinW <$> mb (u ^. ppuDRepDepositL))
+    & #maybe'drepActivity .~ (fromIntegral . unEpochInterval <$> mb (u ^. ppuDRepActivityL))
+    & #maybe'minFeeRefScriptCostPerByte .~ (rationalProto . unboundRational <$> mb (u ^. ppuMinFeeRefScriptCostPerByteL))
+  where
+    r = rationalProto . unboundRational
+    pool t =
+      defMessage
+        & #motionNoConfidence .~ r (pvtMotionNoConfidence t)
+        & #committeeNormal .~ r (pvtCommitteeNormal t)
+        & #committeeNoConfidence .~ r (pvtCommitteeNoConfidence t)
+        & #hardForkInitiation .~ r (pvtHardForkInitiation t)
+        & #ppSecurityGroup .~ r (pvtPPSecurityGroup t)
+    drep t =
+      defMessage
+        & #motionNoConfidence .~ r (dvtMotionNoConfidence t)
+        & #committeeNormal .~ r (dvtCommitteeNormal t)
+        & #committeeNoConfidence .~ r (dvtCommitteeNoConfidence t)
+        & #updateToConstitution .~ r (dvtUpdateToConstitution t)
+        & #hardForkInitiation .~ r (dvtHardForkInitiation t)
+        & #ppNetworkGroup .~ r (dvtPPNetworkGroup t)
+        & #ppEconomicGroup .~ r (dvtPPEconomicGroup t)
+        & #ppTechnicalGroup .~ r (dvtPPTechnicalGroup t)
+        & #ppGovGroup .~ r (dvtPPGovGroup t)
+        & #treasuryWithdrawal .~ r (dvtTreasuryWithdrawal t)
+
+data PPUEra = forall era. EraPParams era => PPUEra (Proxy era) (PParamsUpdate era -> S.ProtocolParameters)
+
+ppuEra :: P.Era -> Result PPUEra
+ppuEra = \case
+  P.ERA_SHELLEY -> pure (PPUEra (Proxy @ShelleyEra) (\u -> shelleyUpdate u (baseUpdate u) & #maybe'minUtxoValue .~ (coinW <$> mb (u ^. ppuMinUTxOValueL))))
+  P.ERA_ALLEGRA -> pure (PPUEra (Proxy @AllegraEra) (\u -> shelleyUpdate u (baseUpdate u) & #maybe'minUtxoValue .~ (coinW <$> mb (u ^. ppuMinUTxOValueL))))
+  P.ERA_MARY -> pure (PPUEra (Proxy @MaryEra) (\u -> shelleyUpdate u (baseUpdate u) & #maybe'minUtxoValue .~ (coinW <$> mb (u ^. ppuMinUTxOValueL))))
+  P.ERA_ALONZO ->
+    pure
+      ( PPUEra (Proxy @AlonzoEra) $ \u ->
+          alonzoUpdate u (shelleyUpdate u (baseUpdate u))
+            & #maybe'coinsPerUtxoWord .~ (coinW . unCoinPerWord <$> mb (u ^. ppuCoinsPerUTxOWordL))
+      )
+  P.ERA_BABBAGE -> pure (PPUEra (Proxy @BabbageEra) (\u -> babbageUpdate u (alonzoUpdate u (baseUpdate u)) & #maybe'protocolVersion .~ (protVerOf <$> mb (u ^. ppuProtocolVersionL))))
+  P.ERA_CONWAY -> pure (PPUEra (Proxy @ConwayEra) (\u -> conwayUpdate u (babbageUpdate u (alonzoUpdate u (baseUpdate u)))))
+  e -> unsupported ("no codec for " <> T.pack (show e))
+  where
+    babbageUpdate :: (BabbageEraPParams era) => PParamsUpdate era -> S.ProtocolParameters -> S.ProtocolParameters
+    babbageUpdate u p =
+      p
+        & #maybe'coinsPerUtxoByte .~ (coinW . fromCompact . unCoinPerByte <$> mb (u ^. ppuCoinsPerUTxOByteL))
+
+codecPParamsUpdate :: CodecPParamsUpdateRequest -> Result CodecPParamsUpdateResponse
+codecPParamsUpdate req = do
+  PPUEra (_ :: Proxy era) view <- ppuEra (req ^. #era)
+  v <- versionArg @era (req ^. #maybe'protocolVersion)
+  pure $
+    case decodeFull v (BSL.fromStrict (req ^. #cbor)) :: Either DecoderError (PParamsUpdate era) of
+      Left e -> defMessage & #rejection .~ decodeFailure e
+      Right u -> defMessage & #cbor .~ serialize' v u & #update .~ view u
+
 dispatch :: Call'Request -> Maybe Answer
 dispatch = \case
   Call'CodecTx q -> Just (respond #codecTx (codecTx q))
@@ -500,6 +634,7 @@ dispatch = \case
   Call'CodecBlockHeader q -> Just (respond #codecBlockHeader (codecBlockHeader q))
   Call'CodecBlockBody q -> Just (respond #codecBlockBody (codecBlockBody q))
   Call'CodecByronBlock q -> Just (respond #codecByronBlock (codecByronBlock q))
+  Call'CodecPparamsUpdate q -> Just (respond #codecPparamsUpdate (codecPParamsUpdate q))
   _ -> Nothing
 
 implemented :: [Text]
@@ -512,4 +647,5 @@ implemented =
   , "codec_block_header"
   , "codec_block_body"
   , "codec_byron_block"
+  , "codec_pparams_update"
   ]

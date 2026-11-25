@@ -1,0 +1,5 @@
+# key 13 does not exist in Conway
+codec_pparams_update: {
+  era: ERA_CONWAY
+  cbor: "\xa1\r\x81\x00"
+}

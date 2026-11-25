@@ -1,0 +1,5 @@
+# min UTxO value, a Mary-and-earlier parameter
+codec_pparams_update: {
+  era: ERA_MARY
+  cbor: "\xa1\x0f\x1a\x00\x0fB@"
+}

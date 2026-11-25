@@ -7,8 +7,9 @@ module Test.Codec (tests) where
 
 import Cardano.Crypto.Hash (Blake2b_256, hashToBytes, hashWith)
 import Cardano.Ledger.Binary (DecoderError, decodeFull, decodeFullAnnotator, decCBOR, serialize')
+import Cardano.Ledger.Alonzo (AlonzoEra)
 import Cardano.Ledger.Conway (ConwayEra)
-import Cardano.Ledger.Core (Tx, TxOut, TxLevel (TopTx), eraProtVerLow)
+import Cardano.Ledger.Core (PParamsUpdate, Tx, TxOut, TxLevel (TopTx), eraProtVerLow)
 import Data.Bits (shiftL, (.|.))
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
@@ -112,6 +113,27 @@ tests =
     )
   , ("byron: bad tag is rejected", rejected (byron (BS.append (hex "82 02") (hex byronBlock)) ^. #codecByronBlock . #rejection))
   , ("byron: trailing byte is rejected", rejected (byron (BS.snoc (BS.append (hex "82 01") (hex byronBlock)) 0) ^. #codecByronBlock . #rejection))
+  , ( "pparams update: min fee A and B only"
+    , let u = ppu ERA_SHELLEY "a2 00 18 2c 01 1a 00025ef5" ^. #codecPparamsUpdate . #update
+       in u ^. #maybe'minFeeA == Just 44 && u ^. #maybe'minFeeB == Just 155381 && u ^. #maybe'maxTxSize == Nothing && u ^. #maybe'minPoolCost == Nothing
+    )
+  , ("pparams update: an empty update sets nothing", ppu ERA_ALLEGRA "a0" ^. #codecPparamsUpdate . #update . #maybe'minFeeA == Nothing)
+  , ("pparams update: Conway max tx size", ppu ERA_CONWAY "a1 03 19 4000" ^. #codecPparamsUpdate . #update . #maybe'maxTxSize == Just 16384)
+  , ( "pparams update: Conway committee size and action lifetime"
+    , let u = ppu ERA_CONWAY "a2 18 1b 07 18 1d 06" ^. #codecPparamsUpdate . #update
+       in u ^. #maybe'committeeMinSize == Just 7 && u ^. #maybe'govActionLifetime == Just 6 && u ^. #maybe'committeeMaxTermLength == Nothing
+    )
+  , ( "pparams update: Conway reference-script fee per byte"
+    , let r = ppu ERA_CONWAY "a1 18 21 d8 1e 82 0f 01" ^. #codecPparamsUpdate . #update . #minFeeRefScriptCostPerByte
+       in (r ^. #numerator, r ^. #denominator) == ("15", "1")
+    )
+  , ( "pparams update: Alonzo collateral"
+    , let u = ppu ERA_ALONZO "a2 17 18 96 18 18 03" ^. #codecPparamsUpdate . #update
+       in u ^. #maybe'collateralPercentage == Just 150 && u ^. #maybe'maxCollateralInputs == Just 3
+    )
+  , ("pparams update: trailing byte is rejected", rejected (ppu ERA_CONWAY "a1 03 19 4000 00" ^. #codecPparamsUpdate . #rejection))
+  , ("pparams update: truncation is rejected", rejected (ppu ERA_CONWAY "a1 03" ^. #codecPparamsUpdate . #rejection))
+  , ("pparams update: an integer is no update", rejected (ppu ERA_SHELLEY "01" ^. #codecPparamsUpdate . #rejection))
   , -- Divergence confirmations call the reference directly, bypassing
     -- dxnode-hs, so a reported mismatch cannot come from request
     -- translation (dxnode-go TestDivergenceCodec*).
@@ -126,11 +148,18 @@ tests =
     , let wire = hex "82 581d" <> addr <> hex "82 1a001e8480 a1 581c" <> h28 <> hex "a2 41 62 07 42 61 61 05"
        in either (const False) (/= wire) (reencodeOut wire) && either (const False) (const True) (reencodeOut wire)
     )
+  , ( "divergence: a three-entry PlutusV1 cost model is rejected in Alonzo"
+    , either (const True) (const False) (decodeFull (eraProtVerLow @AlonzoEra) (BSL.fromStrict (hex "a1 12 a1 00 83 01 02 03")) :: Either DecoderError (PParamsUpdate AlonzoEra))
+    )
+  , ( "divergence: the same cost model is accepted in Conway"
+    , either (const False) (const True) (decodeFull v (BSL.fromStrict (hex "a1 12 a1 00 83 01 02 03")) :: Either DecoderError (PParamsUpdate ConwayEra))
+    )
   , ( "divergence: a three-element Conway transaction is accepted and re-encoded with IsValid"
     , reencodeTx (hex "83 a3 00 80 01 80 02 00 a0 f6") == Right (hex "84 a3 00 80 01 80 02 00 a0 f5 f6")
     )
   ]
   where
+    ppu e h = call (#codecPparamsUpdate .~ (defMessage & #era .~ e & #cbor .~ hex h))
     tx e b = call (#codecTx .~ (defMessage & #era .~ e & #cbor .~ b))
     output e b = call (#codecTxOutput .~ (defMessage & #era .~ e & #cbor .~ b))
     cert e b = call (#codecCertificate .~ (defMessage & #era .~ e & #cbor .~ b))

@@ -1,0 +1,5 @@
+# key 12 (decentralisation) does not exist in Babbage
+codec_pparams_update: {
+  era: ERA_BABBAGE
+  cbor: "\xa1\x0c\xd8\x1e\x82\x01\x02"
+}

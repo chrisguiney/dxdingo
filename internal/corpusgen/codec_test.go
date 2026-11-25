@@ -3,6 +3,7 @@ package corpusgen
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,10 +45,11 @@ func TestGenerateCodecCorpus(t *testing.T) {
 // returns the wire bytes it was given. Each has direct tests on both sides
 // (dxnode-go TestDivergenceCodec*, Test.Codec "divergence: ..." checks).
 var codecDivergences = map[string]string{
-	"codec_tx_output_babbage_1_1":          "real mainnet output: the reference re-encodes the multi-asset map sorted by bytes in an indefinite-length map; gouroboros keeps the wire order (TestDivergenceCodecOutputKeepsWireBytes)",
-	"codec_tx_output_conway_1_1":           "real mainnet output [address, [coin, {}]]: the reference drops the empty multi-asset, gouroboros keeps it (TestDivergenceCodecOutputKeepsWireBytes)",
-	"codec_tx_output_conway_datum_hash":    "Babbage map output with a datum hash: the reference re-encodes the legacy array [address, coin, datum_hash] (TestDivergenceCodecOutputKeepsWireBytes)",
-	"codec_tx_wrong_era_shelley_as_conway": "a three-element transaction decodes as Conway on both nodes; the reference re-encodes it with IsValid, gouroboros keeps three elements (TestDivergenceCodecThreeElementTx)",
+	"codec_tx_output_babbage_1_1":            "real mainnet output: the reference re-encodes the multi-asset map sorted by bytes in an indefinite-length map; gouroboros keeps the wire order (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_tx_output_conway_1_1":             "real mainnet output [address, [coin, {}]]: the reference drops the empty multi-asset, gouroboros keeps it (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_tx_output_conway_datum_hash":      "Babbage map output with a datum hash: the reference re-encodes the legacy array [address, coin, datum_hash] (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_pparams_update_alonzo_cost_model": "a three-entry PlutusV1 cost model: the reference rejects it in Alonzo, gouroboros accepts it (TestDivergenceCodecAlonzoCostModelLength)",
+	"codec_tx_wrong_era_shelley_as_conway":   "a three-element transaction decodes as Conway on both nodes; the reference re-encodes it with IsValid, gouroboros keeps three elements (TestDivergenceCodecThreeElementTx)",
 }
 
 type codecEra struct {
@@ -321,6 +323,56 @@ func codecCases(t *testing.T) []entry {
 	add("codec_byron_block_truncated", "Byron block cut by one byte is rejected", byronCall(tr))
 	add("codec_byron_block_trailing", "Byron block with a trailing byte is rejected", byronCall(tl))
 	add("codec_byron_block_bad_tag", "tag 2 is neither boundary nor main", byronCall(append([]byte{0x82, 0x02}, byron...)))
+	return pparamsUpdateCases(t, out)
+}
+
+// pparamsUpdateCases adds protocol-parameter updates: one per era shape, the
+// empty update, and the encodings an era does not accept.
+func pparamsUpdateCases(t *testing.T, out []entry) []entry {
+	rr := func(n, d int64) cbor.Rat { return cbor.Rat{Rat: big.NewRat(n, d)} }
+	upd := func(name, why string, e v1.Era, m map[uint]any) {
+		out = append(out, entry{"codec_pparams_update_" + name, why, &v1.Call{Request: &v1.Call_CodecPparamsUpdate{CodecPparamsUpdate: &v1.CodecPParamsUpdateRequest{
+			Era: e, Cbor: mustCbor(t, m),
+		}}}})
+	}
+	raw := func(name, why string, e v1.Era, b []byte) {
+		out = append(out, entry{"codec_pparams_update_" + name, why, &v1.Call{Request: &v1.Call_CodecPparamsUpdate{CodecPparamsUpdate: &v1.CodecPParamsUpdateRequest{
+			Era: e, Cbor: b,
+		}}}})
+	}
+	upd("shelley_fees", "min fee A and B: the most common mainnet update", v1.Era_ERA_SHELLEY, map[uint]any{0: 44, 1: 155381})
+	upd("shelley_d_entropy_version", "decentralisation, neutral extra entropy and a protocol version", v1.Era_ERA_SHELLEY, map[uint]any{
+		12: rr(1, 2), 13: []any{0}, 14: []any{3, 0},
+	})
+	upd("shelley_extra_entropy_hash", "extra entropy set to a hash", v1.Era_ERA_SHELLEY, map[uint]any{13: []any{1, rep(0xab, 32)}})
+	upd("shelley_all_scalars", "every scalar parameter at once", v1.Era_ERA_SHELLEY, map[uint]any{
+		2: 65536, 3: 16384, 4: 1100, 5: 2000000, 6: 500000000, 7: 18, 8: 150, 9: rr(3, 10), 10: rr(3, 1000), 11: rr(1, 5), 16: 340000000,
+	})
+	upd("allegra_empty", "an update that sets nothing", v1.Era_ERA_ALLEGRA, map[uint]any{})
+	upd("mary_min_utxo", "min UTxO value, a Mary-and-earlier parameter", v1.Era_ERA_MARY, map[uint]any{15: 1000000})
+	upd("alonzo_ex_units", "Alonzo prices, execution units, collateral", v1.Era_ERA_ALONZO, map[uint]any{
+		17: 34482, 19: []any{rr(577, 10000), rr(721, 10000000)}, 20: []any{14000000, 10000000000}, 21: []any{62000000, 20000000000},
+		22: 5000, 23: 150, 24: 3,
+	})
+	upd("alonzo_cost_model", "a one-entry PlutusV1 cost model", v1.Era_ERA_ALONZO, map[uint]any{18: map[uint][]int64{0: {1, 2, 3}}})
+	upd("babbage_coins_per_byte", "Babbage coins per UTxO byte and a protocol version", v1.Era_ERA_BABBAGE, map[uint]any{17: 4310, 14: []any{8, 0}})
+	upd("babbage_d_is_gone", "key 12 (decentralisation) does not exist in Babbage", v1.Era_ERA_BABBAGE, map[uint]any{12: rr(1, 2)})
+	upd("conway_governance", "Conway committee and governance parameters", v1.Era_ERA_CONWAY, map[uint]any{
+		27: 7, 28: 146, 29: 6, 30: 100000000000, 31: 500000000, 32: 20, 33: rr(15, 1),
+	})
+	upd("conway_thresholds", "pool and DRep voting thresholds", v1.Era_ERA_CONWAY, map[uint]any{
+		25: []any{rr(51, 100), rr(51, 100), rr(51, 100), rr(51, 100), rr(51, 100)},
+		26: []any{rr(67, 100), rr(67, 100), rr(60, 100), rr(75, 100), rr(60, 100), rr(67, 100), rr(67, 100), rr(67, 100), rr(75, 100), rr(67, 100)},
+	})
+	upd("conway_plutus", "Conway cost model, prices and execution units", v1.Era_ERA_CONWAY, map[uint]any{
+		18: map[uint][]int64{1: {5, 6}}, 19: []any{rr(577, 10000), rr(721, 10000000)}, 20: []any{14000000, 10000000000}, 22: 5000,
+	})
+	upd("conway_protocol_version", "key 14 is not an updatable parameter in Conway", v1.Era_ERA_CONWAY, map[uint]any{14: []any{10, 0}})
+	upd("conway_rho_above_one", "rho is a UnitInterval: 2/1 is out of range", v1.Era_ERA_CONWAY, map[uint]any{10: rr(2, 1)})
+	upd("conway_extra_entropy", "key 13 does not exist in Conway", v1.Era_ERA_CONWAY, map[uint]any{13: []any{0}})
+	raw("conway_trailing", "trailing byte is rejected", v1.Era_ERA_CONWAY, append(mustCbor(t, map[uint]any{3: 16384}), 0))
+	raw("conway_truncated", "truncated update is rejected", v1.Era_ERA_CONWAY, mustCbor(t, map[uint]any{3: 16384})[:2])
+	raw("shelley_not_a_map", "an integer is no update", v1.Era_ERA_SHELLEY, []byte{0x01})
 	return out
 }
 

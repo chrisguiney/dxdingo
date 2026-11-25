@@ -18,6 +18,7 @@ import (
 	"github.com/blinklabs-io/gouroboros/ledger/shelley"
 
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
+	"github.com/chrisguiney/dxdingo/internal/convert"
 	"github.com/chrisguiney/dxdingo/internal/dispatch"
 )
 
@@ -34,6 +35,7 @@ func registerCodec(r *dispatch.Registry) {
 	dispatch.Register(r, codecBlockBody)
 	dispatch.Register(r, codecBlockHeader)
 	dispatch.Register(r, codecByronBlock)
+	dispatch.Register(r, codecPParamsUpdate)
 }
 
 // decodeFailure is the rejection a failed decode reports on both nodes.
@@ -364,4 +366,163 @@ func codecByronBlock(_ context.Context, req *v1.CodecByronBlockRequest) (*v1.Cod
 		resp.Epoch = b.BlockHeader.ConsensusData.Epoch
 	}
 	return resp, nil
+}
+
+// pparamsOut accumulates the fields an update sets. The optional proto
+// fields stay unset for parameters the update leaves out.
+type pparamsOut struct{ p *v1.ProtocolParameters }
+
+func u64(x *uint) *uint64 {
+	if x == nil {
+		return nil
+	}
+	v := uint64(*x)
+	return &v
+}
+
+func u32(x *uint) *uint32 {
+	if x == nil {
+		return nil
+	}
+	v := uint32(*x)
+	return &v
+}
+
+func ratOf(r *cbor.Rat) *v1.Rational {
+	if r == nil || r.Rat == nil {
+		return nil
+	}
+	return convert.RatProto(r.Rat)
+}
+
+func (o pparamsOut) base(
+	minA, minB, bodySize, txSize, headerSize, keyDep, poolDep, maxEpoch, nOpt *uint,
+	a0, rho, tau *cbor.Rat, minPoolCost *uint64,
+) {
+	o.p.MinFeeA, o.p.MinFeeB = u64(minA), u64(minB)
+	o.p.MaxBlockBodySize, o.p.MaxTxSize, o.p.MaxBlockHeaderSize = u32(bodySize), u32(txSize), u32(headerSize)
+	o.p.KeyDeposit, o.p.PoolDeposit, o.p.MaxEpoch, o.p.NOpt = u64(keyDep), u64(poolDep), u64(maxEpoch), u32(nOpt)
+	o.p.A0, o.p.Rho, o.p.Tau = ratOf(a0), ratOf(rho), ratOf(tau)
+	o.p.MinPoolCost = minPoolCost
+}
+
+func (o pparamsOut) shelleyExtras(d *cbor.Rat, ee *common.Nonce, pv *common.ProtocolParametersProtocolVersion) {
+	o.p.D = ratOf(d)
+	if ee != nil {
+		if ee.Type == 0 {
+			o.p.ExtraEntropy = &v1.Nonce{}
+		} else {
+			o.p.ExtraEntropy = &v1.Nonce{Hash: ee.Value[:]}
+		}
+	}
+	o.protocolVersion(pv)
+}
+
+func (o pparamsOut) protocolVersion(pv *common.ProtocolParametersProtocolVersion) {
+	if pv != nil {
+		o.p.ProtocolVersion = &v1.ProtocolVersion{Major: uint32(pv.Major), Minor: uint32(pv.Minor)}
+	}
+}
+
+func (o pparamsOut) plutus(
+	models map[uint][]int64, prices *common.ExUnitPrice, txEx, blockEx *common.ExUnits,
+	valueSize, collateralPct, collateralInputs *uint,
+) {
+	o.p.CostModelPlutusV1 = models[0]
+	o.p.CostModelPlutusV2 = models[1]
+	o.p.CostModelPlutusV3 = models[2]
+	o.p.CostModelPlutusV4 = models[3]
+	if prices != nil {
+		o.p.PriceMem, o.p.PriceSteps = ratOf(prices.MemPrice), ratOf(prices.StepPrice)
+	}
+	if txEx != nil {
+		m, s := uint64(txEx.Memory), uint64(txEx.Steps)
+		o.p.MaxTxExMem, o.p.MaxTxExSteps = &m, &s
+	}
+	if blockEx != nil {
+		m, s := uint64(blockEx.Memory), uint64(blockEx.Steps)
+		o.p.MaxBlockExMem, o.p.MaxBlockExSteps = &m, &s
+	}
+	o.p.MaxValueSize, o.p.CollateralPercentage, o.p.MaxCollateralInputs = u32(valueSize), u32(collateralPct), u32(collateralInputs)
+}
+
+// codecPParamsUpdate decodes an era's protocol-parameter update and reports
+// only the parameters it sets.
+func codecPParamsUpdate(_ context.Context, req *v1.CodecPParamsUpdateRequest) (*v1.CodecPParamsUpdateResponse, error) {
+	if _, err := codecEraArg(req.GetEra(), req.GetProtocolVersion()); err != nil {
+		return nil, err
+	}
+	p := &v1.ProtocolParameters{}
+	o := pparamsOut{p}
+	var enc []byte
+	var err error
+	switch req.GetEra() {
+	case v1.Era_ERA_SHELLEY, v1.Era_ERA_ALLEGRA:
+		var u shelley.ShelleyProtocolParameterUpdate
+		if _, err = cbor.DecodeExact(req.GetCbor(), &u); err == nil {
+			o.base(u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost)
+			o.shelleyExtras(u.Decentralization, u.ExtraEntropy, u.ProtocolVersion)
+			p.MinUtxoValue = u64(u.MinUtxoValue)
+			enc = u.Cbor()
+		}
+	case v1.Era_ERA_MARY:
+		var u mary.MaryProtocolParameterUpdate
+		if _, err = cbor.DecodeExact(req.GetCbor(), &u); err == nil {
+			o.base(u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost)
+			o.shelleyExtras(u.Decentralization, u.ExtraEntropy, u.ProtocolVersion)
+			p.MinUtxoValue = u64(u.MinUtxoValue)
+			enc = u.Cbor()
+		}
+	case v1.Era_ERA_ALONZO:
+		var u alonzo.AlonzoProtocolParameterUpdate
+		if _, err = cbor.DecodeExact(req.GetCbor(), &u); err == nil {
+			o.base(u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost)
+			o.shelleyExtras(u.Decentralization, u.ExtraEntropy, u.ProtocolVersion)
+			p.CoinsPerUtxoWord = u.AdaPerUtxoByte
+			o.plutus(u.CostModels, u.ExecutionCosts, u.MaxTxExUnits, u.MaxBlockExUnits, u.MaxValueSize, u.CollateralPercentage, u.MaxCollateralInputs)
+			enc = u.Cbor()
+		}
+	case v1.Era_ERA_BABBAGE:
+		var u babbage.BabbageProtocolParameterUpdate
+		if _, err = cbor.DecodeExact(req.GetCbor(), &u); err == nil {
+			o.base(u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost)
+			o.protocolVersion(u.ProtocolVersion)
+			p.CoinsPerUtxoByte = u.AdaPerUtxoByte
+			o.plutus(u.CostModels, u.ExecutionCosts, u.MaxTxExUnits, u.MaxBlockExUnits, u.MaxValueSize, u.CollateralPercentage, u.MaxCollateralInputs)
+			enc = u.Cbor()
+		}
+	case v1.Era_ERA_CONWAY:
+		var u conway.ConwayProtocolParameterUpdate
+		if _, err = cbor.DecodeExact(req.GetCbor(), &u); err == nil {
+			o.base(u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost)
+			o.protocolVersion(u.ProtocolVersion)
+			p.CoinsPerUtxoByte = u.AdaPerUtxoByte
+			o.plutus(u.CostModels, u.ExecutionCosts, u.MaxTxExUnits, u.MaxBlockExUnits, u.MaxValueSize, u.CollateralPercentage, u.MaxCollateralInputs)
+			if t := u.PoolVotingThresholds; t != nil {
+				p.PoolVotingThresholds = &v1.PoolVotingThresholds{
+					MotionNoConfidence: ratOf(&t.MotionNoConfidence), CommitteeNormal: ratOf(&t.CommitteeNormal),
+					CommitteeNoConfidence: ratOf(&t.CommitteeNoConfidence), HardForkInitiation: ratOf(&t.HardForkInitiation),
+					PpSecurityGroup: ratOf(&t.PpSecurityGroup),
+				}
+			}
+			if t := u.DRepVotingThresholds; t != nil {
+				p.DrepVotingThresholds = &v1.DRepVotingThresholds{
+					MotionNoConfidence: ratOf(&t.MotionNoConfidence), CommitteeNormal: ratOf(&t.CommitteeNormal),
+					CommitteeNoConfidence: ratOf(&t.CommitteeNoConfidence), UpdateToConstitution: ratOf(&t.UpdateToConstitution),
+					HardForkInitiation: ratOf(&t.HardForkInitiation), PpNetworkGroup: ratOf(&t.PpNetworkGroup),
+					PpEconomicGroup: ratOf(&t.PpEconomicGroup), PpTechnicalGroup: ratOf(&t.PpTechnicalGroup),
+					PpGovGroup: ratOf(&t.PpGovGroup), TreasuryWithdrawal: ratOf(&t.TreasuryWithdrawal),
+				}
+			}
+			p.CommitteeMinSize = u32(u.MinCommitteeSize)
+			p.CommitteeMaxTermLength, p.GovActionLifetime, p.GovActionDeposit = u.CommitteeTermLimit, u.GovActionValidityPeriod, u.GovActionDeposit
+			p.DrepDeposit, p.DrepActivity = u.DRepDeposit, u.DRepInactivityPeriod
+			p.MinFeeRefScriptCostPerByte = ratOf(u.MinFeeRefScriptCostPerByte)
+			enc = u.Cbor()
+		}
+	}
+	if err != nil {
+		return &v1.CodecPParamsUpdateResponse{Rejection: decodeFailure(err)}, nil
+	}
+	return &v1.CodecPParamsUpdateResponse{Cbor: enc, Update: p}, nil
 }

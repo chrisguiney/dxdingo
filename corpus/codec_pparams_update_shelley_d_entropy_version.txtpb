@@ -1,0 +1,5 @@
+# decentralisation, neutral extra entropy and a protocol version
+codec_pparams_update: {
+  era: ERA_SHELLEY
+  cbor: "\xa3\x0c\xd8\x1e\x82\x01\x02\r\x81\x00\x0e\x82\x03\x00"
+}
