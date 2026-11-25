@@ -11,6 +11,8 @@ module Dxdingo.Rewards
   , leaderReward
   , maxPool
   , apparentPerformance
+  , rewardUpdateWith
+  , sortRewards
   ) where
 
 import Cardano.Ledger.BaseTypes
@@ -61,6 +63,7 @@ import Cardano.Ledger.Shelley.LedgerState
   , startStep
   , utxosFeesL
   )
+import qualified Cardano.Ledger.Shelley.LedgerState as LS
 import Cardano.Ledger.Address (AccountId (..))
 import Cardano.Ledger.Hashes (VRFVerKeyHash (..))
 import Cardano.Ledger.Shelley.PoolRank
@@ -424,7 +427,12 @@ sortRewards rs =
 -- | The update 'createRUpd' builds, restricted to the rewards the ledger
 -- delivers ('filterRewards').
 rewardUpdate :: RewardsRewardUpdateRequest -> Result RewardsRewardUpdateResponse
-rewardUpdate req = do
+rewardUpdate req = snd <$> rewardUpdateWith req
+
+-- | 'rewardUpdate' with the unfiltered update the ledger built, as the
+-- reward update a NEWEPOCH state holds.
+rewardUpdateWith :: RewardsRewardUpdateRequest -> Result (LS.RewardUpdate, RewardsRewardUpdateResponse)
+rewardUpdateWith req = do
   (_, pp) <- rewardPParams (req ^. #maybe'protocolVersion) (req ^. #maybe'pparams) True
   g <- rewardGlobals (req ^. #maybe'globals)
   let pots = req ^. #pots
@@ -453,7 +461,7 @@ rewardUpdate req = do
       DeltaCoin dt = deltaT ru
       DeltaCoin df = deltaF ru
   when (any (\x -> abs x > toInteger (maxBound :: Int64)) [dr, dt, df]) $ unsupported "pot amounts exceed Int64"
-  pure $
+  pure . (,) ru $
     defMessage
       & #update
         .~ ( defMessage

@@ -17,10 +17,14 @@ import (
 // at the end of the epoch before req's, with the node's snapshot hooks wired.
 //
 // Domain, shared with dxnode-hs: Conway only; the request holds accounts,
-// pools, pots, the snapshots in force and the instant stake. Governance
-// state, a pending reward update, previous-epoch blocks and a UTxO table are
-// UNSUPPORTED, since the rollover derives its own reward round and the request
-// carries no state for them to read. The response reports only the pots both
+// pools, pots, the snapshots in force and the instant stake. A pending
+// reward_update is accepted when it equals the update dingo's reward
+// calculation derives from blocks_previous, the GO snapshot, the pools and
+// the pots (pots.fees is the fee pot the round pays out), under the scratch
+// ledger's globals; the boundary then applies it. blocks_previous is read
+// only with a reward_update. An account's DRep delegation is kept and reported
+// on a changed row. Governance state, registration pointers and a UTxO table
+// are UNSUPPORTED, since the request carries no state for them to read. The response reports only the pots both
 // ledgers keep: reserves and treasury. Dingo keeps no fee, deposit or
 // donation pot, so those deltas are left unset on both sides.
 func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.EpochNewEpochResponse, error) {
@@ -28,11 +32,11 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		return nil, unsupportedf("NEWEPOCH is answered for Conway only")
 	}
 	st := req.GetState()
-	if req.GetRewardUpdate() != nil || len(req.GetBlocksPrevious()) > 0 || len(st.GetUtxo()) > 0 ||
+	if len(st.GetUtxo()) > 0 ||
 		len(st.GetDreps()) > 0 || len(st.GetProposals()) > 0 || len(st.GetVotes()) > 0 ||
 		len(st.GetPparamProposals()) > 0 || len(st.GetGenesisDelegations()) > 0 ||
 		st.GetCommittee() != nil || st.GetEnactState() != nil {
-		return nil, unsupportedf("reward update, blocks, UTxO and governance state are not read")
+		return nil, unsupportedf("UTxO and governance state are not read")
 	}
 	if req.GetContext().GetEpoch() < 5 {
 		return nil, unsupportedf("epoch below 5 has no reward round to run")
@@ -67,13 +71,20 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 				return nil, err
 			}
 		}
-		if a.GetDrep() != nil || a.GetPointer() != nil {
-			return nil, unsupportedf("accounts: DRep delegation and pointers are not read")
+		if a.GetPointer() != nil {
+			return nil, unsupportedf("accounts: pointers are not read")
+		}
+		if a.GetDrep() != nil && a.GetDrep().GetTarget() == nil {
+			return nil, dispatch.BadRequest(errors.New("accounts: drep target unset"))
+		}
+		drep, err := delegation(a.GetDrep())
+		if err != nil {
+			return nil, dispatch.BadRequest(err)
 		}
 		tag, _ := credentialTag(a.GetCredential())
 		deposits[key] = a.GetDeposit()
 		in.Accounts = append(in.Accounts, dxoracle.NewEpochAccount{
-			Tag: tag, Key: a.GetCredential().GetHash(), Reward: a.GetBalance(), Pool: a.GetPoolId(),
+			Tag: tag, Key: a.GetCredential().GetHash(), Reward: a.GetBalance(), Pool: a.GetPoolId(), Drep: drep,
 		})
 	}
 	seenPools := map[string]struct{}{}
@@ -121,6 +132,12 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 			return nil, unsupportedf("accounts: stake of one credential exceeds Word64")
 		}
 	}
+	if req.GetRewardUpdate() != nil {
+		var rej *v1.Rejection
+		if in.Rewards, rej, err = pendingRewards(ctx, req); err != nil || rej != nil {
+			return &v1.EpochNewEpochResponse{Rejection: rej}, err
+		}
+	}
 	out, err := dxoracle.NewEpoch(ctx, in)
 	if err != nil {
 		return &v1.EpochNewEpochResponse{Rejection: dingoRejection("NEWEPOCH", err)}, nil
@@ -136,7 +153,7 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		}
 		cred := protoCredential(a.Tag, a.Key)
 		delta.AccountsChanged = append(delta.AccountsChanged, &v1.Account{
-			Credential: cred, Deposit: deposits[credKeyRewardsStake(cred)], Balance: a.Reward, PoolId: a.Pool,
+			Credential: cred, Deposit: deposits[credKeyRewardsStake(cred)], Balance: a.Reward, PoolId: a.Pool, Drep: drepProto(a.Drep),
 		})
 	}
 	sort.Slice(delta.AccountsChanged, func(i, j int) bool {
@@ -159,4 +176,19 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		}
 	}
 	return resp, nil
+}
+
+// drepProto is the DRep a delegation names, nil for none.
+func drepProto(d dxoracle.Delegation) *v1.DRep {
+	switch d.Type {
+	case dxoracle.DelegateAlwaysAbstain:
+		return &v1.DRep{Target: &v1.DRep_AlwaysAbstain{AlwaysAbstain: true}}
+	case dxoracle.DelegateAlwaysNoConfidence:
+		return &v1.DRep{Target: &v1.DRep_AlwaysNoConfidence{AlwaysNoConfidence: true}}
+	case dxoracle.DelegateKeyHash:
+		return &v1.DRep{Target: &v1.DRep_Credential{Credential: protoCredential(0, d.Key)}}
+	case dxoracle.DelegateScriptHash:
+		return &v1.DRep{Target: &v1.DRep_Credential{Credential: protoCredential(1, d.Key)}}
+	}
+	return nil
 }

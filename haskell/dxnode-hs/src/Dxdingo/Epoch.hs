@@ -71,7 +71,10 @@ import Cardano.Ledger.Shelley.LedgerState
   , lsCertStateL
   , lsUTxOStateL
   , utxosFeesL
+  , PulsingRewUpdate (..)
+  , RewardUpdate (..)
   )
+import Cardano.Ledger.Rewards (Reward (..), RewardType (..))
 import Cardano.Ledger.Shelley.Rules (votedFuturePParams, MIR, POOLREAP, SNAP, SnapEnv (..), ShelleyMirEvent (..), ShelleyPoolreapEvent (..), ShelleyPoolreapState (..))
 import Cardano.Ledger.Shelley.State (ShelleyEraAccounts (mkShelleyAccountState))
 import Cardano.Ledger.State
@@ -98,10 +101,10 @@ import qualified Data.ByteString.Lazy as BSL
 import Cardano.Ledger.Conway.Governance
   ( GovAction (InfoAction), GovActionId (..), GovActionIx (..), GovActionState (..)
   , ProposalProcedure (..), ConwayGovState, cgsProposalsL, proposalsAddAction )
-import Cardano.Ledger.Conway.State (vsDRepsL, certVStateL)
+import Cardano.Ledger.Conway.State (vsDRepsL, certVStateL, dRepDelegationAccountStateL)
 import Cardano.Ledger.Address (AccountAddress (..))
 import Cardano.Ledger.BaseTypes (Anchor (..), Url, textToUrl)
-import Cardano.Ledger.DRep (DRepState (..))
+import Cardano.Ledger.DRep (DRep (..), DRepState (..))
 import Cardano.Ledger.Hashes (unsafeMakeSafeHash)
 import Cardano.Ledger.TxIn (TxId (..))
 import Cardano.Ledger.Shelley.LedgerState (allObligations)
@@ -111,7 +114,9 @@ import Data.Functor.Identity (runIdentity)
 import qualified Data.ByteString as BS
 import qualified Data.List as L
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Ratio ((%))
+import Dxdingo.Convert (rational)
 import qualified Data.Sequence.Strict as StrictSeq
 import qualified Data.Set as Set
 import Data.Text (Text)
@@ -122,7 +127,9 @@ import Data.Word (Word64)
 import Cardano.Crypto.Hash.Class (hashFromBytes, hashToBytes)
 import Dxdingo.Answer (Answer, respond)
 import Dxdingo.Domain
+import Dxdingo.Rewards (rewardUpdateWith, sortRewards)
 import Dxdingo.Stake (credentialOf, poolHashOf, poolStateOf, currentPools)
+import qualified Proto.Dxdingo.V1.Rewards as RW
 import qualified Data.VMap as VMap
 import Cardano.Ledger.Conway.State (ConwayInstantStake (..))
 import Data.Foldable (foldlM)
@@ -157,7 +164,7 @@ cred c = do
     P.CREDENTIAL_KIND_SCRIPT -> maybe bad (pure . ScriptHashObj . ScriptHash) bytes
     _ -> badRequest "credential kind"
 
-credProto :: Credential Staking -> P.Credential
+credProto :: Credential r -> P.Credential
 credProto = \case
   KeyHashObj (KeyHash h) -> defMessage & #kind .~ P.CREDENTIAL_KIND_KEY & #hash .~ hashBytes h
   ScriptHashObj (ScriptHash h) -> defMessage & #kind .~ P.CREDENTIAL_KIND_SCRIPT & #hash .~ hashBytes h
@@ -895,47 +902,109 @@ conwayPParams (Just p) = do
     )
   pure (upgradePParams up base)
 
--- | NEWEPOCH over Conway state: the real rule runs SNAP, POOLREAP and the
--- Conway EPOCH step over a state built from the request, with no pending
--- reward update and an empty governance state. The delta holds what changed
--- in the accounts, the removed pools and the reserves and treasury; the
--- snapshots are the three after rotation.
+-- | The Globals of dingo's scratch ledger: the only ones a pending reward
+-- update is checked under, because dingo recomputes the round from them.
+newEpochGlobalsMatch :: Maybe S.Globals -> Bool
+newEpochGlobalsMatch mg =
+  let g = fromMaybe defMessage mg
+   in (rational =<< (g ^. #maybe'activeSlotCoeff)) == Just (1 % 20)
+        && g ^. #epochLength == 432000
+        && g ^. #maxLovelaceSupply == 45000000000000000
+        && g ^. #securityParam == 2160
+
+-- | The reward_update call whose answer a pending update must equal. The
+-- protocol version is the context's, else the parameters'. Registered
+-- credentials are the accounts.
+newEpochRewardCall :: E.EpochNewEpochRequest -> RW.RewardsRewardUpdateRequest
+newEpochRewardCall req =
+  let st = req ^. #state
+      pp = req ^. #maybe'pparams
+      pv = case req ^. #context . #maybe'protocolVersion of
+        Just v -> Just v
+        Nothing -> pp >>= (^. #maybe'protocolVersion)
+      pots = st ^. #pots
+   in defMessage
+        & #maybe'protocolVersion .~ pv
+        & #maybe'pparams .~ pp
+        & #maybe'globals .~ (req ^. #maybe'globals)
+        & #pots .~ (defMessage & #reserves .~ (pots ^. #reserves) & #treasury .~ (pots ^. #treasury) & #fees .~ (pots ^. #fees))
+        & #snapshots .~ (req ^. #snapshots)
+        & #pools .~ (st ^. #pools)
+        & #blocks .~ (req ^. #blocksPrevious)
+        & #registered .~ [a ^. #credential | a <- st ^. #accounts]
+
+-- | The reward update NEWEPOCH applies: the one the real calculation builds
+-- from the request's inputs, provided it equals the request's delivered
+-- update. Dingo cannot take an update it did not compute, so any other is
+-- UNSUPPORTED, as are zero, unconvertible or kind-less rewards, which dingo's
+-- list never holds.
+pendingRewardUpdate :: E.EpochNewEpochRequest -> Result (StrictMaybe PulsingRewUpdate)
+pendingRewardUpdate req = case req ^. #maybe'rewardUpdate of
+  Nothing -> pure SNothing
+  Just up -> do
+    unless (newEpochGlobalsMatch (req ^. #maybe'globals)) $ unsupported "reward_update needs the scratch ledger's globals"
+    (ru, got) <- rewardUpdateWith (newEpochRewardCall req)
+    let differs = unsupported "reward_update differs from the update the inputs produce"
+    rs' <- either (const differs) pure (mapM rewardOf (up ^. #rewards))
+    when (any (\r -> r ^. #amount == 0) (up ^. #rewards)) differs
+    unless (got ^. #update == (up & #rewards .~ sortRewards rs')) differs
+    pure (SJust (Complete ru))
+  where
+    rewardOf r = do
+      c <- maybe (badRequest "credential missing") (credentialOf "reward_update") (r ^. #maybe'credential)
+      kh <- poolHashOf "reward_update" (r ^. #poolId)
+      ty <- case r ^. #kind of
+        S.REWARD_KIND_LEADER -> pure LeaderReward
+        S.REWARD_KIND_MEMBER -> pure MemberReward
+        _ -> badRequest "reward kind"
+      pure (c, Reward ty kh (Coin (toInteger (r ^. #amount))))
+
+-- | NEWEPOCH over Conway state: the real rule applies the pending reward
+-- update, then runs SNAP, POOLREAP and the Conway EPOCH step over a state
+-- built from the request, with an empty governance state. The delta holds
+-- what changed in the accounts, the removed pools and the reserves and
+-- treasury; the snapshots are the three after rotation.
 --
--- Domain, shared with dxnode-go: Conway only; a reward update, previous-epoch
--- blocks, a UTxO table or governance state are UNSUPPORTED, and the fee,
--- deposit and donation pots are not reported because dingo keeps none.
+-- Domain, shared with dxnode-go: Conway only. A reward_update is accepted when
+-- the real reward calculation produces it from blocks_previous, the GO
+-- snapshot, the pools and pots (pots.fees is the fee pot it pays out), under
+-- the scratch ledger's Globals; blocks_previous is read only with a
+-- reward_update. A UTxO table or governance state are UNSUPPORTED, and the
+-- fee, deposit and donation pots are not reported because dingo keeps none.
 newEpoch :: E.EpochNewEpochRequest -> Result E.EpochNewEpochResponse
 newEpoch req = do
   unless (req ^. #context . #era == P.ERA_CONWAY) $ unsupported "NEWEPOCH is answered for Conway only"
   let st = req ^. #state
   when
-    ( isJust (req ^. #maybe'rewardUpdate) || not (null (req ^. #blocksPrevious)) || not (null (st ^. #utxo))
+    ( not (null (st ^. #utxo))
         || not (null (st ^. #dreps)) || not (null (st ^. #proposals)) || not (null (st ^. #votes))
         || not (null (st ^. #pparamProposals)) || not (null (st ^. #genesisDelegations))
         || isJust (st ^. #maybe'committee) || isJust (st ^. #maybe'enactState)
     )
-    $ unsupported "reward update, blocks, UTxO and governance state are not read"
+    $ unsupported "UTxO and governance state are not read"
   let epoch = req ^. #context . #epoch
   when (epoch < 5) $ unsupported "epoch below 5 has no reward round to run"
   pp <- conwayPParams (req ^. #maybe'pparams)
   priors <- priorSnapshots (req ^. #snapshots)
   accts <- foldlM addAccount Map.empty (st ^. #accounts)
-  let delegatorsOf pid = Set.fromList [c | (c, (_, _, Just p)) <- Map.toList accts, p == pid]
+  let delegatorsOf pid = Set.fromList [c | (c, (_, _, Just p, _)) <- Map.toList accts, p == pid]
   forM_ (st ^. #pools) $ \p -> do
     unless (p ^. #stage == S.POOL_STAGE_CURRENT) $ unsupported "pools: stage is not current"
   pools <- traverse (mkPool delegatorsOf) (st ^. #pools)
   when (Map.size (Map.fromList [(pid, ()) | (pid, _, _) <- pools]) /= length pools) $ badRequest "pools: repeated pool"
   instant <- foldlM addInstant Map.empty (req ^. #instantStake)
-  let totals = Map.unionWith (+) instant (Map.map (\(_, b, _) -> toInteger b) accts)
+  let totals = Map.unionWith (+) instant (Map.map (\(_, b, _, _) -> toInteger b) accts)
   when (any (> toInteger (maxBound :: Word64)) (Map.elems totals)) $ unsupported "stake of one credential exceeds Word64"
+  pending <- pendingRewardUpdate req
   let pots = st ^. #pots
       accountMap =
         Map.foldrWithKey
-          ( \c (dep, bal, mp) ->
+          ( \c (dep, bal, mp, dr) ->
               addAccountState c
                 ( mkConwayAccountState (CompactCoin dep)
                     & balanceAccountStateL .~ CompactCoin bal
                     & stakePoolDelegationAccountStateL .~ mp
+                    & dRepDelegationAccountStateL .~ dr
                 )
           )
           def
@@ -949,6 +1018,7 @@ newEpoch req = do
         (def :: LedgerState ConwayEra)
           & lsCertStateL .~ cs
           & lsUTxOStateL . utxosDonationL .~ Coin (toInteger (pots ^. #donations))
+          & lsUTxOStateL . utxosFeesL .~ maybe (Coin 0) (const (Coin (toInteger (pots ^. #fees)))) (req ^. #maybe'rewardUpdate)
           & lsUTxOStateL . instantStakeL .~ ConwayInstantStake (Map.map (CompactCoin . fromInteger) (Map.filter (> 0) instant))
       snapOf k = snapshotOfRows (Map.findWithDefault [] k priors)
       mark0 = snapOf S.SNAPSHOT_KIND_MARK
@@ -960,7 +1030,7 @@ newEpoch req = do
           & chainAccountStateL .~ ChainAccountState (Coin (toInteger (pots ^. #treasury))) (Coin (toInteger (pots ^. #reserves)))
           & curPParamsEpochStateL .~ pp
           & prevPParamsEpochStateL .~ pp
-      nes0 = (def :: NewEpochState ConwayEra) {nesEL = EpochNo (epoch - 1), nesEs = es0, nesPd = calculatePoolDistr mark0}
+      nes0 = (def :: NewEpochState ConwayEra) {nesEL = EpochNo (epoch - 1), nesEs = es0, nesPd = calculatePoolDistr mark0, nesRu = pending}
       opts = ApplySTSOpts {asoAssertions = AssertionsOff, asoValidation = ValidateNone, asoEvents = EPReturn}
       ((nes1, _failures), _events) =
         runIdentity . (`runReaderT` globals) $
@@ -973,7 +1043,8 @@ newEpoch req = do
         [ defMessage & #credential .~ credProto c & #deposit .~ unCompactCoin (a ^. depositAccountStateL)
             & #balance .~ unCompactCoin (a ^. balanceAccountStateL)
             & #poolId .~ maybe BS.empty (\(KeyHash h) -> hashToBytes h) (a ^. stakePoolDelegationAccountStateL)
-        | (c, (_, bal, mp)) <- Map.toList accts
+            & #maybe'drep .~ (drepToProto <$> (a ^. dRepDelegationAccountStateL))
+        | (c, (_, bal, mp, _)) <- Map.toList accts
         , Just a <- [Map.lookup c acctsAfter]
         , unCompactCoin (a ^. balanceAccountStateL) /= bal || a ^. stakePoolDelegationAccountStateL /= mp
         ]
@@ -1005,11 +1076,34 @@ newEpoch req = do
       c <- credentialOf "accounts" (a ^. #credential)
       when (c `Map.member` acc) $ badRequest "accounts: repeated credential"
       mp <- if BS.null (a ^. #poolId) then pure Nothing else Just <$> poolHashOf "accounts" (a ^. #poolId)
-      when (isJust (a ^. #maybe'drep) || isJust (a ^. #maybe'pointer)) $ unsupported "accounts: DRep delegation and pointers are not read"
-      pure (Map.insert c (a ^. #deposit, a ^. #balance, mp) acc)
+      when (isJust (a ^. #maybe'pointer)) $ unsupported "accounts: pointers are not read"
+      dr <- case a ^. #maybe'drep of
+        Nothing -> pure Nothing
+        Just d -> Just <$> drepFromProto d
+      pure (Map.insert c (a ^. #deposit, a ^. #balance, mp, dr) acc)
     addInstant acc e = do
       c <- credentialOf "instant_stake" (e ^. #credential)
       pure (Map.insertWith (+) c (toInteger (e ^. #amount)) acc)
+
+-- | The DRep a request account delegates to. An unset target is malformed.
+drepFromProto :: P.DRep -> Result DRep
+drepFromProto d = case d ^. #maybe'target of
+  Nothing -> badRequest "accounts: drep target unset"
+  Just (P.DRep'AlwaysAbstain _) -> pure DRepAlwaysAbstain
+  Just (P.DRep'AlwaysNoConfidence _) -> pure DRepAlwaysNoConfidence
+  Just (P.DRep'Credential c) -> DRepCredential <$> cred' c
+  where
+    cred' c = case c ^. #kind of
+      P.CREDENTIAL_KIND_KEY -> maybe bad (pure . KeyHashObj . KeyHash) (hashFromBytes (c ^. #hash))
+      P.CREDENTIAL_KIND_SCRIPT -> maybe bad (pure . ScriptHashObj . ScriptHash) (hashFromBytes (c ^. #hash))
+      _ -> badRequest "credential kind"
+    bad = badRequest "credential hash must be 28 bytes"
+
+drepToProto :: DRep -> P.DRep
+drepToProto = \case
+  DRepAlwaysAbstain -> defMessage & #alwaysAbstain .~ True
+  DRepAlwaysNoConfidence -> defMessage & #alwaysNoConfidence .~ True
+  DRepCredential c -> defMessage & #credential .~ credProto c
 
 dispatch :: Call'Request -> Maybe Answer
 dispatch = \case

@@ -4,6 +4,7 @@
 module Test.Epoch (tests) where
 
 import qualified Data.ByteString as BS
+import Data.Maybe (isNothing)
 import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import Lens.Micro ((&), (.~), (^.), (%~))
@@ -94,6 +95,22 @@ tests =
   , ("new epoch: UTxO is UNSUPPORTED", newErr (newReq & #state . #utxo .~ [defMessage]) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("new epoch: repeated account is BAD_REQUEST", newErr (newReq & #state . #accounts %~ (\as -> as ++ take 1 as)) == HARNESS_ERROR_CODE_BAD_REQUEST)
   , ("new epoch: short pool id is BAD_REQUEST", newErr (newReq & #state . #pools %~ (\(x : xs) -> (x & #poolId .~ BS.pack [1]) : xs)) == HARNESS_ERROR_CODE_BAD_REQUEST)
+  , ("new epoch: pointer is UNSUPPORTED", newErr (newReq & #state . #accounts %~ (\(x : xs) -> (x & #pointer .~ defMessage) : xs)) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch: drep target unset is BAD_REQUEST", newErr (newReq & #state . #accounts %~ (\(x : xs) -> (x & #drep .~ defMessage) : xs)) == HARNESS_ERROR_CODE_BAD_REQUEST)
+  , ("new epoch: a DRep delegation is kept and reported on the changed row", all (\d -> drepRow d == Just d) drepTargets)
+  , ("new epoch: an account without a delegation reports none", isNothing (drepRowOf (newReq & #state . #accounts %~ (\(x : y : zs) -> x : y : zs)) 0 ^. #maybe'drep))
+  , ("new epoch reward: leader and member are credited", rwAccounts == [(1, 18461, BS.empty), (2, 1827691, h 0xa0)])
+  , ("new epoch reward: pots follow the update", (rwDelta ^. #reservesDelta, rwDelta ^. #treasuryDelta) == (-601846152, 600000000))
+  , ("new epoch reward: the credited reward is in the new mark", rwRows == [(2, 1827691, 0xa0)])
+  , ("new epoch reward: an update the inputs do not produce is UNSUPPORTED", newErr (rewardReq & #rewardUpdate . #rewards %~ (\(x : xs) -> (x & #amount %~ (+ 1)) : xs)) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: a different delta_t is UNSUPPORTED", newErr (rewardReq & #rewardUpdate . #deltaT %~ (+ 1)) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: other globals are UNSUPPORTED", newErr (rewardReq & #globals . #epochLength .~ 100) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: no globals is UNSUPPORTED", newErr (rewardReq & #maybe'globals .~ Nothing) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: no blocks is UNSUPPORTED", newErr (rewardReq & #blocksPrevious .~ []) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: blocks of a pool not in state are UNSUPPORTED", newErr (rewardReq & #blocksPrevious . traverse . #poolId .~ h 0xb0) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: a zero reward is UNSUPPORTED", newErr (rewardReq & #rewardUpdate . #rewards %~ (++ [defMessage & #credential .~ cred 1 & #poolId .~ h 0xa0 & #kind .~ S.REWARD_KIND_LEADER])) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: a reward without a kind is UNSUPPORTED", newErr (rewardReq & #rewardUpdate . #rewards %~ (\(x : xs) -> (x & #kind .~ S.REWARD_KIND_UNSPECIFIED) : xs)) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch reward: blocks without an update leave the boundary alone", null (blocksOnlyDelta ^. #accountsChanged) && (blocksOnlyDelta ^. #reservesDelta, blocksOnlyDelta ^. #treasuryDelta) == (0, 0))
   , ("divergence: snapshot rotate: stake delegated to an unregistered pool is active stake", unregisteredPoolStake == Just 42)
   , ("snapshot rotate: stake overflow is UNSUPPORTED", rotateErr (rotateReq & #instantStake %~ (++ [defMessage & #credential .~ cred 4 & #amount .~ maxBound])) == HARNESS_ERROR_CODE_UNSUPPORTED)
   ]
@@ -118,6 +135,43 @@ tests =
     newAccounts = [(BS.head (a ^. #credential . #hash), a ^. #balance, a ^. #poolId) | a <- newDelta ^. #accountsChanged]
     newRows k = [(BS.head (e ^. #credential . #hash), e ^. #amount, BS.head (e ^. #poolId)) | e <- newReply ^. #epochNewEpoch . #snapshots, e ^. #snapshot == k]
     newErr r = call (#epochNewEpoch .~ r) ^. #error . #code
+    drepTargets :: [P.DRep]
+    drepTargets =
+      [ defMessage & #alwaysAbstain .~ True
+      , defMessage & #alwaysNoConfidence .~ True
+      , defMessage & #credential .~ cred 0xd1
+      , defMessage & #credential .~ (cred 0xd2 & #kind .~ P.CREDENTIAL_KIND_SCRIPT)
+      ]
+    drepRowOf r i = ((call (#epochNewEpoch .~ r)) ^. #epochNewEpoch . #delta . #accountsChanged) !! i
+    drepRow d = drepRowOf (newReq & #state . #accounts %~ (\(x : y : zs) -> x : (y & #drep .~ d) : zs)) 1 ^. #maybe'drep
+    -- A pending reward round, the case of dxnode-go
+    -- cmd/dxnode-go/epoch_new_epoch_test.go. Pool a0 holds all 4.4999e13
+    -- active stake (sigma = 1/1000 of the 4.4999e16 circulation) and made all
+    -- 21600 blocks, the expected count for f = 1/20 over 432000 slots, so
+    -- eta = 1. With rho = 3/1000 and tau = 1/5 on reserves of 10^12: deltaR1 =
+    -- 3_000_000_000, the treasury cut is 600_000_000 and the pool pot
+    -- 2_400_000_000. maxPool = floor(2.4e9 / 1.3 * 0.001) = 1_846_153 at
+    -- performance 1; with margin 1/100, cost 0 and no owners the leader gets
+    -- floor(1_846_153 / 100) = 18_461 and the member floor(1_846_153 * 99 /
+    -- 100) = 1_827_691. The 1 left over stays in reserves: deltaR = -3e9 +
+    -- (2.4e9 - 1_846_152).
+    rewardReq :: E.EpochNewEpochRequest
+    rewardReq = newReq
+      & #globals .~ (defMessage & #epochLength .~ 432000 & #securityParam .~ 2160 & #maxLovelaceSupply .~ 45000000000000000 & #activeSlotCoeff .~ rat ("1", "20"))
+      & #state . #accounts .~ [defMessage & #credential .~ cred 1, defMessage & #credential .~ cred 2 & #poolId .~ h 0xa0]
+      & #state . #pools .~ [pool 0xa0 1 11 & #maybe'retiringEpoch .~ Nothing & #margin .~ rat ("1", "100")]
+      & #state . #pots .~ (defMessage & #reserves .~ 1000000000000 & #treasury .~ 1000000)
+      & #snapshots .~ [rotEntry S.SNAPSHOT_KIND_GO 2 44999000000000 0xa0]
+      & #instantStake .~ []
+      & #blocksPrevious .~ [defMessage & #poolId .~ h 0xa0 & #count .~ 21600]
+      & #rewardUpdate .~ (defMessage & #deltaR .~ (-601846152) & #deltaT .~ 600000000
+          & #rewards .~ [ defMessage & #credential .~ cred 1 & #poolId .~ h 0xa0 & #kind .~ S.REWARD_KIND_LEADER & #amount .~ 18461
+                        , defMessage & #credential .~ cred 2 & #poolId .~ h 0xa0 & #kind .~ S.REWARD_KIND_MEMBER & #amount .~ 1827691 ])
+    rwReply = call (#epochNewEpoch .~ rewardReq)
+    rwDelta = rwReply ^. #epochNewEpoch . #delta
+    rwAccounts = [(BS.head (a ^. #credential . #hash), a ^. #balance, a ^. #poolId) | a <- rwDelta ^. #accountsChanged]
+    rwRows = [(BS.head (e ^. #credential . #hash), e ^. #amount, BS.head (e ^. #poolId)) | e <- rwReply ^. #epochNewEpoch . #snapshots, e ^. #snapshot == S.SNAPSHOT_KIND_MARK]
+    blocksOnlyDelta = call (#epochNewEpoch .~ (rewardReq & #maybe'rewardUpdate .~ Nothing)) ^. #epochNewEpoch . #delta
     -- Same case as dxnode-go cmd/dxnode-go/epoch_snapshot_test.go.
     rotEntry k c a p = defMessage & #snapshot .~ k & #credential .~ cred c & #amount .~ a & #poolId .~ h p :: S.SnapshotEntry
     rotateReq :: E.EpochSnapshotRotateRequest
