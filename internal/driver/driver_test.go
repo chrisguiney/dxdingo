@@ -16,7 +16,9 @@ import (
 
 type local struct{ r *dispatch.Registry }
 
-func (l local) Call(ctx context.Context, c *v1.Call) (*v1.Reply, error) { return l.r.Handle(ctx, c), nil }
+func (l local) Call(ctx context.Context, c *v1.Call) (*v1.Reply, error) {
+	return l.r.Handle(ctx, c), nil
+}
 
 func feeNode(offset uint64) local {
 	r := dispatch.NewRegistry()
