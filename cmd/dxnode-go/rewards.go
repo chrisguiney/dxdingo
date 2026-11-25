@@ -101,3 +101,10 @@ func apparentPerformance(_ context.Context, req *v1.RewardsApparentPerformanceRe
 	}
 	return &v1.RewardsApparentPerformanceResponse{Performance: convert.RatProto(got)}, nil
 }
+
+func registerRewards(r *dispatch.Registry) {
+	dispatch.Register(r, memberReward)
+	dispatch.Register(r, leaderReward)
+	dispatch.Register(r, maxPool)
+	dispatch.Register(r, apparentPerformance)
+}

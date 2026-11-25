@@ -2,3 +2,7 @@
 /gen/
 /haskell/dist-newstyle/
 /haskell/dxnode-hs/gen/
+/go.work
+/go.work.sum
+/local.mk
+/.worktrees/

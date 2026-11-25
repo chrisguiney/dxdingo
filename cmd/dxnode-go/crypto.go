@@ -106,3 +106,10 @@ func payloadCredential(p lcommon.AddressPayload) *v1.Credential {
 	}
 	return nil
 }
+
+func registerCrypto(r *dispatch.Registry) {
+	dispatch.Register(r, vkeyWitness)
+	dispatch.Register(r, vrfVerify)
+	dispatch.Register(r, kesVerify)
+	dispatch.Register(r, addressDecode)
+}

@@ -1,71 +1,100 @@
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Routes envelope calls to reference implementations. Functions without
--- a handler reply UNIMPLEMENTED.
+-- | Routes envelope calls to the area modules. Functions no area answers
+-- reply UNIMPLEMENTED.
 module Dxdingo.Dispatch
   ( handle
+  , handleWith
   , handleBytes
   , implemented
   ) where
 
 import Data.ByteString (ByteString)
+import Data.Foldable (asum)
 import Data.ProtoLens (decodeMessage, defMessage, encodeMessage)
 import Data.ProtoLens.Labels ()
 import Data.Text (Text)
 import qualified Data.Text as T
-import Lens.Micro (ASetter', (&), (.~), (^.))
+import Dxdingo.Answer (Answer)
+import qualified Dxdingo.Codec as Codec
+import qualified Dxdingo.Rule as Rule
+import qualified Dxdingo.Fee as Fee
+import qualified Dxdingo.Plutus as Plutus
+import qualified Dxdingo.Rewards as Rewards
+import qualified Dxdingo.Stake as Stake
+import qualified Dxdingo.Epoch as Epoch
+import qualified Dxdingo.Gov as Gov
+import qualified Dxdingo.Praos as Praos
+import qualified Dxdingo.Chainsel as Chainsel
+import qualified Dxdingo.Time as Time
+import qualified Dxdingo.Byron as Byron
+import qualified Dxdingo.Crypto as Crypto
+import qualified Dxdingo.Net as Net
+import Lens.Micro ((&), (.~), (^.))
 import Proto.Dxdingo.V1.Envelope
   ( Call
   , Call'Request (..)
   , HarnessErrorCode (..)
   , Reply
   )
-import qualified Dxdingo.Crypto as Crypto
-import qualified Dxdingo.Praos as Praos
-import qualified Dxdingo.Rewards as Rewards
 import Proto.Dxdingo.V1.Meta (MetaInfoResponse)
+
+areas :: [Call'Request -> Maybe Answer]
+areas =
+  [ Codec.dispatch
+  , Rule.dispatch
+  , Fee.dispatch
+  , Plutus.dispatch
+  , Rewards.dispatch
+  , Stake.dispatch
+  , Epoch.dispatch
+  , Gov.dispatch
+  , Praos.dispatch
+  , Chainsel.dispatch
+  , Time.dispatch
+  , Byron.dispatch
+  , Crypto.dispatch
+  , Net.dispatch
+  ]
 
 -- | Envelope field names this node handles.
 implemented :: [Text]
 implemented =
-  [ "meta_info"
-  , "rewards_member_reward"
-  , "rewards_leader_reward"
-  , "rewards_max_pool"
-  , "rewards_apparent_performance"
-  , "crypto_vkey_witness"
-  , "crypto_vrf_verify"
-  , "crypto_kes_verify"
-  , "crypto_address_decode"
-  , "praos_leader_check"
-  , "praos_nonce_epoch"
-  , "tpraos_overlay_schedule"
-  ]
+  "meta_info"
+    : concat
+      [ Codec.implemented
+      , Rule.implemented
+      , Fee.implemented
+      , Plutus.implemented
+      , Rewards.implemented
+      , Stake.implemented
+      , Epoch.implemented
+      , Gov.implemented
+      , Praos.implemented
+      , Chainsel.implemented
+      , Time.implemented
+      , Byron.implemented
+      , Crypto.implemented
+      , Net.implemented
+      ]
 
 handle :: Call -> Reply
-handle call = case call ^. #maybe'request of
+handle = handleWith areas
+
+-- | 'handle' over an explicit list of areas.
+handleWith :: [Call'Request -> Maybe Answer] -> Call -> Reply
+handleWith as call = case call ^. #maybe'request of
   Nothing -> harnessError HARNESS_ERROR_CODE_BAD_REQUEST "call has no request"
   Just (Call'MetaInfo _) -> base & #metaInfo .~ metaInfo
-  Just (Call'RewardsMemberReward q) -> answer #rewardsMemberReward (Rewards.memberReward q)
-  Just (Call'RewardsLeaderReward q) -> answer #rewardsLeaderReward (Rewards.leaderReward q)
-  Just (Call'RewardsMaxPool q) -> answer #rewardsMaxPool (Rewards.maxPool q)
-  Just (Call'RewardsApparentPerformance q) -> answer #rewardsApparentPerformance (Rewards.apparentPerformance q)
-  Just (Call'CryptoVkeyWitness q) -> answer #cryptoVkeyWitness (Crypto.vkeyWitness q)
-  Just (Call'CryptoVrfVerify q) -> answer #cryptoVrfVerify (Crypto.vrfVerify q)
-  Just (Call'CryptoKesVerify q) -> answer #cryptoKesVerify (Crypto.kesVerify q)
-  Just (Call'CryptoAddressDecode q) -> answer #cryptoAddressDecode (Crypto.addressDecode q)
-  Just (Call'PraosLeaderCheck q) -> answer #praosLeaderCheck (Praos.leaderCheck q)
-  Just (Call'PraosNonceEpoch q) -> answer #praosNonceEpoch (Praos.nonceEpoch q)
-  Just (Call'TpraosOverlaySchedule q) -> answer #tpraosOverlaySchedule (Praos.overlaySchedule q)
-  Just _ -> harnessError HARNESS_ERROR_CODE_UNIMPLEMENTED "not implemented by dxnode-hs"
+  Just req -> case asum (map ($ req) as) of
+    Just answer -> answer base
+    Nothing -> harnessError HARNESS_ERROR_CODE_UNIMPLEMENTED "not implemented by dxnode-hs"
   where
     base :: Reply
     base = defMessage & #id .~ (call ^. #id)
     harnessError code msg =
       base & #error .~ (defMessage & #code .~ code & #message .~ msg)
-    answer :: ASetter' Reply a -> Either (HarnessErrorCode, Text) a -> Reply
-    answer field = either (uncurry harnessError) (\r -> base & field .~ r)
 
 metaInfo :: MetaInfoResponse
 metaInfo =

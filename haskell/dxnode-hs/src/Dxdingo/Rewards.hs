@@ -1,9 +1,12 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Reward functions, answered by cardano-ledger-shelley and -core.
 module Dxdingo.Rewards
-  ( memberReward
+  ( dispatch
+  , implemented
+  , memberReward
   , leaderReward
   , maxPool
   , apparentPerformance
@@ -24,6 +27,9 @@ import Data.Ratio ((%))
 import qualified Data.Text as T
 import Data.Word (Word16, Word64)
 import Dxdingo.Domain
+import Dxdingo.Answer (Answer, respond)
+import Proto.Dxdingo.V1.Envelope (Call'Request (..))
+import Data.Text (Text)
 import Lens.Micro ((&), (.~), (^.))
 import Proto.Dxdingo.V1.Rewards
 
@@ -103,3 +109,19 @@ coinWord64 (Coin c)
   | c < 0 || c > toInteger (maxBound :: Word64) =
       internal ("coin out of Word64 range: " <> T.pack (show c))
   | otherwise = pure (fromInteger c)
+
+dispatch :: Call'Request -> Maybe Answer
+dispatch = \case
+  Call'RewardsMemberReward q -> Just (respond #rewardsMemberReward (memberReward q))
+  Call'RewardsLeaderReward q -> Just (respond #rewardsLeaderReward (leaderReward q))
+  Call'RewardsMaxPool q -> Just (respond #rewardsMaxPool (maxPool q))
+  Call'RewardsApparentPerformance q -> Just (respond #rewardsApparentPerformance (apparentPerformance q))
+  _ -> Nothing
+
+implemented :: [Text]
+implemented =
+  [ "rewards_member_reward"
+  , "rewards_leader_reward"
+  , "rewards_max_pool"
+  , "rewards_apparent_performance"
+  ]

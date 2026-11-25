@@ -1,6 +1,9 @@
+# Optional untracked per-checkout settings (HS_DEV_TAG, DX_THIRD_PARTY).
+-include local.mk
+
 GO    ?= go
 CABAL ?= cabal
-BUF   := $(GO) tool buf
+BUF   ?= $(GO) tool buf
 
 # Submodule pins stamped into dxnode-go's meta info, e.g. dingo@ae74b09219.
 # Override when .git is unavailable (Docker builds pass it as a build arg).
@@ -12,7 +15,7 @@ GO_GEN := gen/go
 
 .PHONY: all proto proto-go proto-hs lint-proto fmt-proto tools-hs \
         build build-go build-hs test test-go test-hs smoke \
-        submodules print-revisions docker docker-shell hs-dev-image docker-test-hs clean
+        submodules print-revisions docker docker-shell hs-dev-image docker-test-hs docker-replay-dev clean
 
 all: build
 
@@ -89,22 +92,32 @@ docker-shell:
 	docker build --target toolchain -t dxdingo-toolchain .
 	docker run --rm -it -v $(CURDIR):/src -w /src dxdingo-toolchain bash
 
-# Fast Haskell loop: build and test dxnode-hs from the working tree in the
-# deps image. Named volumes keep the cabal store (seeded from the image),
-# build tree, Go module cache and Linux tools out of the host checkout.
+# Fast loop in the hs-tools image. The cabal store and Go module cache are
+# shared volumes; HS_DEV_TAG separates the build tree and binaries of
+# concurrent checkouts. DX_THIRD_PARTY is mounted read-only at its own path so
+# a go.work pointing at submodule worktrees resolves inside the container.
+HS_DEV_TAG     ?= main
+DX_THIRD_PARTY ?= $(CURDIR)/third_party
 HS_DEV_RUN = docker run --rm \
 	-v $(CURDIR):/work -w /work \
+	-v $(DX_THIRD_PARTY):$(DX_THIRD_PARTY):ro \
 	-v dxdingo-cabal-store:/root/.local/state/cabal \
-	-v dxdingo-hs-dist:/work/haskell/dist-newstyle \
-	-v dxdingo-hs-bin:/work/bin \
 	-v dxdingo-go-mod:/root/go \
-	dxdingo-hsdeps
+	-v dxdingo-go-cache:/root/.cache/go-build \
+	-v dxdingo-hs-dist-$(HS_DEV_TAG):/work/haskell/dist-newstyle \
+	-v dxdingo-hs-bin-$(HS_DEV_TAG):/work/bin \
+	dxdingo-hstools
 
 hs-dev-image:
-	docker build -q --target hs-deps -t dxdingo-hsdeps . >/dev/null
+	docker build -q --target hs-tools -t dxdingo-hstools . >/dev/null
 
+# Build and test dxnode-hs.
 docker-test-hs: hs-dev-image
-	$(HS_DEV_RUN) sh -c 'cp -n /src/bin/proto-lens-protoc bin/ && make test-hs'
+	$(HS_DEV_RUN) sh -c 'cp -n /src/bin/proto-lens-protoc bin/ && make test-hs BUF=buf'
+
+# Build both nodes and the driver, then replay the corpus across them.
+docker-replay-dev: hs-dev-image
+	$(HS_DEV_RUN) sh -c 'cp -n /src/bin/proto-lens-protoc bin/ && make build BUF=buf && bin/dxfuzz -a bin/dxnode-go -b bin/dxnode-hs replay corpus'
 
 clean:
 	rm -rf bin gen/go haskell/dxnode-hs/gen haskell/dist-newstyle

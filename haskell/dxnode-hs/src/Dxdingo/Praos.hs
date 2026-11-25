@@ -1,10 +1,13 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Leader eligibility, epoch nonce and the TPraos overlay schedule,
 -- answered by cardano-protocol-tpraos and cardano-ledger-core.
 module Dxdingo.Praos
-  ( leaderCheck
+  ( dispatch
+  , implemented
+  , leaderCheck
   , nonceEpoch
   , overlaySchedule
   ) where
@@ -23,6 +26,9 @@ import Data.Ratio ((%))
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import Dxdingo.Domain
+import Dxdingo.Answer (Answer, respond)
+import Proto.Dxdingo.V1.Envelope (Call'Request (..))
+import Data.Text (Text)
 import Lens.Micro ((&), (.~), (^.))
 import Proto.Dxdingo.V1.Praos
 import qualified Proto.Dxdingo.V1.Types as P
@@ -91,3 +97,17 @@ overlaySchedule req = do
         ActiveSlot (KeyHash h) ->
           defMessage & #kind .~ OVERLAY_SLOT_KIND_ACTIVE & #genesisKeyHash .~ hashToBytes h
         NonActiveSlot -> defMessage & #kind .~ OVERLAY_SLOT_KIND_NON_ACTIVE
+
+dispatch :: Call'Request -> Maybe Answer
+dispatch = \case
+  Call'PraosLeaderCheck q -> Just (respond #praosLeaderCheck (leaderCheck q))
+  Call'PraosNonceEpoch q -> Just (respond #praosNonceEpoch (nonceEpoch q))
+  Call'TpraosOverlaySchedule q -> Just (respond #tpraosOverlaySchedule (overlaySchedule q))
+  _ -> Nothing
+
+implemented :: [Text]
+implemented =
+  [ "praos_leader_check"
+  , "praos_nonce_epoch"
+  , "tpraos_overlay_schedule"
+  ]

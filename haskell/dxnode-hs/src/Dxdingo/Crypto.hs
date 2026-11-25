@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -6,7 +7,9 @@
 -- | Crypto primitives and address decoding, answered by cardano-base and
 -- cardano-ledger-core.
 module Dxdingo.Crypto
-  ( vkeyWitness
+  ( dispatch
+  , implemented
+  , vkeyWitness
   , vrfVerify
   , kesVerify
   , addressDecode
@@ -38,6 +41,9 @@ import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import qualified Data.Text as T
 import Dxdingo.Domain
+import Dxdingo.Answer (Answer, respond)
+import Proto.Dxdingo.V1.Envelope (Call'Request (..))
+import Data.Text (Text)
 import Lens.Micro ((&), (.~), (^.))
 import Proto.Dxdingo.V1.Crypto
 import qualified Proto.Dxdingo.V1.Types as P
@@ -141,3 +147,19 @@ credential (KeyHashObj (KeyHash h)) =
   defMessage & #kind .~ P.CREDENTIAL_KIND_KEY & #hash .~ hashToBytes h
 credential (ScriptHashObj (ScriptHash h)) =
   defMessage & #kind .~ P.CREDENTIAL_KIND_SCRIPT & #hash .~ hashToBytes h
+
+dispatch :: Call'Request -> Maybe Answer
+dispatch = \case
+  Call'CryptoVkeyWitness q -> Just (respond #cryptoVkeyWitness (vkeyWitness q))
+  Call'CryptoVrfVerify q -> Just (respond #cryptoVrfVerify (vrfVerify q))
+  Call'CryptoKesVerify q -> Just (respond #cryptoKesVerify (kesVerify q))
+  Call'CryptoAddressDecode q -> Just (respond #cryptoAddressDecode (addressDecode q))
+  _ -> Nothing
+
+implemented :: [Text]
+implemented =
+  [ "crypto_vkey_witness"
+  , "crypto_vrf_verify"
+  , "crypto_kes_verify"
+  , "crypto_address_decode"
+  ]

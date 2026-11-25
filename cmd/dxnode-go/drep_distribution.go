@@ -165,3 +165,7 @@ func sortDRepStakes(ds []*v1.DRepStake) {
 func dingoRejection(rule string, err error) *v1.Rejection {
 	return &v1.Rejection{Failures: []*v1.Failure{{Rule: rule, Name: "DingoError", Detail: err.Error()}}}
 }
+
+func registerStake(r *dispatch.Registry) {
+	dispatch.Register(r, drepDistribution)
+}

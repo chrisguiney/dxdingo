@@ -66,21 +66,26 @@ RUN git clone https://github.com/supranational/blst && cd blst \
 
 WORKDIR /src
 
-# Haskell dependencies and proto-lens-protoc, cached on the cabal files.
-FROM toolchain AS hs-deps
+# hs-tools is the dev image for `make docker-test-hs`: the toolchain plus
+# proto-lens-protoc and a buf binary, without project dependencies (those
+# live in the dev container's cabal store volume).
+FROM toolchain AS hs-tools
+ARG BUF_VERSION=v1.74.0
 COPY haskell/cabal.project haskell/
 COPY haskell/dxnode-hs/dxnode-hs.cabal haskell/dxnode-hs/
 COPY Makefile ./
-# cabal update runs inside the project so it also fetches the CHaP index
-# that cabal.project declares.
-RUN cd haskell && cabal update && cd .. \
-    && make tools-hs \
-    && cd haskell && cabal build --only-dependencies all
+RUN --mount=type=cache,id=dxdingo-cabal-store,target=/root/.local/state/cabal \
+    cd haskell && cabal update && cd .. && make tools-hs
+RUN GOBIN=/usr/local/bin go install github.com/bufbuild/buf/cmd/buf@${BUF_VERSION}
 
-FROM hs-deps AS build
+# The cabal store is a BuildKit cache mount, so a dependency change rebuilds
+# only what changed instead of the whole store.
+FROM hs-tools AS build
 ARG REVISIONS=
 COPY . .
-RUN make build test smoke REVISIONS=${REVISIONS}
+RUN --mount=type=cache,id=dxdingo-cabal-store,target=/root/.local/state/cabal \
+    --mount=type=cache,id=dxdingo-go-mod,target=/root/go/pkg/mod \
+    make build test smoke REVISIONS=${REVISIONS}
 
 FROM debian:bookworm-slim AS runtime
 RUN apt-get update -y && apt-get install -y --no-install-recommends \

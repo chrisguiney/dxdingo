@@ -127,3 +127,9 @@ func overlaySchedule(_ context.Context, req *v1.TpraosOverlayScheduleRequest) (*
 		return &v1.TpraosOverlayScheduleResponse{Kind: v1.OverlaySlotKind_OVERLAY_SLOT_KIND_PRAOS}, nil
 	}
 }
+
+func registerPraos(r *dispatch.Registry) {
+	dispatch.Register(r, leaderCheck)
+	dispatch.Register(r, nonceEpoch)
+	dispatch.Register(r, overlaySchedule)
+}
