@@ -132,4 +132,11 @@ func registerPraos(r *dispatch.Registry) {
 	dispatch.Register(r, leaderCheck)
 	dispatch.Register(r, nonceEpoch)
 	dispatch.Register(r, overlaySchedule)
+	dispatch.Register(r, headerEnvelope)
+	dispatch.Register(r, vrfCheck)
+	dispatch.Register(r, kesCheck)
+	dispatch.Register(r, opcertCheck)
+	dispatch.Register(r, vrfKeyRegistered)
+	dispatch.Register(r, nonceRolling)
+	dispatch.Register(r, nonceCandidate)
 }

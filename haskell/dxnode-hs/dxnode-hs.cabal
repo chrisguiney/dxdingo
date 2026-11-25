@@ -50,6 +50,7 @@ library
     , cardano-ledger-dijkstra
     , cardano-ledger-mary
     , cardano-ledger-shelley  ^>=1.19
+    , cardano-protocol
     , cardano-protocol-tpraos ^>=1.6
     , cardano-slotting
     , cardano-strict-containers

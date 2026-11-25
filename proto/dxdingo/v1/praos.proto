@@ -9,16 +9,14 @@ option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1"
 
 // praos: header validity and nonce evolution.
 
+// Header envelope size checks (Shelley.Protocol.EnvelopeChecks): the encoded
+// header against max_block_header_size, then the body size the header
+// declares against max_block_body_size. header is the era's block header CBOR.
 message PraosHeaderEnvelopeRequest {
+  reserved 2, 5, 6, 7, 8;
   Era era = 1;
-  ProtocolVersion protocol_version = 2;
   ProtocolParameters pparams = 3;
   bytes header = 4;
-  // Nullable: genesis successor.
-  bytes prev_hash = 5;
-  optional uint64 prev_slot = 6;
-  optional uint64 prev_block_no = 7;
-  uint32 max_major_protocol_version = 8;
 }
 
 message PraosHeaderEnvelopeResponse {
@@ -60,6 +58,8 @@ message PraosKesCheckRequest {
 
 message PraosKesCheckResponse {
   Rejection rejection = 1;
+  // The KES evolution the header was signed at: the header's KES period less
+  // the operational certificate's start period.
   uint64 kes_period = 2;
 }
 
@@ -69,6 +69,8 @@ message PraosOpCertCheckRequest {
   // Unset: no counter seen for this pool yet.
   optional uint64 last_counter = 3;
   bool pool_registered = 4;
+  uint64 slots_per_kes_period = 5;
+  uint64 max_kes_evolutions = 6;
 }
 
 message PraosOpCertCheckResponse {
@@ -86,10 +88,12 @@ message PraosVrfKeyRegisteredResponse {
   bytes pool_id = 2;
 }
 
+// vrf_output is the block's raw 64-byte VRF output (the nonce VRF output
+// under TPraos); each era derives its nonce contribution from it.
 message PraosNonceRollingRequest {
   Era era = 1;
   Nonce evolving = 2;
-  bytes nonce_value = 3;
+  bytes vrf_output = 3;
 }
 
 message PraosNonceRollingResponse {
@@ -99,17 +103,25 @@ message PraosNonceRollingResponse {
 
 message BlockNonceInput {
   uint64 slot = 1;
-  bytes nonce_value = 2;
+  bytes vrf_output = 2;
 }
 
+// The candidate nonce follows the evolving nonce for blocks below the
+// freeze cutoff and stays put from there on. The cutoff is the first slot of
+// the next epoch less the era's stability window, ceiling(3k/f) before
+// Conway and ceiling(4k/f) from Conway. Every block slot lies in
+// [epoch_first_slot, next_epoch_first_slot).
 message PraosNonceCandidateRequest {
+  reserved 4;
   Era era = 1;
   Nonce evolving = 2;
   Nonce candidate = 3;
-  uint64 stability_window = 4;
   uint64 next_epoch_first_slot = 5;
   // Ordered by slot.
   repeated BlockNonceInput blocks = 6;
+  uint64 security_param = 7;
+  Rational active_slot_coeff = 8;
+  uint64 epoch_first_slot = 9;
 }
 
 message PraosNonceCandidateResponse {
