@@ -1,0 +1,12 @@
+# execution units are Word64 in the reference and int64 in gouroboros
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "1"
+    denominator:  "1000000000"
+  }
+  price_steps:  {
+    numerator:  "0"
+    denominator:  "1"
+  }
+  ex_mem:  9223372036854775808
+}

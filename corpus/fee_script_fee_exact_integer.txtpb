@@ -1,0 +1,13 @@
+# an exact total needs no rounding
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "1"
+    denominator:  "1"
+  }
+  price_steps:  {
+    numerator:  "2"
+    denominator:  "1"
+  }
+  ex_mem:  5
+  ex_steps:  7
+}

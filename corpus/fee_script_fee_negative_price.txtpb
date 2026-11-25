@@ -1,0 +1,13 @@
+# a negative price is not a NonNegativeInterval
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "-1"
+    denominator:  "2"
+  }
+  price_steps:  {
+    numerator:  "1"
+    denominator:  "2"
+  }
+  ex_mem:  1
+  ex_steps:  1
+}

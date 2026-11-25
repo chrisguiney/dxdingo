@@ -1,0 +1,9 @@
+# a size past the bound both nodes accept is UNSUPPORTED
+fee_ref_script_fee:  {
+  era:  ERA_CONWAY
+  cost_per_byte:  {
+    numerator:  "15"
+    denominator:  "1"
+  }
+  size:  536870912
+}

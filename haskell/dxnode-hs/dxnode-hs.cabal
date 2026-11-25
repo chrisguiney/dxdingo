@@ -169,7 +169,9 @@ test-suite dxnode-hs-test
     , cardano-ledger-conway
     , cardano-ledger-core
     , cardano-ledger-dijkstra
+    , cardano-ledger-mary
     , cardano-slotting
+    , cardano-strict-containers
     , containers
     , data-default
     , time

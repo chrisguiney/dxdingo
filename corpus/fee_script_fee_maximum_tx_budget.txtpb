@@ -1,0 +1,13 @@
+# the mainnet per-transaction budget, 14M memory and 10G steps
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "577"
+    denominator:  "10000"
+  }
+  price_steps:  {
+    numerator:  "721"
+    denominator:  "10000000"
+  }
+  ex_mem:  14000000
+  ex_steps:  10000000000
+}

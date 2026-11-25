@@ -1,0 +1,5 @@
+# nothing to hash: no hash
+fee_script_integrity_hash:  {
+  era:  ERA_CONWAY
+  pparams:  {}
+}

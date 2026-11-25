@@ -1,0 +1,11 @@
+# no execution units
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "577"
+    denominator:  "10000"
+  }
+  price_steps:  {
+    numerator:  "721"
+    denominator:  "10000000"
+  }
+}

@@ -1,0 +1,13 @@
+# unreduced rationals are the same value
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "1154"
+    denominator:  "20000"
+  }
+  price_steps:  {
+    numerator:  "1442"
+    denominator:  "20000000"
+  }
+  ex_mem:  2500000
+  ex_steps:  1000000000
+}

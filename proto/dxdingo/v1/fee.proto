@@ -9,11 +9,18 @@ option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1"
 
 // fee: arithmetic on a transaction. Each function takes its direct
 // arguments; derived sizes are inputs, not recomputed.
+//
+// Eras are Shelley through Conway; Byron and Dijkstra are UNSUPPORTED. A
+// result that does not fit its field, or a reference-script size above 2^28,
+// is UNSUPPORTED on both nodes.
 
 message FeeMinFeeRequest {
   Era era = 1;
+  // Reads min_fee_a and min_fee_b; from Alonzo price_mem and price_steps;
+  // in Conway min_fee_ref_script_cost_per_byte.
   ProtocolParameters pparams = 2;
   bytes tx = 3;
+  // Conway only; earlier eras ignore it.
   uint64 ref_script_size = 4;
 }
 
@@ -70,7 +77,10 @@ message FeeScriptFeeResponse {
 
 message FeeMinUtxoRequest {
   Era era = 1;
+  // Reads min_utxo_value (Shelley through Mary), coins_per_utxo_word
+  // (Alonzo) or coins_per_utxo_byte (Babbage on).
   ProtocolParameters pparams = 2;
+  // On-chain TxOut CBOR, priced by its size on the wire.
   bytes txout = 3;
 }
 
@@ -80,12 +90,15 @@ message FeeMinUtxoResponse {
 }
 
 message FeeScriptIntegrityHashRequest {
+  // Alonzo through Conway.
   Era era = 1;
+  // Reads cost_model_plutus_v1 to v3 for the listed languages.
   ProtocolParameters pparams = 2;
-  // Nullable: Redeemers CBOR.
+  // Nullable: Redeemers CBOR as in the witness set.
   bytes redeemers = 3;
-  // Nullable: TxDats CBOR.
+  // Nullable: TxDats CBOR as in the witness set.
   bytes datums = 4;
+  // Plutus V1 to V3; V4 is UNSUPPORTED.
   repeated PlutusVersion languages = 5;
 }
 
@@ -96,18 +109,29 @@ message FeeScriptIntegrityHashResponse {
 }
 
 message FeeValueBalanceRequest {
+  // Conway only.
   LedgerContext context = 1;
+  // Reads key_deposit, pool_deposit, drep_deposit and gov_action_deposit.
   ProtocolParameters pparams = 2;
+  // Reads utxo (an unresolved input counts nothing), accounts (the deposit
+  // refunded on deregistration) and pools in stage CURRENT (a registered pool
+  // pays no deposit).
   LedgerState state = 3;
   bytes tx = 4;
 }
 
 message FeeValueBalanceResponse {
   Rejection rejection = 1;
+  // Inputs, withdrawals and refunds.
   uint64 consumed_coin = 2;
+  // Input assets plus the positively minted ones, sorted by policy and name.
   repeated Asset consumed_assets = 3;
+  // Outputs, fee, deposits and donation.
   uint64 produced_coin = 4;
+  // Output assets plus the burned ones, sorted by policy and name.
   repeated Asset produced_assets = 5;
+  // Certificate, pool and proposal deposits (already in produced_coin).
   uint64 deposits = 6;
+  // Certificate refunds (already in consumed_coin).
   uint64 refunds = 7;
 }

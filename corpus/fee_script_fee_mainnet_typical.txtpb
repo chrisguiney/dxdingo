@@ -1,0 +1,13 @@
+# mainnet prices, a mid-sized script
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "577"
+    denominator:  "10000"
+  }
+  price_steps:  {
+    numerator:  "721"
+    denominator:  "10000000"
+  }
+  ex_mem:  2500000
+  ex_steps:  1000000000
+}

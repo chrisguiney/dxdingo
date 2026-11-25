@@ -1,0 +1,8 @@
+# Babbage output: (160 + size) * coinsPerUTxOByte
+fee_min_utxo:  {
+  era:  ERA_BABBAGE
+  pparams:  {
+    coins_per_utxo_byte:  4310
+  }
+  txout:  "\xa2\x00X\x1da$\xd2t\xbf\xd9\x13\xb2A\xa8̢\x0ciwwW\x18\xfdۏ7c\xf1\xd3e\xc8TE\x01\x1a\x00\x1e\x84\x80"
+}
