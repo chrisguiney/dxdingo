@@ -1,0 +1,5 @@
+# an update that sets nothing
+codec_pparams_update: {
+  era: ERA_ALLEGRA
+  cbor: "\xa0"
+}

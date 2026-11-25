@@ -1,0 +1,5 @@
+# min fee A and B: the most common mainnet update
+codec_pparams_update: {
+  era: ERA_SHELLEY
+  cbor: "\xa2\x00\x18,\x01\x1a\x00\x02^\xf5"
+}

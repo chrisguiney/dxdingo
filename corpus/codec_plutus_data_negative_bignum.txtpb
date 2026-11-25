@@ -1,0 +1,4 @@
+# bignum tag 3
+codec_plutus_data: {
+  cbor: "\xc3I\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+}

@@ -1,0 +1,4 @@
+# a lone break is no data
+codec_plutus_data: {
+  cbor: "\xff"
+}

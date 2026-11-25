@@ -1,0 +1,6 @@
+# NewConstitution with no guardrail script
+codec_governance: {
+  era: ERA_CONWAY
+  kind: GOVERNANCE_ITEM_KIND_PROPOSAL
+  cbor: "\x84\x1a;\x9a\xca\x00X\x1d\xe0\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x83\x05\xf6\x82\x82uhttps://example.org/pX 33333333333333333333333333333333\xf6\x82uhttps://example.org/pX 33333333333333333333333333333333"
+}

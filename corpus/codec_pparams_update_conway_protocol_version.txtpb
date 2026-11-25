@@ -1,0 +1,5 @@
+# key 14 is not an updatable parameter in Conway
+codec_pparams_update: {
+  era: ERA_CONWAY
+  cbor: "\xa1\x0e\x82\n\x00"
+}

@@ -1,0 +1,5 @@
+# Babbage coins per UTxO byte and a protocol version
+codec_pparams_update: {
+  era: ERA_BABBAGE
+  cbor: "\xa2\x0e\x82\x08\x00\x11\x19\x10\xd6"
+}

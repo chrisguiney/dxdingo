@@ -1,0 +1,4 @@
+# tag 102 general constructor form
+codec_plutus_data: {
+  cbor: "\xd8f\x82\t\x80"
+}

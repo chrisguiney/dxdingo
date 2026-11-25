@@ -1,0 +1,5 @@
+# an integer is no update
+codec_pparams_update: {
+  era: ERA_SHELLEY
+  cbor: "\x01"
+}

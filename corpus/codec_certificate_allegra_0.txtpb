@@ -1,0 +1,5 @@
+# real mainnet allegra certificate, type 0
+codec_certificate: {
+  era: ERA_ALLEGRA
+  cbor: "\x82\x00\x82\x00X\x1c\x15\x82L\xe0M\x92H\xac\xea\xd6\xe8\xa0ʈ\xc6=>\x1aY\x1c\xfc$\x06F\xff\x90}q"
+}
