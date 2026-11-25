@@ -1,0 +1,9 @@
+# memberRew: floor((1000 - 340) ADA * (1 - 1/100) * 25/50) = 326.7 ADA
+rewards_member_reward {
+  pool_reward: 1000000000
+  cost: 340000000
+  margin { numerator: "1" denominator: "100" }
+  member_stake: 25
+  pool_stake: 50
+  total_stake: 1000
+}

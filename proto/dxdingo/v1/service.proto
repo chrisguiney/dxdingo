@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/byron.proto";
+import "dxdingo/v1/chainsel.proto";
+import "dxdingo/v1/codec.proto";
+import "dxdingo/v1/crypto.proto";
+import "dxdingo/v1/epoch.proto";
+import "dxdingo/v1/fee.proto";
+import "dxdingo/v1/gov.proto";
+import "dxdingo/v1/meta.proto";
+import "dxdingo/v1/net.proto";
+import "dxdingo/v1/plutus.proto";
+import "dxdingo/v1/praos.proto";
+import "dxdingo/v1/rewards.proto";
+import "dxdingo/v1/rule.proto";
+import "dxdingo/v1/stake.proto";
+import "dxdingo/v1/time.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// NodeService lists every function as a method. The stdin/stdout transport
+// carries the same request and response messages inside Call and Reply.
+service NodeService {
+  // meta
+  rpc MetaInfo(MetaInfoRequest) returns (MetaInfoResponse);
+  // codec
+  rpc CodecTx(CodecTxRequest) returns (CodecTxResponse);
+  rpc CodecTxOutput(CodecTxOutputRequest) returns (CodecTxOutputResponse);
+  rpc CodecCertificate(CodecCertificateRequest) returns (CodecCertificateResponse);
+  rpc CodecGovernance(CodecGovernanceRequest) returns (CodecGovernanceResponse);
+  rpc CodecPParamsUpdate(CodecPParamsUpdateRequest) returns (CodecPParamsUpdateResponse);
+  rpc CodecPlutusData(CodecPlutusDataRequest) returns (CodecPlutusDataResponse);
+  rpc CodecBlockBody(CodecBlockBodyRequest) returns (CodecBlockBodyResponse);
+  rpc CodecBlockHeader(CodecBlockHeaderRequest) returns (CodecBlockHeaderResponse);
+  rpc CodecHfcBlock(CodecHfcBlockRequest) returns (CodecHfcBlockResponse);
+  rpc CodecByronBlock(CodecByronBlockRequest) returns (CodecByronBlockResponse);
+  rpc CodecLedgerState(CodecLedgerStateRequest) returns (CodecLedgerStateResponse);
+  // rule
+  rpc RuleUtxo(RuleUtxoRequest) returns (RuleUtxoResponse);
+  rpc RuleUtxos(RuleUtxosRequest) returns (RuleUtxosResponse);
+  rpc RuleUtxow(RuleUtxowRequest) returns (RuleUtxowResponse);
+  rpc RuleDeleg(RuleDelegRequest) returns (RuleDelegResponse);
+  rpc RulePool(RulePoolRequest) returns (RulePoolResponse);
+  rpc RuleGovCert(RuleGovCertRequest) returns (RuleGovCertResponse);
+  rpc RuleGov(RuleGovRequest) returns (RuleGovResponse);
+  rpc RuleCerts(RuleCertsRequest) returns (RuleCertsResponse);
+  rpc RulePpup(RulePpupRequest) returns (RulePpupResponse);
+  rpc RuleLedger(RuleLedgerRequest) returns (RuleLedgerResponse);
+  rpc RuleBlockBody(RuleBlockBodyRequest) returns (RuleBlockBodyResponse);
+  // fee
+  rpc FeeMinFee(FeeMinFeeRequest) returns (FeeMinFeeResponse);
+  rpc FeeRefScriptSize(FeeRefScriptSizeRequest) returns (FeeRefScriptSizeResponse);
+  rpc FeeRefScriptFee(FeeRefScriptFeeRequest) returns (FeeRefScriptFeeResponse);
+  rpc FeeTxSize(FeeTxSizeRequest) returns (FeeTxSizeResponse);
+  rpc FeeScriptFee(FeeScriptFeeRequest) returns (FeeScriptFeeResponse);
+  rpc FeeMinUtxo(FeeMinUtxoRequest) returns (FeeMinUtxoResponse);
+  rpc FeeScriptIntegrityHash(FeeScriptIntegrityHashRequest) returns (FeeScriptIntegrityHashResponse);
+  rpc FeeValueBalance(FeeValueBalanceRequest) returns (FeeValueBalanceResponse);
+  // plutus
+  rpc PlutusTxInfo(PlutusTxInfoRequest) returns (PlutusTxInfoResponse);
+  rpc PlutusScriptPurpose(PlutusScriptPurposeRequest) returns (PlutusScriptPurposeResponse);
+  rpc PlutusScriptContext(PlutusScriptContextRequest) returns (PlutusScriptContextResponse);
+  rpc PlutusCollectScripts(PlutusCollectScriptsRequest) returns (PlutusCollectScriptsResponse);
+  rpc PlutusEvalExUnits(PlutusEvalExUnitsRequest) returns (PlutusEvalExUnitsResponse);
+  rpc PlutusCostModel(PlutusCostModelRequest) returns (PlutusCostModelResponse);
+  // rewards
+  rpc RewardsMonetaryExpansion(RewardsMonetaryExpansionRequest) returns (RewardsMonetaryExpansionResponse);
+  rpc RewardsMaxPool(RewardsMaxPoolRequest) returns (RewardsMaxPoolResponse);
+  rpc RewardsApparentPerformance(RewardsApparentPerformanceRequest) returns (RewardsApparentPerformanceResponse);
+  rpc RewardsLeaderReward(RewardsLeaderRewardRequest) returns (RewardsLeaderRewardResponse);
+  rpc RewardsMemberReward(RewardsMemberRewardRequest) returns (RewardsMemberRewardResponse);
+  rpc RewardsPoolReward(RewardsPoolRewardRequest) returns (RewardsPoolRewardResponse);
+  rpc RewardsRewardUpdate(RewardsRewardUpdateRequest) returns (RewardsRewardUpdateResponse);
+  rpc RewardsApplyUpdate(RewardsApplyUpdateRequest) returns (RewardsApplyUpdateResponse);
+  rpc RewardsNonMyopic(RewardsNonMyopicRequest) returns (RewardsNonMyopicResponse);
+  // stake
+  rpc StakeInstantStake(StakeInstantStakeRequest) returns (StakeInstantStakeResponse);
+  rpc StakeSnapshot(StakeSnapshotRequest) returns (StakeSnapshotResponse);
+  rpc StakePoolDistribution(StakePoolDistributionRequest) returns (StakePoolDistributionResponse);
+  rpc StakeDRepDistribution(StakeDRepDistributionRequest) returns (StakeDRepDistributionResponse);
+  // epoch
+  rpc EpochNewEpoch(EpochNewEpochRequest) returns (EpochNewEpochResponse);
+  rpc EpochSnapshotRotate(EpochSnapshotRotateRequest) returns (EpochSnapshotRotateResponse);
+  rpc EpochPoolReap(EpochPoolReapRequest) returns (EpochPoolReapResponse);
+  rpc EpochMir(EpochMirRequest) returns (EpochMirResponse);
+  rpc EpochPParamUpdate(EpochPParamUpdateRequest) returns (EpochPParamUpdateResponse);
+  rpc EpochObligations(EpochObligationsRequest) returns (EpochObligationsResponse);
+  rpc EpochDonations(EpochDonationsRequest) returns (EpochDonationsResponse);
+  rpc EpochHardFork(EpochHardForkRequest) returns (EpochHardForkResponse);
+  // gov
+  rpc GovThresholds(GovThresholdsRequest) returns (GovThresholdsResponse);
+  rpc GovSpoRatio(GovSpoRatioRequest) returns (GovSpoRatioResponse);
+  rpc GovDRepRatio(GovDRepRatioRequest) returns (GovDRepRatioResponse);
+  rpc GovCommitteeRatio(GovCommitteeRatioRequest) returns (GovCommitteeRatioResponse);
+  rpc GovCommitteeQuorum(GovCommitteeQuorumRequest) returns (GovCommitteeQuorumResponse);
+  rpc GovRatify(GovRatifyRequest) returns (GovRatifyResponse);
+  rpc GovEnact(GovEnactRequest) returns (GovEnactResponse);
+  rpc GovProposalTree(GovProposalTreeRequest) returns (GovProposalTreeResponse);
+  rpc GovProposalExpiry(GovProposalExpiryRequest) returns (GovProposalExpiryResponse);
+  rpc GovDRepExpiry(GovDRepExpiryRequest) returns (GovDRepExpiryResponse);
+  // praos
+  rpc PraosHeaderEnvelope(PraosHeaderEnvelopeRequest) returns (PraosHeaderEnvelopeResponse);
+  rpc PraosVrfCheck(PraosVrfCheckRequest) returns (PraosVrfCheckResponse);
+  rpc PraosLeaderCheck(PraosLeaderCheckRequest) returns (PraosLeaderCheckResponse);
+  rpc PraosKesCheck(PraosKesCheckRequest) returns (PraosKesCheckResponse);
+  rpc PraosOpCertCheck(PraosOpCertCheckRequest) returns (PraosOpCertCheckResponse);
+  rpc PraosVrfKeyRegistered(PraosVrfKeyRegisteredRequest) returns (PraosVrfKeyRegisteredResponse);
+  rpc PraosNonceRolling(PraosNonceRollingRequest) returns (PraosNonceRollingResponse);
+  rpc PraosNonceCandidate(PraosNonceCandidateRequest) returns (PraosNonceCandidateResponse);
+  rpc PraosNonceEpoch(PraosNonceEpochRequest) returns (PraosNonceEpochResponse);
+  rpc TpraosOverlaySchedule(TpraosOverlayScheduleRequest) returns (TpraosOverlayScheduleResponse);
+  // chainsel
+  rpc ChainselCompare(ChainselCompareRequest) returns (ChainselCompareResponse);
+  rpc ChainselVrfTiebreak(ChainselVrfTiebreakRequest) returns (ChainselVrfTiebreakResponse);
+  rpc ChainselGenesisDensity(ChainselGenesisDensityRequest) returns (ChainselGenesisDensityResponse);
+  // time
+  rpc TimeEraParams(TimeEraParamsRequest) returns (TimeEraParamsResponse);
+  rpc TimeEraSummary(TimeEraSummaryRequest) returns (TimeEraSummaryResponse);
+  rpc TimeSlotToEpoch(TimeSlotToEpochRequest) returns (TimeSlotToEpochResponse);
+  rpc TimeSlotToWallclock(TimeSlotToWallclockRequest) returns (TimeSlotToWallclockResponse);
+  rpc TimeWallclockToSlot(TimeWallclockToSlotRequest) returns (TimeWallclockToSlotResponse);
+  // byron
+  rpc ByronTxValidate(ByronTxValidateRequest) returns (ByronTxValidateResponse);
+  rpc ByronHeaderValidate(ByronHeaderValidateRequest) returns (ByronHeaderValidateResponse);
+  rpc ByronChainUpdate(ByronChainUpdateRequest) returns (ByronChainUpdateResponse);
+  rpc ByronUpdateProposal(ByronUpdateProposalRequest) returns (ByronUpdateProposalResponse);
+  rpc ByronMinFee(ByronMinFeeRequest) returns (ByronMinFeeResponse);
+  // crypto
+  rpc CryptoAddressDecode(CryptoAddressDecodeRequest) returns (CryptoAddressDecodeResponse);
+  rpc CryptoScriptHash(CryptoScriptHashRequest) returns (CryptoScriptHashResponse);
+  rpc CryptoVkeyWitness(CryptoVkeyWitnessRequest) returns (CryptoVkeyWitnessResponse);
+  rpc CryptoBootstrapWitness(CryptoBootstrapWitnessRequest) returns (CryptoBootstrapWitnessResponse);
+  rpc CryptoVrfVerify(CryptoVrfVerifyRequest) returns (CryptoVrfVerifyResponse);
+  rpc CryptoVrfProve(CryptoVrfProveRequest) returns (CryptoVrfProveResponse);
+  rpc CryptoKesVerify(CryptoKesVerifyRequest) returns (CryptoKesVerifyResponse);
+  // net
+  rpc NetCodecChainSync(NetCodecChainSyncRequest) returns (NetCodecChainSyncResponse);
+  rpc NetCodecBlockFetch(NetCodecBlockFetchRequest) returns (NetCodecBlockFetchResponse);
+  rpc NetCodecTxSubmission2(NetCodecTxSubmission2Request) returns (NetCodecTxSubmission2Response);
+  rpc NetCodecLocalStateQuery(NetCodecLocalStateQueryRequest) returns (NetCodecLocalStateQueryResponse);
+  rpc NetCodecLocalTxSubmission(NetCodecLocalTxSubmissionRequest) returns (NetCodecLocalTxSubmissionResponse);
+  rpc NetCodecLocalTxMonitor(NetCodecLocalTxMonitorRequest) returns (NetCodecLocalTxMonitorResponse);
+  rpc NetCodecHandshake(NetCodecHandshakeRequest) returns (NetCodecHandshakeResponse);
+  rpc NetCodecKeepAlive(NetCodecKeepAliveRequest) returns (NetCodecKeepAliveResponse);
+  rpc NetCodecPeerSharing(NetCodecPeerSharingRequest) returns (NetCodecPeerSharingResponse);
+  rpc NetCodecMuxSdu(NetCodecMuxSduRequest) returns (NetCodecMuxSduResponse);
+  rpc NetAgency(NetAgencyRequest) returns (NetAgencyResponse);
+}

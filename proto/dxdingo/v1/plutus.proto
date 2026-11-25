@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// plutus: what a script sees and what it costs.
+
+enum ScriptPurposeTag {
+  SCRIPT_PURPOSE_TAG_UNSPECIFIED = 0;
+  SCRIPT_PURPOSE_TAG_SPEND = 1;
+  SCRIPT_PURPOSE_TAG_MINT = 2;
+  SCRIPT_PURPOSE_TAG_CERT = 3;
+  SCRIPT_PURPOSE_TAG_REWARD = 4;
+  SCRIPT_PURPOSE_TAG_VOTE = 5;
+  SCRIPT_PURPOSE_TAG_PROPOSE = 6;
+}
+
+// ScriptPurpose is a redeemer pointer and what it points at. Exactly one
+// target field is set, matching the tag.
+message ScriptPurpose {
+  ScriptPurposeTag tag = 1;
+  uint32 index = 2;
+  TxIn spend_input = 3;
+  bytes mint_policy_id = 4;
+  // Certificate CBOR.
+  bytes certificate = 5;
+  Credential reward_account = 6;
+  Voter voter = 7;
+  // ProposalProcedure CBOR.
+  bytes proposal = 8;
+}
+
+message PlutusTxInfoRequest {
+  LedgerContext context = 1;
+  PlutusVersion plutus_version = 2;
+  bytes tx = 3;
+  repeated UtxoEntry utxo = 4;
+  EraHistory era_history = 5;
+}
+
+// Rejections use ContextError constructor names.
+message PlutusTxInfoResponse {
+  Rejection rejection = 1;
+  // PlutusData CBOR.
+  bytes tx_info = 2;
+}
+
+message PlutusScriptPurposeRequest {
+  LedgerContext context = 1;
+  bytes tx = 2;
+  repeated UtxoEntry utxo = 3;
+}
+
+message PlutusScriptPurposeResponse {
+  Rejection rejection = 1;
+  repeated ScriptPurpose purposes = 2;
+}
+
+message PlutusScriptContextRequest {
+  PlutusVersion plutus_version = 1;
+  bytes tx_info = 2;
+  ScriptPurpose purpose = 3;
+  bytes redeemer = 4;
+  // Nullable: spending datum.
+  bytes datum = 5;
+}
+
+message PlutusScriptContextResponse {
+  Rejection rejection = 1;
+  // Ordered script arguments, each PlutusData CBOR.
+  repeated bytes args = 2;
+}
+
+message PlutusCollectScriptsRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  bytes tx = 3;
+  repeated UtxoEntry utxo = 4;
+  EraHistory era_history = 5;
+}
+
+message CollectedScript {
+  ScriptPurpose purpose = 1;
+  bytes script_hash = 2;
+  PlutusVersion plutus_version = 3;
+  bytes datum = 4;
+  bytes redeemer = 5;
+  bytes context = 6;
+  uint64 ex_mem = 7;
+  uint64 ex_steps = 8;
+}
+
+message PlutusCollectScriptsResponse {
+  Rejection rejection = 1;
+  repeated CollectedScript scripts = 2;
+}
+
+message PlutusEvalExUnitsRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  bytes tx = 3;
+  repeated UtxoEntry utxo = 4;
+  EraHistory era_history = 5;
+}
+
+message ScriptEvaluation {
+  ScriptPurpose purpose = 1;
+  bool ok = 2;
+  uint64 ex_mem = 3;
+  uint64 ex_steps = 4;
+  // TransactionScriptFailure constructor name when not ok.
+  string failure = 5;
+}
+
+message PlutusEvalExUnitsResponse {
+  Rejection rejection = 1;
+  repeated ScriptEvaluation results = 2;
+}
+
+message PlutusCostModelRequest {
+  PlutusVersion plutus_version = 1;
+  ProtocolVersion protocol_version = 2;
+  repeated int64 params = 3;
+}
+
+message PlutusCostModelResponse {
+  Rejection rejection = 1;
+  // Parameters as stored after validation.
+  repeated int64 params = 2;
+}

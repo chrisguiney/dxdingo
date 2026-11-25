@@ -1,0 +1,5 @@
+version: v2
+plugins:
+  # proto-lens-protoc, built into bin/ by `make tools-hs`.
+  - local: bin/proto-lens-protoc
+    out: haskell/dxnode-hs/gen

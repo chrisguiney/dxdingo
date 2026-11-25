@@ -1,0 +1,312 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/byron.proto";
+import "dxdingo/v1/chainsel.proto";
+import "dxdingo/v1/codec.proto";
+import "dxdingo/v1/crypto.proto";
+import "dxdingo/v1/epoch.proto";
+import "dxdingo/v1/fee.proto";
+import "dxdingo/v1/gov.proto";
+import "dxdingo/v1/meta.proto";
+import "dxdingo/v1/net.proto";
+import "dxdingo/v1/plutus.proto";
+import "dxdingo/v1/praos.proto";
+import "dxdingo/v1/rewards.proto";
+import "dxdingo/v1/rule.proto";
+import "dxdingo/v1/stake.proto";
+import "dxdingo/v1/time.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// Wire envelope for the stdin/stdout transport. Each frame is a 4-byte
+// big-endian length followed by one serialized Call (driver to node) or
+// Reply (node to driver). One call is outstanding at a time.
+//
+// Field numbers are blocked by area (meta 10, codec 100, rule 200, ...).
+// Request and response for a function share the same field number. Add
+// new functions at the end of their block; never renumber.
+
+enum HarnessErrorCode {
+  HARNESS_ERROR_CODE_UNSPECIFIED = 0;
+  // The node does not implement this function.
+  HARNESS_ERROR_CODE_UNIMPLEMENTED = 1;
+  // The call could not be decoded or was missing required inputs.
+  HARNESS_ERROR_CODE_BAD_REQUEST = 2;
+  // The node accepts the function but not these inputs (for example an
+  // era it does not support).
+  HARNESS_ERROR_CODE_UNSUPPORTED = 3;
+  // The adapter failed; this is a harness bug, not a finding.
+  HARNESS_ERROR_CODE_INTERNAL = 4;
+}
+
+// HarnessError reports that a call was not evaluated. A domain rejection is
+// not a harness error; it is the response's rejection field.
+message HarnessError {
+  HarnessErrorCode code = 1;
+  string message = 2;
+}
+
+message Call {
+  uint64 id = 1;
+  oneof request {
+    // meta
+    MetaInfoRequest meta_info = 10;
+    // codec
+    CodecTxRequest codec_tx = 100;
+    CodecTxOutputRequest codec_tx_output = 101;
+    CodecCertificateRequest codec_certificate = 102;
+    CodecGovernanceRequest codec_governance = 103;
+    CodecPParamsUpdateRequest codec_pparams_update = 104;
+    CodecPlutusDataRequest codec_plutus_data = 105;
+    CodecBlockBodyRequest codec_block_body = 106;
+    CodecBlockHeaderRequest codec_block_header = 107;
+    CodecHfcBlockRequest codec_hfc_block = 108;
+    CodecByronBlockRequest codec_byron_block = 109;
+    CodecLedgerStateRequest codec_ledger_state = 110;
+    // rule
+    RuleUtxoRequest rule_utxo = 200;
+    RuleUtxosRequest rule_utxos = 201;
+    RuleUtxowRequest rule_utxow = 202;
+    RuleDelegRequest rule_deleg = 203;
+    RulePoolRequest rule_pool = 204;
+    RuleGovCertRequest rule_gov_cert = 205;
+    RuleGovRequest rule_gov = 206;
+    RuleCertsRequest rule_certs = 207;
+    RulePpupRequest rule_ppup = 208;
+    RuleLedgerRequest rule_ledger = 209;
+    RuleBlockBodyRequest rule_block_body = 210;
+    // fee
+    FeeMinFeeRequest fee_min_fee = 300;
+    FeeRefScriptSizeRequest fee_ref_script_size = 301;
+    FeeRefScriptFeeRequest fee_ref_script_fee = 302;
+    FeeTxSizeRequest fee_tx_size = 303;
+    FeeScriptFeeRequest fee_script_fee = 304;
+    FeeMinUtxoRequest fee_min_utxo = 305;
+    FeeScriptIntegrityHashRequest fee_script_integrity_hash = 306;
+    FeeValueBalanceRequest fee_value_balance = 307;
+    // plutus
+    PlutusTxInfoRequest plutus_tx_info = 400;
+    PlutusScriptPurposeRequest plutus_script_purpose = 401;
+    PlutusScriptContextRequest plutus_script_context = 402;
+    PlutusCollectScriptsRequest plutus_collect_scripts = 403;
+    PlutusEvalExUnitsRequest plutus_eval_ex_units = 404;
+    PlutusCostModelRequest plutus_cost_model = 405;
+    // rewards
+    RewardsMonetaryExpansionRequest rewards_monetary_expansion = 500;
+    RewardsMaxPoolRequest rewards_max_pool = 501;
+    RewardsApparentPerformanceRequest rewards_apparent_performance = 502;
+    RewardsLeaderRewardRequest rewards_leader_reward = 503;
+    RewardsMemberRewardRequest rewards_member_reward = 504;
+    RewardsPoolRewardRequest rewards_pool_reward = 505;
+    RewardsRewardUpdateRequest rewards_reward_update = 506;
+    RewardsApplyUpdateRequest rewards_apply_update = 507;
+    RewardsNonMyopicRequest rewards_non_myopic = 508;
+    // stake
+    StakeInstantStakeRequest stake_instant_stake = 600;
+    StakeSnapshotRequest stake_snapshot = 601;
+    StakePoolDistributionRequest stake_pool_distribution = 602;
+    StakeDRepDistributionRequest stake_drep_distribution = 603;
+    // epoch
+    EpochNewEpochRequest epoch_new_epoch = 700;
+    EpochSnapshotRotateRequest epoch_snapshot_rotate = 701;
+    EpochPoolReapRequest epoch_pool_reap = 702;
+    EpochMirRequest epoch_mir = 703;
+    EpochPParamUpdateRequest epoch_pparam_update = 704;
+    EpochObligationsRequest epoch_obligations = 705;
+    EpochDonationsRequest epoch_donations = 706;
+    EpochHardForkRequest epoch_hard_fork = 707;
+    // gov
+    GovThresholdsRequest gov_thresholds = 800;
+    GovSpoRatioRequest gov_spo_ratio = 801;
+    GovDRepRatioRequest gov_drep_ratio = 802;
+    GovCommitteeRatioRequest gov_committee_ratio = 803;
+    GovCommitteeQuorumRequest gov_committee_quorum = 804;
+    GovRatifyRequest gov_ratify = 805;
+    GovEnactRequest gov_enact = 806;
+    GovProposalTreeRequest gov_proposal_tree = 807;
+    GovProposalExpiryRequest gov_proposal_expiry = 808;
+    GovDRepExpiryRequest gov_drep_expiry = 809;
+    // praos
+    PraosHeaderEnvelopeRequest praos_header_envelope = 900;
+    PraosVrfCheckRequest praos_vrf_check = 901;
+    PraosLeaderCheckRequest praos_leader_check = 902;
+    PraosKesCheckRequest praos_kes_check = 903;
+    PraosOpCertCheckRequest praos_opcert_check = 904;
+    PraosVrfKeyRegisteredRequest praos_vrf_key_registered = 905;
+    PraosNonceRollingRequest praos_nonce_rolling = 906;
+    PraosNonceCandidateRequest praos_nonce_candidate = 907;
+    PraosNonceEpochRequest praos_nonce_epoch = 908;
+    TpraosOverlayScheduleRequest tpraos_overlay_schedule = 909;
+    // chainsel
+    ChainselCompareRequest chainsel_compare = 1000;
+    ChainselVrfTiebreakRequest chainsel_vrf_tiebreak = 1001;
+    ChainselGenesisDensityRequest chainsel_genesis_density = 1002;
+    // time
+    TimeEraParamsRequest time_era_params = 1100;
+    TimeEraSummaryRequest time_era_summary = 1101;
+    TimeSlotToEpochRequest time_slot_to_epoch = 1102;
+    TimeSlotToWallclockRequest time_slot_to_wallclock = 1103;
+    TimeWallclockToSlotRequest time_wallclock_to_slot = 1104;
+    // byron
+    ByronTxValidateRequest byron_tx_validate = 1200;
+    ByronHeaderValidateRequest byron_header_validate = 1201;
+    ByronChainUpdateRequest byron_chain_update = 1202;
+    ByronUpdateProposalRequest byron_update_proposal = 1203;
+    ByronMinFeeRequest byron_min_fee = 1204;
+    // crypto
+    CryptoAddressDecodeRequest crypto_address_decode = 1300;
+    CryptoScriptHashRequest crypto_script_hash = 1301;
+    CryptoVkeyWitnessRequest crypto_vkey_witness = 1302;
+    CryptoBootstrapWitnessRequest crypto_bootstrap_witness = 1303;
+    CryptoVrfVerifyRequest crypto_vrf_verify = 1304;
+    CryptoVrfProveRequest crypto_vrf_prove = 1305;
+    CryptoKesVerifyRequest crypto_kes_verify = 1306;
+    // net
+    NetCodecChainSyncRequest net_codec_chain_sync = 1400;
+    NetCodecBlockFetchRequest net_codec_block_fetch = 1401;
+    NetCodecTxSubmission2Request net_codec_tx_submission2 = 1402;
+    NetCodecLocalStateQueryRequest net_codec_local_state_query = 1403;
+    NetCodecLocalTxSubmissionRequest net_codec_local_tx_submission = 1404;
+    NetCodecLocalTxMonitorRequest net_codec_local_tx_monitor = 1405;
+    NetCodecHandshakeRequest net_codec_handshake = 1406;
+    NetCodecKeepAliveRequest net_codec_keep_alive = 1407;
+    NetCodecPeerSharingRequest net_codec_peer_sharing = 1408;
+    NetCodecMuxSduRequest net_codec_mux_sdu = 1409;
+    NetAgencyRequest net_agency = 1410;
+  }
+}
+
+// Reply echoes the call id. Exactly one of error or response is set; the
+// response field matches the call's request field.
+message Reply {
+  uint64 id = 1;
+  HarnessError error = 2;
+  oneof response {
+    // meta
+    MetaInfoResponse meta_info = 10;
+    // codec
+    CodecTxResponse codec_tx = 100;
+    CodecTxOutputResponse codec_tx_output = 101;
+    CodecCertificateResponse codec_certificate = 102;
+    CodecGovernanceResponse codec_governance = 103;
+    CodecPParamsUpdateResponse codec_pparams_update = 104;
+    CodecPlutusDataResponse codec_plutus_data = 105;
+    CodecBlockBodyResponse codec_block_body = 106;
+    CodecBlockHeaderResponse codec_block_header = 107;
+    CodecHfcBlockResponse codec_hfc_block = 108;
+    CodecByronBlockResponse codec_byron_block = 109;
+    CodecLedgerStateResponse codec_ledger_state = 110;
+    // rule
+    RuleUtxoResponse rule_utxo = 200;
+    RuleUtxosResponse rule_utxos = 201;
+    RuleUtxowResponse rule_utxow = 202;
+    RuleDelegResponse rule_deleg = 203;
+    RulePoolResponse rule_pool = 204;
+    RuleGovCertResponse rule_gov_cert = 205;
+    RuleGovResponse rule_gov = 206;
+    RuleCertsResponse rule_certs = 207;
+    RulePpupResponse rule_ppup = 208;
+    RuleLedgerResponse rule_ledger = 209;
+    RuleBlockBodyResponse rule_block_body = 210;
+    // fee
+    FeeMinFeeResponse fee_min_fee = 300;
+    FeeRefScriptSizeResponse fee_ref_script_size = 301;
+    FeeRefScriptFeeResponse fee_ref_script_fee = 302;
+    FeeTxSizeResponse fee_tx_size = 303;
+    FeeScriptFeeResponse fee_script_fee = 304;
+    FeeMinUtxoResponse fee_min_utxo = 305;
+    FeeScriptIntegrityHashResponse fee_script_integrity_hash = 306;
+    FeeValueBalanceResponse fee_value_balance = 307;
+    // plutus
+    PlutusTxInfoResponse plutus_tx_info = 400;
+    PlutusScriptPurposeResponse plutus_script_purpose = 401;
+    PlutusScriptContextResponse plutus_script_context = 402;
+    PlutusCollectScriptsResponse plutus_collect_scripts = 403;
+    PlutusEvalExUnitsResponse plutus_eval_ex_units = 404;
+    PlutusCostModelResponse plutus_cost_model = 405;
+    // rewards
+    RewardsMonetaryExpansionResponse rewards_monetary_expansion = 500;
+    RewardsMaxPoolResponse rewards_max_pool = 501;
+    RewardsApparentPerformanceResponse rewards_apparent_performance = 502;
+    RewardsLeaderRewardResponse rewards_leader_reward = 503;
+    RewardsMemberRewardResponse rewards_member_reward = 504;
+    RewardsPoolRewardResponse rewards_pool_reward = 505;
+    RewardsRewardUpdateResponse rewards_reward_update = 506;
+    RewardsApplyUpdateResponse rewards_apply_update = 507;
+    RewardsNonMyopicResponse rewards_non_myopic = 508;
+    // stake
+    StakeInstantStakeResponse stake_instant_stake = 600;
+    StakeSnapshotResponse stake_snapshot = 601;
+    StakePoolDistributionResponse stake_pool_distribution = 602;
+    StakeDRepDistributionResponse stake_drep_distribution = 603;
+    // epoch
+    EpochNewEpochResponse epoch_new_epoch = 700;
+    EpochSnapshotRotateResponse epoch_snapshot_rotate = 701;
+    EpochPoolReapResponse epoch_pool_reap = 702;
+    EpochMirResponse epoch_mir = 703;
+    EpochPParamUpdateResponse epoch_pparam_update = 704;
+    EpochObligationsResponse epoch_obligations = 705;
+    EpochDonationsResponse epoch_donations = 706;
+    EpochHardForkResponse epoch_hard_fork = 707;
+    // gov
+    GovThresholdsResponse gov_thresholds = 800;
+    GovSpoRatioResponse gov_spo_ratio = 801;
+    GovDRepRatioResponse gov_drep_ratio = 802;
+    GovCommitteeRatioResponse gov_committee_ratio = 803;
+    GovCommitteeQuorumResponse gov_committee_quorum = 804;
+    GovRatifyResponse gov_ratify = 805;
+    GovEnactResponse gov_enact = 806;
+    GovProposalTreeResponse gov_proposal_tree = 807;
+    GovProposalExpiryResponse gov_proposal_expiry = 808;
+    GovDRepExpiryResponse gov_drep_expiry = 809;
+    // praos
+    PraosHeaderEnvelopeResponse praos_header_envelope = 900;
+    PraosVrfCheckResponse praos_vrf_check = 901;
+    PraosLeaderCheckResponse praos_leader_check = 902;
+    PraosKesCheckResponse praos_kes_check = 903;
+    PraosOpCertCheckResponse praos_opcert_check = 904;
+    PraosVrfKeyRegisteredResponse praos_vrf_key_registered = 905;
+    PraosNonceRollingResponse praos_nonce_rolling = 906;
+    PraosNonceCandidateResponse praos_nonce_candidate = 907;
+    PraosNonceEpochResponse praos_nonce_epoch = 908;
+    TpraosOverlayScheduleResponse tpraos_overlay_schedule = 909;
+    // chainsel
+    ChainselCompareResponse chainsel_compare = 1000;
+    ChainselVrfTiebreakResponse chainsel_vrf_tiebreak = 1001;
+    ChainselGenesisDensityResponse chainsel_genesis_density = 1002;
+    // time
+    TimeEraParamsResponse time_era_params = 1100;
+    TimeEraSummaryResponse time_era_summary = 1101;
+    TimeSlotToEpochResponse time_slot_to_epoch = 1102;
+    TimeSlotToWallclockResponse time_slot_to_wallclock = 1103;
+    TimeWallclockToSlotResponse time_wallclock_to_slot = 1104;
+    // byron
+    ByronTxValidateResponse byron_tx_validate = 1200;
+    ByronHeaderValidateResponse byron_header_validate = 1201;
+    ByronChainUpdateResponse byron_chain_update = 1202;
+    ByronUpdateProposalResponse byron_update_proposal = 1203;
+    ByronMinFeeResponse byron_min_fee = 1204;
+    // crypto
+    CryptoAddressDecodeResponse crypto_address_decode = 1300;
+    CryptoScriptHashResponse crypto_script_hash = 1301;
+    CryptoVkeyWitnessResponse crypto_vkey_witness = 1302;
+    CryptoBootstrapWitnessResponse crypto_bootstrap_witness = 1303;
+    CryptoVrfVerifyResponse crypto_vrf_verify = 1304;
+    CryptoVrfProveResponse crypto_vrf_prove = 1305;
+    CryptoKesVerifyResponse crypto_kes_verify = 1306;
+    // net
+    NetCodecChainSyncResponse net_codec_chain_sync = 1400;
+    NetCodecBlockFetchResponse net_codec_block_fetch = 1401;
+    NetCodecTxSubmission2Response net_codec_tx_submission2 = 1402;
+    NetCodecLocalStateQueryResponse net_codec_local_state_query = 1403;
+    NetCodecLocalTxSubmissionResponse net_codec_local_tx_submission = 1404;
+    NetCodecLocalTxMonitorResponse net_codec_local_tx_monitor = 1405;
+    NetCodecHandshakeResponse net_codec_handshake = 1406;
+    NetCodecKeepAliveResponse net_codec_keep_alive = 1407;
+    NetCodecPeerSharingResponse net_codec_peer_sharing = 1408;
+    NetCodecMuxSduResponse net_codec_mux_sdu = 1409;
+    NetAgencyResponse net_agency = 1410;
+  }
+}

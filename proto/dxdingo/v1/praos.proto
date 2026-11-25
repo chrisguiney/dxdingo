@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// praos: header validity and nonce evolution.
+
+message PraosHeaderEnvelopeRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  ProtocolParameters pparams = 3;
+  bytes header = 4;
+  // Nullable: genesis successor.
+  bytes prev_hash = 5;
+  optional uint64 prev_slot = 6;
+  optional uint64 prev_block_no = 7;
+  uint32 max_major_protocol_version = 8;
+}
+
+message PraosHeaderEnvelopeResponse {
+  Rejection rejection = 1;
+}
+
+message PraosVrfCheckRequest {
+  Era era = 1;
+  bytes header = 2;
+  Nonce epoch_nonce = 3;
+  bytes pool_vrf_key_hash = 4;
+}
+
+message PraosVrfCheckResponse {
+  Rejection rejection = 1;
+  bytes leader_value = 2;
+  bytes nonce_value = 3;
+}
+
+message PraosLeaderCheckRequest {
+  Era era = 1;
+  bytes leader_value = 2;
+  uint64 pool_stake = 3;
+  uint64 total_stake = 4;
+  Rational active_slot_coeff = 5;
+}
+
+message PraosLeaderCheckResponse {
+  Rejection rejection = 1;
+  bool is_leader = 2;
+}
+
+message PraosKesCheckRequest {
+  Era era = 1;
+  bytes header = 2;
+  uint64 slots_per_kes_period = 3;
+  uint64 max_kes_evolutions = 4;
+}
+
+message PraosKesCheckResponse {
+  Rejection rejection = 1;
+  uint64 kes_period = 2;
+}
+
+message PraosOpCertCheckRequest {
+  ProtocolVersion protocol_version = 1;
+  bytes header = 2;
+  // Unset: no counter seen for this pool yet.
+  optional uint64 last_counter = 3;
+  bool pool_registered = 4;
+}
+
+message PraosOpCertCheckResponse {
+  Rejection rejection = 1;
+  uint64 new_counter = 2;
+}
+
+message PraosVrfKeyRegisteredRequest {
+  bytes header = 1;
+  repeated PoolStake pool_distribution = 2;
+}
+
+message PraosVrfKeyRegisteredResponse {
+  Rejection rejection = 1;
+  bytes pool_id = 2;
+}
+
+message PraosNonceRollingRequest {
+  Era era = 1;
+  Nonce evolving = 2;
+  bytes nonce_value = 3;
+}
+
+message PraosNonceRollingResponse {
+  Rejection rejection = 1;
+  Nonce evolving = 2;
+}
+
+message BlockNonceInput {
+  uint64 slot = 1;
+  bytes nonce_value = 2;
+}
+
+message PraosNonceCandidateRequest {
+  Era era = 1;
+  Nonce evolving = 2;
+  Nonce candidate = 3;
+  uint64 stability_window = 4;
+  uint64 next_epoch_first_slot = 5;
+  // Ordered by slot.
+  repeated BlockNonceInput blocks = 6;
+}
+
+message PraosNonceCandidateResponse {
+  Rejection rejection = 1;
+  Nonce evolving = 2;
+  Nonce candidate = 3;
+}
+
+message PraosNonceEpochRequest {
+  Era era = 1;
+  Nonce candidate = 2;
+  // Previous epoch's last-applied-block nonce.
+  Nonce previous_lab = 3;
+  Nonce extra_entropy = 4;
+}
+
+message PraosNonceEpochResponse {
+  Rejection rejection = 1;
+  Nonce epoch_nonce = 2;
+}
+
+enum OverlaySlotKind {
+  OVERLAY_SLOT_KIND_UNSPECIFIED = 0;
+  OVERLAY_SLOT_KIND_ACTIVE = 1;
+  OVERLAY_SLOT_KIND_NON_ACTIVE = 2;
+  OVERLAY_SLOT_KIND_PRAOS = 3;
+}
+
+message TpraosOverlayScheduleRequest {
+  uint64 slot = 1;
+  uint64 epoch_first_slot = 2;
+  Rational d = 3;
+  Rational active_slot_coeff = 4;
+  // Ordered as in genesis.
+  repeated GenesisDelegation genesis_delegations = 5;
+}
+
+message TpraosOverlayScheduleResponse {
+  Rejection rejection = 1;
+  OverlaySlotKind kind = 2;
+  bytes genesis_key_hash = 3;
+}

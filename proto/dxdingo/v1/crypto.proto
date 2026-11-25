@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// crypto: primitives and identities.
+
+enum AddressKind {
+  ADDRESS_KIND_UNSPECIFIED = 0;
+  ADDRESS_KIND_BASE = 1;
+  ADDRESS_KIND_POINTER = 2;
+  ADDRESS_KIND_ENTERPRISE = 3;
+  ADDRESS_KIND_REWARD = 4;
+  ADDRESS_KIND_BOOTSTRAP = 5;
+}
+
+message CryptoAddressDecodeRequest {
+  oneof input {
+    bytes raw = 1;
+    string bech32 = 2;
+  }
+}
+
+message CryptoAddressDecodeResponse {
+  Rejection rejection = 1;
+  AddressKind kind = 2;
+  uint32 network_id = 3;
+  Credential payment = 4;
+  Credential stake = 5;
+  Pointer pointer = 6;
+  // Canonical re-encoding.
+  bytes raw = 7;
+}
+
+message CryptoScriptHashRequest {
+  ScriptLanguage language = 1;
+  bytes script = 2;
+}
+
+message CryptoScriptHashResponse {
+  Rejection rejection = 1;
+  bytes hash = 2;
+}
+
+message CryptoVkeyWitnessRequest {
+  bytes body_hash = 1;
+  bytes vkey = 2;
+  bytes signature = 3;
+}
+
+message CryptoVkeyWitnessResponse {
+  Rejection rejection = 1;
+  bool valid = 2;
+  bytes key_hash = 3;
+}
+
+message CryptoBootstrapWitnessRequest {
+  bytes body_hash = 1;
+  bytes vkey = 2;
+  bytes chain_code = 3;
+  bytes attributes = 4;
+  bytes signature = 5;
+  bytes address = 6;
+}
+
+message CryptoBootstrapWitnessResponse {
+  Rejection rejection = 1;
+  bool valid = 2;
+  bool matches_address = 3;
+}
+
+message CryptoVrfVerifyRequest {
+  bytes vkey = 1;
+  bytes proof = 2;
+  bytes alpha = 3;
+}
+
+message CryptoVrfVerifyResponse {
+  Rejection rejection = 1;
+  bool valid = 2;
+  bytes output = 3;
+}
+
+message CryptoVrfProveRequest {
+  bytes skey = 1;
+  bytes alpha = 2;
+}
+
+message CryptoVrfProveResponse {
+  Rejection rejection = 1;
+  bytes proof = 2;
+  bytes output = 3;
+}
+
+message CryptoKesVerifyRequest {
+  uint32 depth = 1;
+  bytes vkey = 2;
+  uint64 period = 3;
+  bytes message = 4;
+  bytes signature = 5;
+}
+
+message CryptoKesVerifyResponse {
+  Rejection rejection = 1;
+  bool valid = 2;
+}

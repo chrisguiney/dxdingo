@@ -1,0 +1,358 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// Shared input groups and ledger-state tables. Repeated fields are sets
+// unless a comment says ordered; comparison sorts them canonically.
+
+// LedgerContext locates a call on the chain.
+message LedgerContext {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  uint64 slot = 3;
+  uint64 epoch = 4;
+  uint32 network_id = 5;
+}
+
+// Globals are the genesis-derived constants (Haskell `Globals`).
+message Globals {
+  uint32 network_magic = 1;
+  uint64 epoch_length = 2;
+  // Seconds.
+  Rational slot_length = 3;
+  uint64 security_param = 4;
+  Rational active_slot_coeff = 5;
+  uint64 slots_per_kes_period = 6;
+  uint64 max_kes_evolutions = 7;
+  uint64 max_lovelace_supply = 8;
+  int64 system_start_unix = 9;
+  uint64 quorum = 10;
+}
+
+message PoolVotingThresholds {
+  Rational motion_no_confidence = 1;
+  Rational committee_normal = 2;
+  Rational committee_no_confidence = 3;
+  Rational hard_fork_initiation = 4;
+  Rational pp_security_group = 5;
+}
+
+message DRepVotingThresholds {
+  Rational motion_no_confidence = 1;
+  Rational committee_normal = 2;
+  Rational committee_no_confidence = 3;
+  Rational update_to_constitution = 4;
+  Rational hard_fork_initiation = 5;
+  Rational pp_network_group = 6;
+  Rational pp_economic_group = 7;
+  Rational pp_technical_group = 8;
+  Rational pp_gov_group = 9;
+  Rational treasury_withdrawal = 10;
+}
+
+// ProtocolParameters uses Conway field names. Parameters an era lacks, or
+// a function does not read, are left unset.
+message ProtocolParameters {
+  optional uint64 min_fee_a = 1;
+  optional uint64 min_fee_b = 2;
+  optional uint32 max_block_body_size = 3;
+  optional uint32 max_tx_size = 4;
+  optional uint32 max_block_header_size = 5;
+  optional uint64 key_deposit = 6;
+  optional uint64 pool_deposit = 7;
+  optional uint64 max_epoch = 8;
+  optional uint32 n_opt = 9;
+  Rational a0 = 10;
+  Rational rho = 11;
+  Rational tau = 12;
+  // Shelley through Alonzo.
+  Rational d = 13;
+  // Shelley through Alonzo.
+  Nonce extra_entropy = 14;
+  ProtocolVersion protocol_version = 15;
+  // Shelley through Mary.
+  optional uint64 min_utxo_value = 16;
+  optional uint64 min_pool_cost = 17;
+  // Alonzo.
+  optional uint64 coins_per_utxo_word = 18;
+  // Babbage onwards.
+  optional uint64 coins_per_utxo_byte = 19;
+  repeated int64 cost_model_plutus_v1 = 20;
+  repeated int64 cost_model_plutus_v2 = 21;
+  repeated int64 cost_model_plutus_v3 = 22;
+  repeated int64 cost_model_plutus_v4 = 23;
+  Rational price_mem = 24;
+  Rational price_steps = 25;
+  optional uint64 max_tx_ex_mem = 26;
+  optional uint64 max_tx_ex_steps = 27;
+  optional uint64 max_block_ex_mem = 28;
+  optional uint64 max_block_ex_steps = 29;
+  optional uint32 max_value_size = 30;
+  optional uint32 collateral_percentage = 31;
+  optional uint32 max_collateral_inputs = 32;
+  PoolVotingThresholds pool_voting_thresholds = 33;
+  DRepVotingThresholds drep_voting_thresholds = 34;
+  optional uint32 committee_min_size = 35;
+  optional uint64 committee_max_term_length = 36;
+  optional uint64 gov_action_lifetime = 37;
+  optional uint64 gov_action_deposit = 38;
+  optional uint64 drep_deposit = 39;
+  optional uint64 drep_activity = 40;
+  Rational min_fee_ref_script_cost_per_byte = 41;
+}
+
+// ByronProtocolParameters holds the Byron-era update-system parameters.
+message ByronProtocolParameters {
+  Rational tx_fee_a = 1;
+  Rational tx_fee_b = 2;
+  uint64 max_tx_size = 3;
+  uint64 max_block_size = 4;
+  uint64 max_header_size = 5;
+  Rational update_adoption_threshold = 6;
+  uint64 update_proposal_ttl = 7;
+  Rational update_vote_threshold = 8;
+}
+
+message Pots {
+  uint64 reserves = 1;
+  uint64 treasury = 2;
+  uint64 fees = 3;
+  uint64 donations = 4;
+  uint64 deposits = 5;
+}
+
+message UtxoEntry {
+  TxIn txin = 1;
+  // On-chain TxOut CBOR.
+  bytes txout = 2;
+}
+
+message Account {
+  Credential credential = 1;
+  uint64 deposit = 2;
+  uint64 balance = 3;
+  // Nullable: delegated pool.
+  bytes pool_id = 4;
+  // Nullable: delegated DRep.
+  DRep drep = 5;
+  // Nullable: registration pointer (pre-Conway pointer addresses).
+  Pointer pointer = 6;
+}
+
+enum PoolStage {
+  POOL_STAGE_UNSPECIFIED = 0;
+  // Registered parameters in effect.
+  POOL_STAGE_CURRENT = 1;
+  // Re-registration taking effect next epoch.
+  POOL_STAGE_FUTURE = 2;
+}
+
+message Pool {
+  bytes pool_id = 1;
+  PoolStage stage = 2;
+  bytes vrf_key_hash = 3;
+  uint64 pledge = 4;
+  uint64 cost = 5;
+  Rational margin = 6;
+  Credential reward_account = 7;
+  // Owner key hashes.
+  repeated bytes owners = 8;
+  uint64 deposit = 9;
+  optional uint64 retiring_epoch = 10;
+}
+
+message DRepRecord {
+  Credential credential = 1;
+  uint64 deposit = 2;
+  uint64 expiry = 3;
+  string anchor_url = 4;
+  bytes anchor_hash = 5;
+}
+
+message CommitteeMember {
+  Credential cold = 1;
+  // Nullable: no hot key authorized.
+  Credential hot = 2;
+  uint64 expiry = 3;
+  bool resigned = 4;
+}
+
+// Committee is unset on a request when there is no committee (after a
+// successful no-confidence action).
+message Committee {
+  repeated CommitteeMember members = 1;
+  Rational threshold = 2;
+}
+
+message Proposal {
+  GovActionId id = 1;
+  GovActionType action_type = 2;
+  // GovAction CBOR.
+  bytes action = 3;
+  // Nullable: previous action of the same purpose.
+  GovActionId parent = 4;
+  uint64 proposed_epoch = 5;
+  uint64 expires_epoch = 6;
+  uint64 deposit = 7;
+  Credential return_account = 8;
+}
+
+message VoteRecord {
+  GovActionId action_id = 1;
+  Voter voter = 2;
+  Vote vote = 3;
+}
+
+message GenesisDelegation {
+  bytes genesis_key_hash = 1;
+  bytes delegate_key_hash = 2;
+  bytes vrf_key_hash = 3;
+}
+
+message Constitution {
+  string anchor_url = 1;
+  bytes anchor_hash = 2;
+  // Nullable.
+  bytes guardrail_script_hash = 3;
+}
+
+// EnactState holds the last enacted action per purpose. Unset ids mean none.
+message EnactState {
+  GovActionId prev_pparam_update = 1;
+  GovActionId prev_hard_fork = 2;
+  GovActionId prev_committee = 3;
+  GovActionId prev_constitution = 4;
+  Constitution constitution = 5;
+}
+
+// PParamProposal is a pre-Conway genesis-key protocol parameter update.
+message PParamProposal {
+  bytes genesis_key_hash = 1;
+  uint64 target_epoch = 2;
+  // ProtocolParamUpdate CBOR.
+  bytes update = 3;
+}
+
+// LedgerState is the ledger as tables. Requests fill only the tables the
+// function reads.
+message LedgerState {
+  repeated UtxoEntry utxo = 1;
+  repeated Account accounts = 2;
+  repeated Pool pools = 3;
+  repeated DRepRecord dreps = 4;
+  Committee committee = 5;
+  repeated Proposal proposals = 6;
+  repeated VoteRecord votes = 7;
+  repeated GenesisDelegation genesis_delegations = 8;
+  EnactState enact_state = 9;
+  Pots pots = 10;
+  repeated PParamProposal pparam_proposals = 11;
+}
+
+// LedgerDelta is what a transition changed. Changed rows are full rows.
+message LedgerDelta {
+  repeated UtxoEntry utxo_added = 1;
+  repeated TxIn utxo_removed = 2;
+  repeated Account accounts_added = 3;
+  repeated Credential accounts_removed = 4;
+  repeated Account accounts_changed = 5;
+  repeated Pool pools_changed = 6;
+  repeated bytes pools_removed = 7;
+  repeated DRepRecord dreps_changed = 8;
+  repeated Credential dreps_removed = 9;
+  // Set when the committee changed; members are the full new set.
+  Committee committee_after = 10;
+  repeated Proposal proposals_added = 11;
+  repeated GovActionId proposals_removed = 12;
+  repeated VoteRecord votes_added = 13;
+  int64 reserves_delta = 14;
+  int64 treasury_delta = 15;
+  int64 fees_delta = 16;
+  int64 deposits_delta = 17;
+  int64 donations_delta = 18;
+  // Set when the enact state changed.
+  EnactState enact_state_after = 19;
+  // Set when protocol parameters changed; full new parameters.
+  ProtocolParameters pparams_after = 20;
+}
+
+enum SnapshotKind {
+  SNAPSHOT_KIND_UNSPECIFIED = 0;
+  SNAPSHOT_KIND_MARK = 1;
+  SNAPSHOT_KIND_SET = 2;
+  SNAPSHOT_KIND_GO = 3;
+}
+
+message StakeEntry {
+  Credential credential = 1;
+  uint64 amount = 2;
+}
+
+message SnapshotEntry {
+  SnapshotKind snapshot = 1;
+  Credential credential = 2;
+  uint64 amount = 3;
+  // Nullable: delegated pool at snapshot time.
+  bytes pool_id = 4;
+}
+
+message BlocksMade {
+  bytes pool_id = 1;
+  uint64 count = 2;
+}
+
+enum RewardKind {
+  REWARD_KIND_UNSPECIFIED = 0;
+  REWARD_KIND_LEADER = 1;
+  REWARD_KIND_MEMBER = 2;
+}
+
+message Reward {
+  Credential credential = 1;
+  bytes pool_id = 2;
+  RewardKind kind = 3;
+  uint64 amount = 4;
+}
+
+message Credit {
+  Credential credential = 1;
+  uint64 amount = 2;
+}
+
+message PoolStake {
+  bytes pool_id = 1;
+  uint64 stake = 2;
+  Rational share = 3;
+  bytes vrf_key_hash = 4;
+}
+
+message DRepStake {
+  DRep drep = 1;
+  uint64 stake = 2;
+}
+
+// EraSummary is one row of the hard-fork era history. Unset end bounds mean
+// the era has no known end.
+message EraSummary {
+  Era era = 1;
+  uint64 start_slot = 2;
+  uint64 start_epoch = 3;
+  // Seconds since system start.
+  Rational start_time = 4;
+  optional uint64 end_slot = 5;
+  optional uint64 end_epoch = 6;
+  Rational end_time = 7;
+  uint64 epoch_length = 8;
+  Rational slot_length = 9;
+  uint64 safe_zone = 10;
+}
+
+// EraHistory is ordered by start slot.
+message EraHistory {
+  repeated EraSummary eras = 1;
+  int64 system_start_unix = 2;
+}

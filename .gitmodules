@@ -1,0 +1,24 @@
+[submodule "third_party/dingo"]
+	path = third_party/dingo
+	url = https://github.com/chrisguiney/dingo.git
+	branch = dxdingo
+[submodule "third_party/gouroboros"]
+	path = third_party/gouroboros
+	url = https://github.com/chrisguiney/gouroboros.git
+	branch = dxdingo
+[submodule "third_party/cardano-ledger"]
+	path = third_party/cardano-ledger
+	url = https://github.com/chrisguiney/cardano-ledger.git
+	branch = dxdingo
+[submodule "third_party/ouroboros-consensus"]
+	path = third_party/ouroboros-consensus
+	url = https://github.com/chrisguiney/ouroboros-consensus.git
+	branch = dxdingo
+[submodule "third_party/ouroboros-network"]
+	path = third_party/ouroboros-network
+	url = https://github.com/chrisguiney/ouroboros-network.git
+	branch = dxdingo
+[submodule "third_party/cardano-base"]
+	path = third_party/cardano-base
+	url = https://github.com/chrisguiney/cardano-base.git
+	branch = dxdingo

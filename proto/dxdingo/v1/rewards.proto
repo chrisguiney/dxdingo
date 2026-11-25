@@ -1,0 +1,168 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// rewards: one epoch's reward update. Primitives take amounts, not shares;
+// the Haskell adapter forms StakeShare values as amount / total_stake.
+
+message RewardsMonetaryExpansionRequest {
+  ProtocolVersion protocol_version = 1;
+  ProtocolParameters pparams = 2;
+  Globals globals = 3;
+  uint64 reserves = 4;
+  uint64 fees = 5;
+  // Blocks made by pools in the epoch (overlay blocks excluded).
+  uint64 blocks_total = 6;
+}
+
+message RewardsMonetaryExpansionResponse {
+  Rejection rejection = 1;
+  Rational eta = 2;
+  uint64 delta_r1 = 3;
+  uint64 reward_pot = 4;
+  uint64 treasury_cut = 5;
+  uint64 pool_pot = 6;
+}
+
+message RewardsMaxPoolRequest {
+  ProtocolParameters pparams = 1;
+  uint64 pool_pot = 2;
+  uint64 total_stake = 3;
+  uint64 pool_stake = 4;
+  uint64 pledge = 5;
+}
+
+message RewardsMaxPoolResponse {
+  Rejection rejection = 1;
+  uint64 max_pool = 2;
+}
+
+message RewardsApparentPerformanceRequest {
+  Rational d = 1;
+  uint64 pool_stake = 2;
+  uint64 total_active_stake = 3;
+  uint64 blocks = 4;
+  uint64 blocks_total = 5;
+}
+
+message RewardsApparentPerformanceResponse {
+  Rejection rejection = 1;
+  Rational performance = 2;
+}
+
+message RewardsLeaderRewardRequest {
+  uint64 pool_reward = 1;
+  uint64 cost = 2;
+  Rational margin = 3;
+  uint64 owner_stake = 4;
+  uint64 pool_stake = 5;
+  uint64 total_stake = 6;
+}
+
+message RewardsLeaderRewardResponse {
+  Rejection rejection = 1;
+  uint64 reward = 2;
+}
+
+message RewardsMemberRewardRequest {
+  uint64 pool_reward = 1;
+  uint64 cost = 2;
+  Rational margin = 3;
+  uint64 member_stake = 4;
+  uint64 pool_stake = 5;
+  uint64 total_stake = 6;
+}
+
+message RewardsMemberRewardResponse {
+  Rejection rejection = 1;
+  uint64 reward = 2;
+}
+
+message RewardsPoolRewardRequest {
+  ProtocolVersion protocol_version = 1;
+  ProtocolParameters pparams = 2;
+  uint64 pool_pot = 3;
+  uint64 total_stake = 4;
+  uint64 total_active_stake = 5;
+  uint64 blocks = 6;
+  uint64 blocks_total = 7;
+  Pool pool = 8;
+  repeated StakeEntry members = 9;
+  repeated Credential registered = 10;
+}
+
+message RewardsPoolRewardResponse {
+  Rejection rejection = 1;
+  uint64 pool_reward = 2;
+  uint64 leader_reward = 3;
+  Rational performance = 4;
+  repeated Reward rewards = 5;
+}
+
+message RewardsRewardUpdateRequest {
+  ProtocolVersion protocol_version = 1;
+  ProtocolParameters pparams = 2;
+  Globals globals = 3;
+  Pots pots = 4;
+  // Only GO rows are read.
+  repeated SnapshotEntry snapshots = 5;
+  repeated Pool pools = 6;
+  repeated BlocksMade blocks = 7;
+  repeated Credential registered = 8;
+}
+
+// RewardUpdate is the outcome of the RUPD calculation (Haskell
+// `RewardUpdate`), applied at the next epoch boundary.
+message RewardUpdate {
+  int64 delta_r = 1;
+  int64 delta_t = 2;
+  int64 delta_f = 3;
+  repeated Reward rewards = 4;
+}
+
+message RewardsRewardUpdateResponse {
+  Rejection rejection = 1;
+  RewardUpdate update = 2;
+}
+
+message RewardsApplyUpdateRequest {
+  ProtocolVersion protocol_version = 1;
+  Pots pots = 2;
+  RewardUpdate update = 3;
+  repeated Credential registered = 4;
+}
+
+message RewardsApplyUpdateResponse {
+  Rejection rejection = 1;
+  Pots pots = 2;
+  repeated Credit credited = 3;
+  uint64 unregistered_to_treasury = 4;
+}
+
+// Non-myopic member rewards (pool ranking). Dingo computes this in float64,
+// so comparison is approximate; see the driver's tolerance.
+message RewardsNonMyopicRequest {
+  ProtocolParameters pparams = 1;
+  uint64 total_stake = 2;
+  uint64 reward_pot = 3;
+  repeated Pool pools = 4;
+  repeated PoolStake pool_distribution = 5;
+  // Per-pool likelihood-derived performance estimates.
+  repeated PoolPerformance performance = 6;
+  uint64 member_stake = 7;
+}
+
+message PoolPerformance {
+  bytes pool_id = 1;
+  Rational performance = 2;
+}
+
+message RewardsNonMyopicResponse {
+  Rejection rejection = 1;
+  repeated Credit member_rewards = 2;
+}

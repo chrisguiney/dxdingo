@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// byron: Byron-era ledger and PBFT.
+
+message ByronDelegation {
+  bytes issuer_vkey = 1;
+  bytes delegate_vkey = 2;
+}
+
+message ByronChainState {
+  // Nullable: genesis.
+  bytes prev_hash = 1;
+  optional uint64 prev_slot = 2;
+  repeated ByronDelegation delegations = 3;
+  // Ordered, oldest first.
+  repeated bytes recent_signers = 4;
+}
+
+message ByronTxValidateRequest {
+  uint32 protocol_magic = 1;
+  ByronProtocolParameters pparams = 2;
+  repeated UtxoEntry utxo = 3;
+  bytes tx = 4;
+}
+
+message ByronTxValidateResponse {
+  Rejection rejection = 1;
+  repeated UtxoEntry utxo_added = 2;
+  repeated TxIn utxo_removed = 3;
+  uint64 fee = 4;
+}
+
+message ByronHeaderValidateRequest {
+  uint32 protocol_magic = 1;
+  uint64 security_param = 2;
+  ByronProtocolParameters pparams = 3;
+  ByronChainState chain_state = 4;
+  bytes header = 5;
+}
+
+message ByronHeaderValidateResponse {
+  Rejection rejection = 1;
+}
+
+message ByronChainUpdateRequest {
+  uint32 protocol_magic = 1;
+  uint64 security_param = 2;
+  ByronProtocolParameters pparams = 3;
+  ByronChainState chain_state = 4;
+  repeated UtxoEntry utxo = 5;
+  bytes block = 6;
+}
+
+message ByronChainUpdateResponse {
+  Rejection rejection = 1;
+  ByronChainState chain_state = 2;
+  repeated UtxoEntry utxo_added = 3;
+  repeated TxIn utxo_removed = 4;
+}
+
+message ByronUpdateProposal {
+  bytes proposal_id = 1;
+  // Proposal CBOR.
+  bytes proposal = 2;
+}
+
+message ByronUpdateVote {
+  bytes proposal_id = 1;
+  bytes voter_vkey = 2;
+  bool accept = 3;
+}
+
+message ByronEndorsement {
+  ProtocolVersion protocol_version = 1;
+  bytes delegate_vkey = 2;
+}
+
+message ByronUpdateState {
+  ProtocolVersion adopted = 1;
+  ByronProtocolParameters pparams = 2;
+  repeated ByronUpdateProposal proposals = 3;
+  repeated ByronUpdateVote votes = 4;
+  repeated ByronEndorsement endorsements = 5;
+}
+
+message ByronUpdateProposalRequest {
+  uint64 slot = 1;
+  ByronUpdateState state = 2;
+  // Block update payload CBOR.
+  bytes update_payload = 3;
+  bytes issuer_vkey = 4;
+}
+
+message ByronUpdateProposalResponse {
+  Rejection rejection = 1;
+  ByronUpdateState state = 2;
+}
+
+message ByronMinFeeRequest {
+  Rational tx_fee_a = 1;
+  Rational tx_fee_b = 2;
+  uint64 size = 3;
+}
+
+message ByronMinFeeResponse {
+  Rejection rejection = 1;
+  uint64 fee = 2;
+}

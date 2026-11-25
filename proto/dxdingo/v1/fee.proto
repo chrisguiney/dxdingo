@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// fee: arithmetic on a transaction. Each function takes its direct
+// arguments; derived sizes are inputs, not recomputed.
+
+message FeeMinFeeRequest {
+  Era era = 1;
+  ProtocolParameters pparams = 2;
+  bytes tx = 3;
+  uint64 ref_script_size = 4;
+}
+
+message FeeMinFeeResponse {
+  Rejection rejection = 1;
+  uint64 min_fee = 2;
+}
+
+message FeeRefScriptSizeRequest {
+  Era era = 1;
+  bytes tx = 2;
+  repeated UtxoEntry utxo = 3;
+}
+
+message FeeRefScriptSizeResponse {
+  Rejection rejection = 1;
+  // Non-distinct total over spending and reference inputs.
+  uint64 size = 2;
+}
+
+message FeeRefScriptFeeRequest {
+  Era era = 1;
+  Rational cost_per_byte = 2;
+  uint64 size = 3;
+}
+
+message FeeRefScriptFeeResponse {
+  Rejection rejection = 1;
+  uint64 fee = 2;
+}
+
+message FeeTxSizeRequest {
+  Era era = 1;
+  bytes tx = 2;
+}
+
+message FeeTxSizeResponse {
+  Rejection rejection = 1;
+  // Size used for the fee calculation.
+  uint64 size = 2;
+}
+
+message FeeScriptFeeRequest {
+  Rational price_mem = 1;
+  Rational price_steps = 2;
+  uint64 ex_mem = 3;
+  uint64 ex_steps = 4;
+}
+
+message FeeScriptFeeResponse {
+  Rejection rejection = 1;
+  uint64 fee = 2;
+}
+
+message FeeMinUtxoRequest {
+  Era era = 1;
+  ProtocolParameters pparams = 2;
+  bytes txout = 3;
+}
+
+message FeeMinUtxoResponse {
+  Rejection rejection = 1;
+  uint64 min_coin = 2;
+}
+
+message FeeScriptIntegrityHashRequest {
+  Era era = 1;
+  ProtocolParameters pparams = 2;
+  // Nullable: Redeemers CBOR.
+  bytes redeemers = 3;
+  // Nullable: TxDats CBOR.
+  bytes datums = 4;
+  repeated PlutusVersion languages = 5;
+}
+
+message FeeScriptIntegrityHashResponse {
+  Rejection rejection = 1;
+  // Nullable: no hash when nothing is hashed.
+  bytes hash = 2;
+}
+
+message FeeValueBalanceRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  LedgerState state = 3;
+  bytes tx = 4;
+}
+
+message FeeValueBalanceResponse {
+  Rejection rejection = 1;
+  uint64 consumed_coin = 2;
+  repeated Asset consumed_assets = 3;
+  uint64 produced_coin = 4;
+  repeated Asset produced_assets = 5;
+  uint64 deposits = 6;
+  uint64 refunds = 7;
+}

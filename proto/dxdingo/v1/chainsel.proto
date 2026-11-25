@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// chainsel: which chain wins.
+
+message ChainTip {
+  uint64 block_no = 1;
+  uint64 slot = 2;
+  bytes issuer_vkey = 3;
+  uint64 issue_no = 4;
+  bytes tiebreak_vrf = 5;
+}
+
+message ChainselCompareRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  // Unset: unrestricted VRF tiebreak.
+  optional uint64 restricted_vrf_window = 3;
+  ChainTip a = 4;
+  ChainTip b = 5;
+}
+
+message ChainselCompareResponse {
+  Rejection rejection = 1;
+  Ordering order = 2;
+  bool prefer_b = 3;
+}
+
+message ChainselVrfTiebreakRequest {
+  optional uint64 restricted_vrf_window = 1;
+  ChainTip a = 2;
+  ChainTip b = 3;
+}
+
+message ChainselVrfTiebreakResponse {
+  Rejection rejection = 1;
+  Ordering order = 2;
+}
+
+message DensityCandidate {
+  string peer = 1;
+  // Ordered header slots after the common prefix.
+  repeated uint64 slots = 2;
+  uint64 tip_slot = 3;
+  bool idling = 4;
+}
+
+message ChainselGenesisDensityRequest {
+  uint64 genesis_window = 1;
+  uint64 security_param = 2;
+  uint64 loe_slot = 3;
+  repeated DensityCandidate candidates = 4;
+}
+
+message ChainselGenesisDensityResponse {
+  Rejection rejection = 1;
+  repeated string disconnect = 2;
+}

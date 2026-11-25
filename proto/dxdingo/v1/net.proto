@@ -1,0 +1,194 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// net: mini-protocol message codecs and agency. State and message names are
+// the Haskell constructor names (for example "StIdle", "MsgRollForward").
+
+// NetCodecRequest is shared by every mini-protocol codec function.
+message NetCodecRequest {
+  // Negotiated node-to-node or node-to-client version.
+  uint32 version = 1;
+  string state = 2;
+  // Era of embedded block, header or tx payloads.
+  Era era = 3;
+  bytes message = 4;
+}
+
+message NetCodecChainSyncRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecChainSyncResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  bytes payload = 4;
+  optional uint64 point_slot = 5;
+  bytes point_hash = 6;
+  optional uint64 tip_slot = 7;
+  optional uint64 tip_block_no = 8;
+}
+
+message NetCodecBlockFetchRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecBlockFetchResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  bytes payload = 4;
+  optional uint64 from_slot = 5;
+  optional uint64 to_slot = 6;
+}
+
+message NetCodecTxSubmission2Request {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecTxSubmission2Response {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  repeated bytes tx_ids = 4;
+  repeated bytes txs = 5;
+  optional uint32 ack = 6;
+  optional uint32 req = 7;
+  optional bool blocking = 8;
+}
+
+message NetCodecLocalStateQueryRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecLocalStateQueryResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  // Constructor path, for example "BlockQuery.GetStakeDistribution".
+  string query = 4;
+  bytes result = 5;
+}
+
+message NetCodecLocalTxSubmissionRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecLocalTxSubmissionResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  bytes tx = 4;
+  // Set for MsgRejectTx: the ledger failures carried by the message.
+  repeated Failure reject_failures = 5;
+}
+
+message NetCodecLocalTxMonitorRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecLocalTxMonitorResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  bytes payload = 4;
+}
+
+message HandshakeVersion {
+  uint32 version = 1;
+  uint32 network_magic = 2;
+  bool initiator_only = 3;
+  uint32 peer_sharing = 4;
+  bool query = 5;
+}
+
+message NetCodecHandshakeRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecHandshakeResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  repeated HandshakeVersion versions = 4;
+}
+
+message NetCodecKeepAliveRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecKeepAliveResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  optional uint32 cookie = 4;
+}
+
+message NetCodecPeerSharingRequest {
+  NetCodecRequest codec = 1;
+}
+
+message NetCodecPeerSharingResponse {
+  Rejection rejection = 1;
+  string message_type = 2;
+  bytes cbor = 3;
+  optional uint32 amount = 4;
+  repeated string peers = 5;
+}
+
+message NetCodecMuxSduRequest {
+  // 8-byte SDU header.
+  bytes header = 1;
+}
+
+enum MuxMode {
+  MUX_MODE_UNSPECIFIED = 0;
+  MUX_MODE_INITIATOR = 1;
+  MUX_MODE_RESPONDER = 2;
+}
+
+message NetCodecMuxSduResponse {
+  Rejection rejection = 1;
+  uint32 timestamp = 2;
+  MuxMode mode = 3;
+  uint32 protocol = 4;
+  uint32 length = 5;
+}
+
+enum MiniProtocol {
+  MINI_PROTOCOL_UNSPECIFIED = 0;
+  MINI_PROTOCOL_CHAIN_SYNC = 1;
+  MINI_PROTOCOL_BLOCK_FETCH = 2;
+  MINI_PROTOCOL_TX_SUBMISSION2 = 3;
+  MINI_PROTOCOL_LOCAL_STATE_QUERY = 4;
+  MINI_PROTOCOL_LOCAL_TX_SUBMISSION = 5;
+  MINI_PROTOCOL_LOCAL_TX_MONITOR = 6;
+  MINI_PROTOCOL_HANDSHAKE = 7;
+  MINI_PROTOCOL_KEEP_ALIVE = 8;
+  MINI_PROTOCOL_PEER_SHARING = 9;
+}
+
+enum Agency {
+  AGENCY_UNSPECIFIED = 0;
+  AGENCY_CLIENT = 1;
+  AGENCY_SERVER = 2;
+  AGENCY_NOBODY = 3;
+}
+
+message NetAgencyRequest {
+  MiniProtocol protocol = 1;
+  string state = 2;
+  string message_type = 3;
+}
+
+// Rejects with "IllegalTransition".
+message NetAgencyResponse {
+  Rejection rejection = 1;
+  string next_state = 2;
+  Agency agency = 3;
+}

@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/rewards.proto";
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// epoch: the epoch-boundary transition and its parts.
+
+message EpochNewEpochRequest {
+  // Epoch is the new epoch.
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+  repeated SnapshotEntry snapshots = 5;
+  repeated BlocksMade blocks_previous = 6;
+  // Pending reward update from the previous epoch.
+  RewardUpdate reward_update = 7;
+}
+
+message EpochNewEpochResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+  repeated SnapshotEntry snapshots = 3;
+  // Ordered.
+  repeated GovActionId enacted = 4;
+  repeated GovActionId expired = 5;
+}
+
+message EpochSnapshotRotateRequest {
+  repeated SnapshotEntry snapshots = 1;
+  repeated StakeEntry instant_stake = 2;
+  repeated Account accounts = 3;
+  repeated Pool pools = 4;
+  uint64 fees = 5;
+}
+
+message EpochSnapshotRotateResponse {
+  Rejection rejection = 1;
+  repeated SnapshotEntry snapshots = 2;
+  uint64 fee_snapshot = 3;
+}
+
+message EpochPoolReapRequest {
+  uint64 epoch = 1;
+  repeated Pool pools = 2;
+  repeated Account accounts = 3;
+}
+
+message EpochPoolReapResponse {
+  Rejection rejection = 1;
+  repeated bytes retired = 2;
+  repeated Credit refunds = 3;
+  uint64 unclaimed_to_treasury = 4;
+  repeated Credential undelegated = 5;
+}
+
+enum MirSource {
+  MIR_SOURCE_UNSPECIFIED = 0;
+  MIR_SOURCE_RESERVES = 1;
+  MIR_SOURCE_TREASURY = 2;
+}
+
+message MirEntry {
+  MirSource source = 1;
+  Credential credential = 2;
+  int64 amount = 3;
+}
+
+message EpochMirRequest {
+  ProtocolVersion protocol_version = 1;
+  uint64 reserves = 2;
+  uint64 treasury = 3;
+  repeated MirEntry mir = 4;
+  uint64 reserves_to_treasury = 5;
+  uint64 treasury_to_reserves = 6;
+  repeated Credential registered = 7;
+}
+
+message EpochMirResponse {
+  Rejection rejection = 1;
+  uint64 reserves = 2;
+  uint64 treasury = 3;
+  repeated Credit credited = 4;
+  bool applied = 5;
+}
+
+message EpochPParamUpdateRequest {
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  repeated PParamProposal proposals = 4;
+  uint64 reserves = 5;
+  uint64 obligations = 6;
+}
+
+message EpochPParamUpdateResponse {
+  Rejection rejection = 1;
+  bool adopted = 2;
+  ProtocolParameters pparams = 3;
+}
+
+message EpochObligationsRequest {
+  repeated Account accounts = 1;
+  repeated Pool pools = 2;
+  repeated DRepRecord dreps = 3;
+  repeated Proposal proposals = 4;
+}
+
+message EpochObligationsResponse {
+  Rejection rejection = 1;
+  uint64 stake_deposits = 2;
+  uint64 pool_deposits = 3;
+  uint64 drep_deposits = 4;
+  uint64 proposal_deposits = 5;
+  uint64 total = 6;
+}
+
+message EpochDonationsRequest {
+  uint64 treasury = 1;
+  uint64 donations = 2;
+}
+
+message EpochDonationsResponse {
+  Rejection rejection = 1;
+  uint64 treasury = 2;
+}
+
+message EpochHardForkRequest {
+  ProtocolVersion from = 1;
+  ProtocolVersion to = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+}
+
+message EpochHardForkResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+}

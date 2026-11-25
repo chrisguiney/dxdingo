@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// meta: describes the node under test.
+
+message MetaInfoRequest {}
+
+message MetaInfoResponse {
+  // For example "dingo" or "cardano-ledger".
+  string implementation = 1;
+  // Source revisions this node was built from, for example
+  // "dingo@ae74b092".
+  repeated string revisions = 2;
+  // Envelope field names the node handles; everything else replies
+  // UNIMPLEMENTED.
+  repeated string implemented = 3;
+}

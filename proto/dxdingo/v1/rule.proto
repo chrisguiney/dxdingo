@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// rule: one transaction against ledger state. Sub-rule functions report
+// every failure the rule finds, not just the first; the Go side runs all
+// predicates of the rule and collects their errors.
+
+message RuleUtxoRequest {
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+  bytes tx = 5;
+}
+
+message RuleUtxoResponse {
+  Rejection rejection = 1;
+}
+
+// Phase-2: script execution outcome against the tx's is_valid flag.
+message RuleUtxosRequest {
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+  EraHistory era_history = 5;
+  bytes tx = 6;
+}
+
+message RuleUtxosResponse {
+  Rejection rejection = 1;
+  bool scripts_valid = 2;
+  uint64 collateral_consumed = 3;
+}
+
+message RuleUtxowRequest {
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+  bytes tx = 5;
+}
+
+message RuleUtxowResponse {
+  Rejection rejection = 1;
+}
+
+// Certificate rules: run the certificate at cert_index, or every
+// certificate in order when unset.
+message RuleDelegRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  LedgerState state = 3;
+  bytes tx = 4;
+  optional uint32 cert_index = 5;
+}
+
+message RuleDelegResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+}
+
+message RulePoolRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  LedgerState state = 3;
+  bytes tx = 4;
+  optional uint32 cert_index = 5;
+}
+
+message RulePoolResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+}
+
+message RuleGovCertRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  LedgerState state = 3;
+  bytes tx = 4;
+  optional uint32 cert_index = 5;
+}
+
+message RuleGovCertResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+}
+
+message RuleGovRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  LedgerState state = 3;
+  bytes tx = 4;
+}
+
+message RuleGovResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+}
+
+// CERTS: certificate sequence plus withdrawals (which must drain balances).
+message RuleCertsRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  LedgerState state = 3;
+  bytes tx = 4;
+}
+
+message RuleCertsResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+}
+
+// Pre-Conway protocol parameter update proposals in a tx.
+message RulePpupRequest {
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+  bytes tx = 5;
+}
+
+message RulePpupResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+}
+
+// LEDGER: the composed transaction rule.
+message RuleLedgerRequest {
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+  EraHistory era_history = 5;
+  bytes tx = 6;
+}
+
+message RuleLedgerResponse {
+  Rejection rejection = 1;
+  bool scripts_valid = 2;
+  LedgerDelta delta = 3;
+}
+
+// BBODY: a whole block body against state.
+message RuleBlockBodyRequest {
+  LedgerContext context = 1;
+  Globals globals = 2;
+  ProtocolParameters pparams = 3;
+  LedgerState state = 4;
+  EraHistory era_history = 5;
+  repeated PoolStake pool_distribution = 6;
+  bytes block = 7;
+}
+
+message RuleBlockBodyResponse {
+  Rejection rejection = 1;
+  LedgerDelta delta = 2;
+  uint64 ex_mem_total = 3;
+  uint64 ex_steps_total = 4;
+  uint64 ref_script_bytes = 5;
+}

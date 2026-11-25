@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// Scalar and identifier types shared by every function.
+//
+// Conventions:
+//   - Coin, asset quantities and execution units are uint64/int64.
+//   - Hashes, keys, signatures and on-chain CBOR are raw bytes, never hex.
+//   - An empty bytes field means "absent" where the comment says nullable.
+
+enum Era {
+  ERA_UNSPECIFIED = 0;
+  ERA_BYRON = 1;
+  ERA_SHELLEY = 2;
+  ERA_ALLEGRA = 3;
+  ERA_MARY = 4;
+  ERA_ALONZO = 5;
+  ERA_BABBAGE = 6;
+  ERA_CONWAY = 7;
+  ERA_DIJKSTRA = 8;
+}
+
+// Rational is an exact fraction. Both parts are base-10 integers carried as
+// strings because reward-calculation ratios exceed 64 bits. Senders reduce
+// the fraction; the denominator is positive; the sign is on the numerator.
+message Rational {
+  string numerator = 1;
+  string denominator = 2;
+}
+
+message ProtocolVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+message TxIn {
+  bytes tx_id = 1;
+  uint32 index = 2;
+}
+
+enum CredentialKind {
+  CREDENTIAL_KIND_UNSPECIFIED = 0;
+  CREDENTIAL_KIND_KEY = 1;
+  CREDENTIAL_KIND_SCRIPT = 2;
+}
+
+message Credential {
+  CredentialKind kind = 1;
+  // Blake2b-224 key or script hash.
+  bytes hash = 2;
+}
+
+message DRep {
+  oneof target {
+    Credential credential = 1;
+    bool always_abstain = 2;
+    bool always_no_confidence = 3;
+  }
+}
+
+enum VoterRole {
+  VOTER_ROLE_UNSPECIFIED = 0;
+  VOTER_ROLE_CONSTITUTIONAL_COMMITTEE = 1;
+  VOTER_ROLE_DREP = 2;
+  VOTER_ROLE_STAKE_POOL = 3;
+}
+
+message Voter {
+  VoterRole role = 1;
+  // Hot credential for committee members, DRep credential for DReps.
+  Credential credential = 2;
+  // Pool id for stake pool voters.
+  bytes pool_id = 3;
+}
+
+enum Vote {
+  VOTE_UNSPECIFIED = 0;
+  VOTE_NO = 1;
+  VOTE_YES = 2;
+  VOTE_ABSTAIN = 3;
+}
+
+message GovActionId {
+  bytes tx_id = 1;
+  uint32 index = 2;
+}
+
+enum GovActionType {
+  GOV_ACTION_TYPE_UNSPECIFIED = 0;
+  GOV_ACTION_TYPE_PARAMETER_CHANGE = 1;
+  GOV_ACTION_TYPE_HARD_FORK_INITIATION = 2;
+  GOV_ACTION_TYPE_TREASURY_WITHDRAWALS = 3;
+  GOV_ACTION_TYPE_NO_CONFIDENCE = 4;
+  GOV_ACTION_TYPE_UPDATE_COMMITTEE = 5;
+  GOV_ACTION_TYPE_NEW_CONSTITUTION = 6;
+  GOV_ACTION_TYPE_INFO = 7;
+}
+
+// Nonce is a Blake2b-256 hash. An empty hash is the neutral nonce.
+message Nonce {
+  bytes hash = 1;
+}
+
+// Pointer locates a stake registration certificate (pointer addresses).
+message Pointer {
+  uint64 slot = 1;
+  uint64 tx_index = 2;
+  uint64 cert_index = 3;
+}
+
+message Asset {
+  bytes policy_id = 1;
+  bytes asset_name = 2;
+  int64 quantity = 3;
+}
+
+enum PlutusVersion {
+  PLUTUS_VERSION_UNSPECIFIED = 0;
+  PLUTUS_VERSION_V1 = 1;
+  PLUTUS_VERSION_V2 = 2;
+  PLUTUS_VERSION_V3 = 3;
+  PLUTUS_VERSION_V4 = 4;
+}
+
+enum ScriptLanguage {
+  SCRIPT_LANGUAGE_UNSPECIFIED = 0;
+  SCRIPT_LANGUAGE_NATIVE = 1;
+  SCRIPT_LANGUAGE_PLUTUS_V1 = 2;
+  SCRIPT_LANGUAGE_PLUTUS_V2 = 3;
+  SCRIPT_LANGUAGE_PLUTUS_V3 = 4;
+  SCRIPT_LANGUAGE_PLUTUS_V4 = 5;
+}
+
+// Failure is one domain rejection. Name is the Haskell constructor name
+// (for example "ValueNotConservedUTxO"); Go adapters map their errors onto
+// it. Rule is the STS rule or check family (for example "UTXO"). Detail is
+// for humans and is never compared.
+message Failure {
+  string rule = 1;
+  string name = 2;
+  string detail = 3;
+}
+
+// Rejection is set on a response when the function rejected its input.
+// The remaining response fields are then unset. Comparison treats the
+// failures as a set of (rule, name).
+message Rejection {
+  repeated Failure failures = 1;
+}
+
+enum Ordering {
+  ORDERING_UNSPECIFIED = 0;
+  ORDERING_LT = 1;
+  ORDERING_EQ = 2;
+  ORDERING_GT = 3;
+}

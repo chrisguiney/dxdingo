@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// gov: Conway ratification and enactment. Actions travel as GovAction CBOR;
+// both sides derive parameter groups from it.
+
+message GovThresholdsRequest {
+  ProtocolVersion protocol_version = 1;
+  ProtocolParameters pparams = 2;
+  // Unset when there is no committee.
+  Committee committee = 3;
+  bytes action = 4;
+}
+
+// An unset threshold means that role does not vote on the action.
+message GovThresholdsResponse {
+  Rejection rejection = 1;
+  Rational spo = 2;
+  Rational drep = 3;
+  Rational committee = 4;
+}
+
+message GovSpoRatioRequest {
+  ProtocolVersion protocol_version = 1;
+  GovActionId action_id = 2;
+  bytes action = 3;
+  repeated PoolStake pool_distribution = 4;
+  // Read for reward accounts.
+  repeated Pool pools = 5;
+  // Read for reward-account DRep delegation (default SPO votes).
+  repeated Account accounts = 6;
+  repeated VoteRecord votes = 7;
+}
+
+message GovSpoRatioResponse {
+  Rejection rejection = 1;
+  Rational ratio = 2;
+  uint64 yes = 3;
+  uint64 no = 4;
+  uint64 abstain = 5;
+}
+
+message GovDRepRatioRequest {
+  uint64 epoch = 1;
+  GovActionId action_id = 2;
+  bytes action = 3;
+  repeated DRepStake drep_distribution = 4;
+  repeated DRepRecord dreps = 5;
+  repeated VoteRecord votes = 6;
+}
+
+message GovDRepRatioResponse {
+  Rejection rejection = 1;
+  Rational ratio = 2;
+  uint64 yes = 3;
+  uint64 no = 4;
+}
+
+message GovCommitteeRatioRequest {
+  uint64 epoch = 1;
+  ProtocolVersion protocol_version = 2;
+  ProtocolParameters pparams = 3;
+  Committee committee = 4;
+  GovActionId action_id = 5;
+  repeated VoteRecord votes = 6;
+}
+
+message GovCommitteeRatioResponse {
+  Rejection rejection = 1;
+  Rational ratio = 2;
+  uint64 yes = 3;
+  uint64 no = 4;
+}
+
+message GovCommitteeQuorumRequest {
+  uint64 epoch = 1;
+  ProtocolVersion protocol_version = 2;
+  ProtocolParameters pparams = 3;
+  Committee committee = 4;
+}
+
+message GovCommitteeQuorumResponse {
+  Rejection rejection = 1;
+  // Unset: the committee cannot approve anything.
+  Rational quorum = 2;
+}
+
+message GovRatifyRequest {
+  LedgerContext context = 1;
+  ProtocolParameters pparams = 2;
+  LedgerState state = 3;
+  repeated PoolStake pool_distribution = 4;
+  repeated DRepStake drep_distribution = 5;
+}
+
+message GovRatifyResponse {
+  Rejection rejection = 1;
+  // Ordered as enacted.
+  repeated GovActionId enacted = 2;
+  repeated GovActionId expired = 3;
+  bool delayed = 4;
+  repeated Credit withdrawals = 5;
+  LedgerDelta delta = 6;
+}
+
+message GovEnactRequest {
+  ProtocolParameters pparams = 1;
+  LedgerState state = 2;
+  GovActionId action_id = 3;
+  bytes action = 4;
+}
+
+message GovEnactResponse {
+  Rejection rejection = 1;
+  repeated Credit withdrawals = 2;
+  LedgerDelta delta = 3;
+}
+
+message GovProposalTreeRequest {
+  repeated Proposal proposals = 1;
+  EnactState enact_state = 2;
+  // Actions enacted this boundary, in order.
+  repeated GovActionId enacted = 3;
+  repeated GovActionId expired = 4;
+}
+
+message GovProposalTreeResponse {
+  Rejection rejection = 1;
+  repeated GovActionId remaining = 2;
+  repeated GovActionId removed = 3;
+}
+
+message GovProposalExpiryRequest {
+  uint64 epoch = 1;
+  repeated Proposal proposals = 2;
+  repeated Account accounts = 3;
+}
+
+message GovProposalExpiryResponse {
+  Rejection rejection = 1;
+  repeated GovActionId expired = 2;
+  repeated Credit refunds = 3;
+  uint64 unclaimed_to_treasury = 4;
+}
+
+message GovDRepExpiryRequest {
+  uint64 epoch = 1;
+  ProtocolParameters pparams = 2;
+  repeated DRepRecord dreps = 3;
+  uint64 dormant_epochs = 4;
+  bool proposals_active = 5;
+}
+
+message GovDRepExpiryResponse {
+  Rejection rejection = 1;
+  repeated DRepRecord dreps_changed = 2;
+  uint64 dormant_epochs = 3;
+}

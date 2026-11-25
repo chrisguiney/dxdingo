@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// stake: who holds how much stake.
+
+message StakeInstantStakeRequest {
+  ProtocolVersion protocol_version = 1;
+  repeated UtxoEntry utxo = 2;
+  // Read for registration pointers.
+  repeated Account accounts = 3;
+}
+
+message StakeInstantStakeResponse {
+  Rejection rejection = 1;
+  repeated StakeEntry stake = 2;
+}
+
+message StakeSnapshotRequest {
+  ProtocolVersion protocol_version = 1;
+  repeated StakeEntry instant_stake = 2;
+  repeated Account accounts = 3;
+  repeated Pool pools = 4;
+}
+
+message StakeSnapshotResponse {
+  Rejection rejection = 1;
+  // MARK rows.
+  repeated SnapshotEntry snapshot = 2;
+  uint64 total = 3;
+}
+
+message StakePoolDistributionRequest {
+  // Rows of one snapshot.
+  repeated SnapshotEntry snapshot = 1;
+  repeated Pool pools = 2;
+}
+
+message StakePoolDistributionResponse {
+  Rejection rejection = 1;
+  repeated PoolStake pools = 2;
+  uint64 total_active = 3;
+}
+
+message StakeDRepDistributionRequest {
+  uint64 epoch = 1;
+  repeated StakeEntry instant_stake = 2;
+  repeated Account accounts = 3;
+  repeated DRepRecord dreps = 4;
+  repeated Proposal proposals = 5;
+}
+
+message StakeDRepDistributionResponse {
+  Rejection rejection = 1;
+  repeated DRepStake dreps = 2;
+}

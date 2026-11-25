@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// codec: decode bytes, re-encode canonically, identify. A rejection here is
+// a decode failure; only accept-versus-reject is compared, not the name.
+// Every response carries the reference re-encoding in `cbor`.
+
+message CodecTxRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  bytes cbor = 3;
+}
+
+message CodecTxResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  bytes tx_id = 3;
+  uint64 size = 4;
+  bool is_valid = 5;
+}
+
+message CodecTxOutputRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  bytes cbor = 3;
+}
+
+message CodecTxOutputResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  bytes address = 3;
+  uint64 coin = 4;
+  repeated Asset assets = 5;
+  bytes datum_hash = 6;
+  bytes inline_datum = 7;
+  bytes script_ref = 8;
+}
+
+message CodecCertificateRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  bytes cbor = 3;
+}
+
+message CodecCertificateResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  // Haskell constructor name, for example "RegDepositTxCert".
+  string cert_kind = 3;
+}
+
+enum GovernanceItemKind {
+  GOVERNANCE_ITEM_KIND_UNSPECIFIED = 0;
+  GOVERNANCE_ITEM_KIND_PROPOSAL = 1;
+  GOVERNANCE_ITEM_KIND_VOTING_PROCEDURES = 2;
+}
+
+message CodecGovernanceRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  GovernanceItemKind kind = 3;
+  bytes cbor = 4;
+}
+
+message CodecGovernanceResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  GovActionType action_type = 3;
+}
+
+message CodecPParamsUpdateRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  bytes cbor = 3;
+}
+
+message CodecPParamsUpdateResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  // Only the fields the update sets.
+  ProtocolParameters update = 3;
+}
+
+message CodecPlutusDataRequest {
+  bytes cbor = 1;
+}
+
+message CodecPlutusDataResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+}
+
+message CodecBlockBodyRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  bytes cbor = 3;
+}
+
+message CodecBlockBodyResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  uint64 tx_count = 3;
+  bytes body_hash = 4;
+}
+
+message CodecBlockHeaderRequest {
+  Era era = 1;
+  ProtocolVersion protocol_version = 2;
+  bytes cbor = 3;
+}
+
+message CodecBlockHeaderResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  bytes header_hash = 3;
+  uint64 slot = 4;
+  uint64 block_no = 5;
+  // Nullable: genesis successor.
+  bytes prev_hash = 6;
+  bytes issuer_vkey = 7;
+  bytes vrf_vkey = 8;
+  uint64 body_size = 9;
+  bytes body_hash = 10;
+  uint64 opcert_counter = 11;
+  uint64 kes_period = 12;
+  ProtocolVersion protocol_version = 13;
+}
+
+message CodecHfcBlockRequest {
+  uint32 node_to_node_version = 1;
+  bytes cbor = 2;
+}
+
+message CodecHfcBlockResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  Era era = 3;
+  bytes header_hash = 4;
+}
+
+message CodecByronBlockRequest {
+  uint32 protocol_magic = 1;
+  bytes cbor = 2;
+}
+
+message CodecByronBlockResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  bool is_boundary = 3;
+  uint64 epoch = 4;
+  uint64 slot = 5;
+  bytes header_hash = 6;
+}
+
+enum LedgerStateFormat {
+  LEDGER_STATE_FORMAT_UNSPECIFIED = 0;
+  LEDGER_STATE_FORMAT_NEW_EPOCH_STATE = 1;
+  LEDGER_STATE_FORMAT_MEMPACK_TXOUT = 2;
+}
+
+message CodecLedgerStateRequest {
+  Era era = 1;
+  LedgerStateFormat format = 2;
+  bytes cbor = 3;
+}
+
+// For NEW_EPOCH_STATE the state is returned as tables, which also converts
+// ledger conformance vectors into rule and epoch requests.
+message CodecLedgerStateResponse {
+  Rejection rejection = 1;
+  bytes cbor = 2;
+  uint64 epoch = 3;
+  LedgerState state = 4;
+  repeated SnapshotEntry snapshots = 5;
+  repeated BlocksMade blocks_current = 6;
+  repeated BlocksMade blocks_previous = 7;
+  ProtocolParameters pparams = 8;
+}

@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package dxdingo.v1;
+
+import "dxdingo/v1/state.proto";
+import "dxdingo/v1/types.proto";
+
+option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1";
+
+// time: hard-fork era history. Past-horizon queries reject with
+// "PastHorizon".
+
+message TimeEraParamsRequest {
+  Era era = 1;
+  Globals globals = 2;
+}
+
+message TimeEraParamsResponse {
+  Rejection rejection = 1;
+  uint64 epoch_length = 2;
+  Rational slot_length = 3;
+  uint64 safe_zone = 4;
+  uint64 genesis_window = 5;
+  uint64 stability_window = 6;
+}
+
+message TimeEraSummaryRequest {
+  // Start bounds and parameters; end bounds unset.
+  EraHistory era_history = 1;
+  uint64 tip_slot = 2;
+}
+
+message TimeEraSummaryResponse {
+  Rejection rejection = 1;
+  EraHistory era_history = 2;
+}
+
+message TimeSlotToEpochRequest {
+  EraHistory era_history = 1;
+  uint64 slot = 2;
+}
+
+message TimeSlotToEpochResponse {
+  Rejection rejection = 1;
+  uint64 epoch = 2;
+  uint64 slot_in_epoch = 3;
+  uint64 slots_left = 4;
+}
+
+message TimeSlotToWallclockRequest {
+  EraHistory era_history = 1;
+  uint64 slot = 2;
+}
+
+message TimeSlotToWallclockResponse {
+  Rejection rejection = 1;
+  // Seconds since system start.
+  Rational time = 2;
+  Rational slot_length = 3;
+}
+
+message TimeWallclockToSlotRequest {
+  EraHistory era_history = 1;
+  // Seconds since system start.
+  Rational time = 2;
+}
+
+message TimeWallclockToSlotResponse {
+  Rejection rejection = 1;
+  uint64 slot = 2;
+  Rational time_spent = 3;
+  Rational time_left = 4;
+}
