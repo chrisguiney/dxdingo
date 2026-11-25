@@ -91,14 +91,14 @@ func TestEpochNewEpochDomain(t *testing.T) {
 		mutate func(*v1.EpochNewEpochRequest)
 		code   v1.HarnessErrorCode
 	}{
-		"not Conway":        {func(r *v1.EpochNewEpochRequest) { r.Context.Era = v1.Era_ERA_BABBAGE }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
-		"reward update":     {func(r *v1.EpochNewEpochRequest) { r.RewardUpdate = &v1.RewardUpdate{} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
-		"proposals":         {func(r *v1.EpochNewEpochRequest) { r.State.Proposals = []*v1.Proposal{{}} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
-		"utxo":              {func(r *v1.EpochNewEpochRequest) { r.State.Utxo = []*v1.UtxoEntry{{}} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
-		"pointer":           {func(r *v1.EpochNewEpochRequest) { r.State.Accounts[0].Pointer = &v1.Pointer{} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
-		"drep target unset": {func(r *v1.EpochNewEpochRequest) { r.State.Accounts[0].Drep = &v1.DRep{} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_BAD_REQUEST},
-		"repeated account":  {func(r *v1.EpochNewEpochRequest) { r.State.Accounts = append(r.State.Accounts, r.State.Accounts[0]) }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_BAD_REQUEST},
-		"short pool id":     {func(r *v1.EpochNewEpochRequest) { r.State.Pools[0].PoolId = []byte{1} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_BAD_REQUEST},
+		"not Conway":          {func(r *v1.EpochNewEpochRequest) { r.Context.Era = v1.Era_ERA_BABBAGE }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
+		"reward update":       {func(r *v1.EpochNewEpochRequest) { r.RewardUpdate = &v1.RewardUpdate{} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
+		"parameter proposals": {func(r *v1.EpochNewEpochRequest) { r.State.PparamProposals = []*v1.PParamProposal{{}} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
+		"utxo":                {func(r *v1.EpochNewEpochRequest) { r.State.Utxo = []*v1.UtxoEntry{{}} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
+		"pointer":             {func(r *v1.EpochNewEpochRequest) { r.State.Accounts[0].Pointer = &v1.Pointer{} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED},
+		"drep target unset":   {func(r *v1.EpochNewEpochRequest) { r.State.Accounts[0].Drep = &v1.DRep{} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_BAD_REQUEST},
+		"repeated account":    {func(r *v1.EpochNewEpochRequest) { r.State.Accounts = append(r.State.Accounts, r.State.Accounts[0]) }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_BAD_REQUEST},
+		"short pool id":       {func(r *v1.EpochNewEpochRequest) { r.State.Pools[0].PoolId = []byte{1} }, v1.HarnessErrorCode_HARNESS_ERROR_CODE_BAD_REQUEST},
 	} {
 		t.Run(name, func(t *testing.T) {
 			req := newEpochRequest(t)

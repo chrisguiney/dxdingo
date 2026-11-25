@@ -23,6 +23,15 @@ message EpochNewEpochRequest {
   // UTxO stake per credential, the ledger's instant stake. The adapters take
   // the stake from here: state.utxo is not read.
   repeated StakeEntry instant_stake = 8;
+  // Governance. state.dreps, proposals, votes, committee and enact_state,
+  // with the two distributions below, are the DRep pulser's snapshot taken at
+  // the boundary into epoch - 1: the proposals and votes it ratified over.
+  // The boundary into epoch completes that RATIFY, enacts what it accepted,
+  // and drops what it expired, so the response's enacted and expired are the
+  // verdict RATIFY reached at epoch - 1 over exactly these tables. Proposals
+  // or votes that arrived after the snapshot are not representable.
+  repeated PoolStake pool_distribution = 9;
+  repeated DRepStake drep_distribution = 10;
 }
 
 message EpochNewEpochResponse {

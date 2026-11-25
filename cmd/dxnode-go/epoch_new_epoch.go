@@ -23,8 +23,18 @@ import (
 // the pots (pots.fees is the fee pot the round pays out), under the scratch
 // ledger's globals; the boundary then applies it. blocks_previous is read
 // only with a reward_update. An account's DRep delegation is kept and reported
-// on a changed row. Governance state, registration pointers and a UTxO table
-// are UNSUPPORTED, since the request carries no state for them to read. The response reports only the pots both
+// on a changed row.
+//
+// Governance: state.dreps, proposals, votes, committee and enact_state, with
+// pool_distribution and drep_distribution, are the pulser snapshot taken at
+// the boundary into the previous epoch. Dingo decides RATIFY over those
+// tables for that boundary (dxoracle.PriorBoundary), and the boundary under
+// test enacts what it accepted and drops what it expired; enacted, expired
+// and the governance-driven parts of the delta are what that boundary did.
+// The domain is gov_ratify's taken at the previous epoch, and a hard fork
+// proposal is UNSUPPORTED. UTxO state, parameter proposals, genesis
+// delegations and registration pointers are UNSUPPORTED, since the request
+// carries no state for them to read. The response reports only the pots both
 // ledgers keep: reserves and treasury. Dingo keeps no fee, deposit or
 // donation pot, so those deltas are left unset on both sides.
 func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.EpochNewEpochResponse, error) {
@@ -32,11 +42,8 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 		return nil, unsupportedf("NEWEPOCH is answered for Conway only")
 	}
 	st := req.GetState()
-	if len(st.GetUtxo()) > 0 ||
-		len(st.GetDreps()) > 0 || len(st.GetProposals()) > 0 || len(st.GetVotes()) > 0 ||
-		len(st.GetPparamProposals()) > 0 || len(st.GetGenesisDelegations()) > 0 ||
-		st.GetCommittee() != nil || st.GetEnactState() != nil {
-		return nil, unsupportedf("UTxO and governance state are not read")
+	if len(st.GetUtxo()) > 0 || len(st.GetPparamProposals()) > 0 || len(st.GetGenesisDelegations()) > 0 {
+		return nil, unsupportedf("UTxO, parameter proposals and genesis delegations are not read")
 	}
 	if req.GetContext().GetEpoch() < 5 {
 		return nil, unsupportedf("epoch below 5 has no reward round to run")
@@ -54,6 +61,13 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 	}
 	if in.PriorMark, in.PriorSet, in.PriorGo, err = priorSnapshots(req.GetSnapshots()); err != nil {
 		return nil, err
+	}
+	var gov *dxoracle.GovState
+	if newEpochHasGovernance(req) {
+		if gov, err = newEpochGovState(ctx, req, pp); err != nil {
+			return nil, err
+		}
+		in.Gov = gov
 	}
 	deposits := map[string]uint64{}
 	seenAccounts := map[string]struct{}{}
@@ -161,6 +175,9 @@ func epochNewEpoch(ctx context.Context, req *v1.EpochNewEpochRequest) (*v1.Epoch
 	})
 	delta.PoolsRemoved = out.PoolsRemoved
 	resp := &v1.EpochNewEpochResponse{Delta: delta}
+	if out.Gov != nil {
+		applyNewEpochGov(req, gov, out.Gov, resp)
+	}
 	for _, part := range []struct {
 		kind v1.SnapshotKind
 		rows []dxoracle.SnapshotStake

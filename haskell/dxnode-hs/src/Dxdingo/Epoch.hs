@@ -64,6 +64,7 @@ import Cardano.Ledger.Shelley.LedgerState
   , LedgerState
   , NewEpochState (..)
   , esLStateL
+  , utxosGovStateL
   , esSnapshotsL
   , curPParamsEpochStateL
   , prevPParamsEpochStateL
@@ -82,7 +83,7 @@ import Cardano.Ledger.BaseTypes (CertIx (..), TxIx (..))
 import Cardano.Slotting.EpochInfo (fixedEpochInfo)
 import Cardano.Slotting.Slot (EpochSize (..))
 import Cardano.Slotting.Time (SystemStart (..), mkSlotLength)
-import Control.Monad (forM_, unless, void, when)
+import Control.Monad (forM, forM_, unless, void, when)
 import Control.Monad.Reader (runReaderT)
 import Control.State.Transition
   ( ApplySTSOpts (..)
@@ -99,9 +100,10 @@ import Cardano.Ledger.Shelley.Core (ppDL, ppExtraEntropyL, ppMinUTxOValueL)
 import Cardano.Ledger.Shelley.PParams (ProposedPPUpdates (..))
 import qualified Data.ByteString.Lazy as BSL
 import Cardano.Ledger.Conway.Governance
-  ( GovAction (InfoAction), GovActionId (..), GovActionIx (..), GovActionState (..)
-  , ProposalProcedure (..), ConwayGovState, cgsProposalsL, proposalsAddAction )
-import Cardano.Ledger.Conway.State (vsDRepsL, certVStateL, dRepDelegationAccountStateL)
+  ( GovAction (HardForkInitiation, InfoAction, NoConfidence, UpdateCommittee), GovActionId (..), GovActionIx (..), GovActionState (..)
+  , GovRelation (..), ProposalProcedure (..), Proposals, RatifyState (..), DRepPulsingState (DRComplete), ConwayGovState
+  , cgsCommitteeL, cgsConstitutionL, cgsDRepPulsingStateL, cgsProposalsL, govStatePrevGovActionIds, proposalsAddAction, proposalsIds, unGovPurposeId )
+import Cardano.Ledger.Conway.State (vsDRepsL, vsCommitteeStateL, certVStateL, dRepDelegationAccountStateL)
 import Cardano.Ledger.Address (AccountAddress (..))
 import Cardano.Ledger.BaseTypes (Anchor (..), Url, textToUrl)
 import Cardano.Ledger.DRep (DRep (..), DRepState (..))
@@ -109,7 +111,7 @@ import Cardano.Ledger.Hashes (unsafeMakeSafeHash)
 import Cardano.Ledger.TxIn (TxId (..))
 import Cardano.Ledger.Shelley.LedgerState (allObligations)
 import Data.Default (def)
-import Data.Foldable (fold)
+import Data.Foldable (fold, toList)
 import Data.Functor.Identity (runIdentity)
 import qualified Data.ByteString as BS
 import qualified Data.List as L
@@ -127,6 +129,7 @@ import Data.Word (Word64)
 import Cardano.Crypto.Hash.Class (hashFromBytes, hashToBytes)
 import Dxdingo.Answer (Answer, respond)
 import Dxdingo.Domain
+import Dxdingo.Gov (actionIdProto, committeeArg, committeeProto, constitutionArg, constitutionProto, ratifyTables, sortedIds)
 import Dxdingo.Rewards (rewardUpdateWith, sortRewards)
 import Dxdingo.Stake (credentialOf, poolHashOf, poolStateOf, currentPools)
 import qualified Proto.Dxdingo.V1.Rewards as RW
@@ -961,27 +964,37 @@ pendingRewardUpdate req = case req ^. #maybe'rewardUpdate of
 
 -- | NEWEPOCH over Conway state: the real rule applies the pending reward
 -- update, then runs SNAP, POOLREAP and the Conway EPOCH step over a state
--- built from the request, with an empty governance state. The delta holds
--- what changed in the accounts, the removed pools and the reserves and
--- treasury; the snapshots are the three after rotation.
+-- built from the request. The delta holds what changed in the accounts, the
+-- removed pools and the reserves and treasury; the snapshots are the three
+-- after rotation.
+--
+-- Governance. state.dreps, proposals, votes, committee and enact_state, with
+-- pool_distribution and drep_distribution, are the DRep pulser's snapshot
+-- taken at the boundary into the previous epoch: the proposals and votes it
+-- ratified over. RATIFY runs over them ('ratifyTables') and its result is
+-- the completed pulser the EPOCH rule consumes, so EPOCH enacts what was
+-- accepted, drops what expired, pays withdrawals and refunds deposits.
+-- enacted and expired are RATIFY's verdict; the delta adds the removed
+-- proposals, DRep expiry changes, the enacted committee and the roots.
+-- Proposals or votes that arrived after the snapshot are not representable.
 --
 -- Domain, shared with dxnode-go: Conway only. A reward_update is accepted when
 -- the real reward calculation produces it from blocks_previous, the GO
 -- snapshot, the pools and pots (pots.fees is the fee pot it pays out), under
 -- the scratch ledger's Globals; blocks_previous is read only with a
--- reward_update. A UTxO table or governance state are UNSUPPORTED, and the
--- fee, deposit and donation pots are not reported because dingo keeps none.
+-- reward_update. Governance is gov_ratify's domain at the previous epoch, and
+-- a hard fork proposal is UNSUPPORTED. A UTxO table, parameter proposals and
+-- genesis delegations are UNSUPPORTED, and the fee, deposit and donation
+-- pots are not reported because dingo keeps none.
 newEpoch :: E.EpochNewEpochRequest -> Result E.EpochNewEpochResponse
 newEpoch req = do
   unless (req ^. #context . #era == P.ERA_CONWAY) $ unsupported "NEWEPOCH is answered for Conway only"
   let st = req ^. #state
   when
     ( not (null (st ^. #utxo))
-        || not (null (st ^. #dreps)) || not (null (st ^. #proposals)) || not (null (st ^. #votes))
         || not (null (st ^. #pparamProposals)) || not (null (st ^. #genesisDelegations))
-        || isJust (st ^. #maybe'committee) || isJust (st ^. #maybe'enactState)
     )
-    $ unsupported "UTxO and governance state are not read"
+    $ unsupported "UTxO, parameter proposals and genesis delegations are not read"
   let epoch = req ^. #context . #epoch
   when (epoch < 5) $ unsupported "epoch below 5 has no reward round to run"
   pp <- conwayPParams (req ^. #maybe'pparams)
@@ -996,6 +1009,7 @@ newEpoch req = do
   let totals = Map.unionWith (+) instant (Map.map (\(_, b, _, _) -> toInteger b) accts)
   when (any (> toInteger (maxBound :: Word64)) (Map.elems totals)) $ unsupported "stake of one credential exceeds Word64"
   pending <- pendingRewardUpdate req
+  gov <- newEpochGov req pp
   let pots = st ^. #pots
       accountMap =
         Map.foldrWithKey
@@ -1014,9 +1028,12 @@ newEpoch req = do
           & certPStateL . psStakePoolsL .~ Map.fromList [(pid, sps) | (pid, sps, _) <- pools]
           & certPStateL . psRetiringL .~ Map.fromList [(pid, EpochNo e) | (pid, _, Just e) <- pools]
           & certDStateL . accountsL .~ accountMap
+          & certVStateL . vsDRepsL .~ maybe Map.empty ngDReps gov
+          & certVStateL . vsCommitteeStateL .~ maybe (CommitteeState Map.empty) ngCommitteeState gov
       ls =
         (def :: LedgerState ConwayEra)
           & lsCertStateL .~ cs
+          & lsUTxOStateL . utxosGovStateL .~ maybe def ngGovState gov
           & lsUTxOStateL . utxosDonationL .~ Coin (toInteger (pots ^. #donations))
           & lsUTxOStateL . utxosFeesL .~ maybe (Coin 0) (const (Coin (toInteger (pots ^. #fees)))) (req ^. #maybe'rewardUpdate)
           & lsUTxOStateL . instantStakeL .~ ConwayInstantStake (Map.map (CompactCoin . fromInteger) (Map.filter (> 0) instant))
@@ -1065,7 +1082,9 @@ newEpoch req = do
                & #poolsRemoved .~ L.sort removed
                & #reservesDelta .~ deltaOf (casReserves cas1) (pots ^. #reserves)
                & #treasuryDelta .~ deltaOf (casTreasury cas1) (pots ^. #treasury)
+               & maybe id (govDelta st es1) gov
            )
+      & maybe id govVerdict gov
       & #snapshots
         .~ ( rowsOf S.SNAPSHOT_KIND_MARK (ssStakeMark snaps)
                ++ rowsOf S.SNAPSHOT_KIND_SET (ssStakeSet snaps)
@@ -1084,6 +1103,104 @@ newEpoch req = do
     addInstant acc e = do
       c <- credentialOf "instant_stake" (e ^. #credential)
       pure (Map.insertWith (+) c (toInteger (e ^. #amount)) acc)
+
+-- | The governance part of a NEWEPOCH request: the state RATIFY decided over
+-- when the DRep pulser was started at the boundary into the previous epoch.
+data NewEpochGov = NewEpochGov
+  { ngGovState :: ConwayGovState ConwayEra
+  , ngDReps :: Map.Map (Credential DRepRole) DRepState
+  , ngCommitteeState :: CommitteeState ConwayEra
+  , ngProposals :: Proposals ConwayEra
+  , ngRatified :: RatifyState ConwayEra
+  }
+
+-- | Governance state is present when any of its tables or distributions is.
+-- It is decoded as for gov_ratify, taken at the previous epoch; RATIFY runs
+-- over it ('ratifyTables') and its result stands as the completed pulser the
+-- EPOCH rule consumes. A hard fork proposal is UNSUPPORTED: enacting it
+-- changes the protocol version, which runs the HARDFORK rule.
+newEpochGov :: E.EpochNewEpochRequest -> PParams ConwayEra -> Result (Maybe NewEpochGov)
+newEpochGov req pp
+  | not present = pure Nothing
+  | otherwise = do
+      let epoch = req ^. #context . #epoch
+      constitution <- constitutionArg (st ^. #maybe'enactState >>= (^. #maybe'constitution))
+      (rs, props, gass) <- ratifyTables (epoch - 1) pp constitution st (req ^. #poolDistribution) (req ^. #drepDistribution)
+      when (any (isHardFork . pProcGovAction . gasProposalProcedure) gass) $
+        unsupported "a hard fork proposal changes the protocol version"
+      (committee, cs) <- committeeArg (st ^. #maybe'committee)
+      dreps <- forM (st ^. #dreps) $ \d -> do
+        c <- credentialOf "dreps credential" (d ^. #credential)
+        pure (c, DRepState (EpochNo (d ^. #expiry)) SNothing (CompactCoin (d ^. #deposit)) Set.empty)
+      let gs =
+            (def :: ConwayGovState ConwayEra)
+              & cgsProposalsL .~ props
+              & cgsCommitteeL .~ committee
+              & cgsConstitutionL .~ constitution
+              & cgsDRepPulsingStateL .~ DRComplete def rs
+      pure (Just (NewEpochGov gs (Map.fromList dreps) cs props rs))
+  where
+    st = req ^. #state
+    present =
+      not (null (st ^. #dreps)) || not (null (st ^. #proposals)) || not (null (st ^. #votes))
+        || isJust (st ^. #maybe'committee) || isJust (st ^. #maybe'enactState)
+        || not (null (req ^. #poolDistribution)) || not (null (req ^. #drepDistribution))
+    isHardFork = \case HardForkInitiation {} -> True; _ -> False
+
+-- | The verdict RATIFY reached: the enacted actions in order and the expired
+-- ones in canonical order.
+govVerdict :: NewEpochGov -> E.EpochNewEpochResponse -> E.EpochNewEpochResponse
+govVerdict g resp =
+  resp
+    & #enacted .~ map (actionIdProto . gasId) (toList (rsEnacted rs))
+    & #expired .~ sortedIds (Set.toList (rsExpired rs))
+  where
+    rs = ngRatified g
+
+-- | What the boundary did to the governance state: the proposals that left
+-- (enacted, expired, and their subtrees), the DReps whose expiry changed, the
+-- enacted committee when a committee action was enacted, and the roots and
+-- constitution after.
+govDelta :: S.LedgerState -> EpochState ConwayEra -> NewEpochGov -> S.LedgerDelta -> S.LedgerDelta
+govDelta st es1 g delta =
+  delta
+    & #proposalsRemoved .~ sortedIds (Set.toList removed)
+    & #drepsChanged .~ changed
+    & maybe id (#committeeAfter .~) committeeAfter
+    & #enactStateAfter .~ enactState
+  where
+    gs1 = es1 ^. esLStateL . lsUTxOStateL . utxosGovStateL :: ConwayGovState ConwayEra
+    before = Set.fromList (toList (proposalsIds (ngProposals g)))
+    removed = before `Set.difference` Set.fromList (toList (proposalsIds (gs1 ^. cgsProposalsL)))
+    dreps1 = es1 ^. esLStateL . lsCertStateL . certVStateL . vsDRepsL
+    changed =
+      L.sortOn
+        (\r -> (fromEnum (r ^. #credential . #kind), r ^. #credential . #hash))
+        [ r & #expiry .~ e1
+        | r <- st ^. #dreps
+        , Right c <- [credentialOf "dreps credential" (r ^. #credential)]
+        , Just d1 <- [Map.lookup c dreps1]
+        , let EpochNo e1 = drepExpiry d1
+        , e1 /= r ^. #expiry
+        ]
+    committeeAfter
+      | any committeeAction (toList (rsEnacted (ngRatified g))) = Just (committeeProto (gs1 ^. cgsCommitteeL))
+      | otherwise = Nothing
+    committeeAction gas = case pProcGovAction (gasProposalProcedure gas) of
+      NoConfidence {} -> True
+      UpdateCommittee {} -> True
+      _ -> False
+    GovRelation rPP rHF rCC rCons = govStatePrevGovActionIds @ConwayEra gs1
+    rootProto = \case
+      SJust i -> Just (actionIdProto (unGovPurposeId i))
+      SNothing -> Nothing
+    enactState =
+      (defMessage :: S.EnactState)
+        & maybe id (#prevPparamUpdate .~) (rootProto rPP)
+        & maybe id (#prevHardFork .~) (rootProto rHF)
+        & maybe id (#prevCommittee .~) (rootProto rCC)
+        & maybe id (#prevConstitution .~) (rootProto rCons)
+        & maybe id (#constitution .~) (constitutionProto (gs1 ^. cgsConstitutionL) (st ^. #maybe'enactState >>= (^. #maybe'constitution)))
 
 -- | The DRep a request account delegates to. An unset target is malformed.
 drepFromProto :: P.DRep -> Result DRep

@@ -10,6 +10,17 @@
 module Dxdingo.Gov
   ( dispatch
   , implemented
+  , ratifyTables
+  , runEpoch
+  , epochStateOf
+  , forestOf
+  , expiryParams
+  , constitutionArg
+  , committeeArg
+  , committeeProto
+  , constitutionProto
+  , actionIdProto
+  , sortedIds
   ) where
 
 import Cardano.Crypto.Hash (Hash, HashAlgorithm, hashFromBytes, hashToBytes)
@@ -579,21 +590,38 @@ govRatify req = do
       epochW = fromMaybe defMessage (req ^. #maybe'context) ^. #epoch
   when (epochW == 0) (unsupported "no ratification before epoch 1")
   pp <- paramsArg mpp (mpp >>= (^. #maybe'protocolVersion))
+  (rs, _, _) <- ratifyTables epochW pp def st (req ^. #poolDistribution) (req ^. #drepDistribution)
+  pure
+    ( defMessage
+        & #enacted .~ map (actionIdProto . gasId) (toList (rsEnacted rs))
+        & #expired .~ sortedIds (Set.toList (rsExpired rs))
+        & #delayed .~ rsDelayed rs
+    )
+
+-- | The RATIFY pass over the tables of a ledger state at epoch @epochW@: the
+-- result, the proposals as a forest under the enacted roots, and the
+-- proposals with their votes. The node reached the same tables when it
+-- started the DRep pulser at the boundary into @epochW@; the boundary into
+-- the next epoch completes that pulser.
+ratifyTables ::
+  Word64 -> PParams Cw -> Constitution Cw -> S.LedgerState -> [S.PoolStake] -> [S.DRepStake] ->
+  Result (RatifyState Cw, Proposals Cw, [GovActionState Cw])
+ratifyTables epochW pp constitution st poolDistribution drepDistribution = do
   checkRatifyProposals epochW (st ^. #proposals)
   gass <- traverse (proposalWith (st ^. #votes)) (st ^. #proposals)
   roots <- rootsArg (st ^. #maybe'enactState)
-  _ <- forestOf roots gass
+  props <- forestOf roots gass
   (committee, cs) <- committeeArg (st ^. #maybe'committee)
   drepStates <- traverse drepStateOf (st ^. #dreps)
   accounts <- accountsArg (st ^. #accounts)
   pools <- traverse poolState (st ^. #pools)
-  poolDist <- traverse poolEntry (req ^. #poolDistribution)
+  poolDist <- traverse poolEntry poolDistribution
   let total = sum (map snd poolDist)
   totalNZ <-
     if total == 0
       then unsupported "pool distribution has no stake"
       else pure (unsafeNonZero (Coin (toInteger total)))
-  drepDist <- traverse distEntry (req ^. #drepDistribution)
+  drepDist <- traverse distEntry drepDistribution
   let env =
         (def :: RatifyEnv Cw)
           { reStakePoolDistr =
@@ -611,15 +639,11 @@ govRatify req = do
         def
           & ensCurPParamsL .~ pp
           & ensCommitteeL .~ committee
+          & ensConstitutionL .~ constitution
           & ensTreasuryL .~ Coin (toInteger (fromMaybe defMessage (st ^. #maybe'pots) ^. #treasury))
           & ensPrevGovActionIdsL .~ roots
   rs <- runRatify env (RatifyState enact mempty mempty False) (RatifySignal (reorderActions (SSeq.fromList gass)))
-  pure
-    ( defMessage
-        & #enacted .~ map (actionIdProto . gasId) (toList (rsEnacted rs))
-        & #expired .~ sortedIds (Set.toList (rsExpired rs))
-        & #delayed .~ rsDelayed rs
-    )
+  pure (rs, props, gass)
   where
     poolEntry p = do
       h <- keyHashArg "pool_distribution pool_id" (p ^. #poolId)

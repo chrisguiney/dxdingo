@@ -3,7 +3,23 @@
 
 module Test.Epoch (tests) where
 
+import Cardano.Crypto.Hash (hashFromBytes)
+import Cardano.Ledger.BaseTypes (StrictMaybe (..))
+import Cardano.Ledger.Coin (Coin (..), CompactForm (..))
+import Cardano.Ledger.Conway (ConwayEra)
+import Cardano.Ledger.Conway.Governance (GovAction (InfoAction), GovRelation (..), RatifyEnv (..), RatifyState (..), Vote (VoteYes))
+import Cardano.Ledger.Conway.Rules (dRepAcceptedRatio)
+import Cardano.Ledger.Conway.State (VState (..), certVStateL, vsDRepsL)
+import Cardano.Ledger.Credential (Credential (..))
+import Cardano.Ledger.DRep (DRep (..), DRepState (..))
+import Cardano.Ledger.Keys (KeyHash (..))
+import Cardano.Ledger.Shelley.LedgerState (esLStateL, lsCertStateL)
+import Cardano.Slotting.Slot (EpochNo (..))
 import qualified Data.ByteString as BS
+import Data.Default (def)
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import Dxdingo.Gov (epochStateOf, expiryParams, forestOf, runEpoch)
 import Data.Maybe (isNothing)
 import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
@@ -13,6 +29,7 @@ import qualified Proto.Dxdingo.V1.Epoch as E
 import qualified Proto.Dxdingo.V1.State as S
 import qualified Proto.Dxdingo.V1.Types as P
 import Dxdingo.Epoch (decodesInAllegra, decodesInShelley, unregisteredPoolStake)
+import qualified Test.Gov as G
 import Test.Util
 
 -- Same cases as dxnode-go cmd/dxnode-go/epoch_test.go.
@@ -111,6 +128,23 @@ tests =
   , ("new epoch reward: a zero reward is UNSUPPORTED", newErr (rewardReq & #rewardUpdate . #rewards %~ (++ [defMessage & #credential .~ cred 1 & #poolId .~ h 0xa0 & #kind .~ S.REWARD_KIND_LEADER])) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("new epoch reward: a reward without a kind is UNSUPPORTED", newErr (rewardReq & #rewardUpdate . #rewards %~ (\(x : xs) -> (x & #kind .~ S.REWARD_KIND_UNSPECIFIED) : xs)) == HARNESS_ERROR_CODE_UNSUPPORTED)
   , ("new epoch reward: blocks without an update leave the boundary alone", null (blocksOnlyDelta ^. #accountsChanged) && (blocksOnlyDelta ^. #reservesDelta, blocksOnlyDelta ^. #treasuryDelta) == (0, 0))
+  , ("new epoch gov: withdrawal enacted and expiry dropped", govIds (govOf wdReq) == ([1], [2], [1, 2]))
+  , ("new epoch gov: withdrawal pays 0x61, refund pays 0x62", govBalances wdReq == [(0x61, 1007), (0x62, 311)])
+  , ("new epoch gov: treasury is the withdrawal less the unclaimed deposit", (govDelta wdReq ^. #treasuryDelta) == (-600))
+  , ("new epoch gov: no DRep expiry changes while a proposal is active", null (govDelta wdReq ^. #drepsChanged))
+  , ("new epoch gov: no committee change without a committee action", isNothing (govDelta wdReq ^. #maybe'committeeAfter))
+  , ("new epoch gov: a parameter change is enacted and becomes the root", govIds (govOf pcReq) == ([1], [], [1]) && fmap (BS.head . (^. #txId)) (govDelta pcReq ^. #enactStateAfter . #maybe'prevPparamUpdate) == Just 1)
+  , ("new epoch gov: a parameter change refunds its deposit", govBalances pcReq == [(0x62, 411)] && (govDelta pcReq ^. #treasuryDelta) == 0)
+  , ("new epoch gov: no confidence needs no committee vote and removes the committee", govIds (govOf ncReq) == ([1], [], [1]) && fmap (null . (^. #members)) (govDelta ncReq ^. #maybe'committeeAfter) == Just True)
+  , ("new epoch gov: no confidence becomes the committee root", fmap (BS.head . (^. #txId)) (govDelta ncReq ^. #enactStateAfter . #maybe'prevCommittee) == Just 1)
+  , ("new epoch gov: nothing accepted leaves the proposal", govIds (govOf rejReq) == ([], [], []) && null (govDelta rejReq ^. #accountsChanged) && (govDelta rejReq ^. #treasuryDelta) == 0)
+  , ("new epoch gov: a hard fork proposal is UNSUPPORTED", newErr (govReq [govProp 1 (G.hfAction 0) 15 0 0x50] []) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch gov: no pool stake is UNSUPPORTED", newErr (govReq [govProp 3 G.actInfo 15 0 0x50] [] & #poolDistribution .~ []) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch gov: a proposal expired before the previous epoch is UNSUPPORTED", newErr (govReq [govProp 1 G.actInfo 7 0 0x50] []) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("new epoch gov: an undecodable action is BAD_REQUEST", newErr (govReq [govProp 1 (BS.pack [0xff]) 15 0 0x50] []) == HARNESS_ERROR_CODE_BAD_REQUEST)
+  , ("new epoch: a parameter proposal is UNSUPPORTED", newErr (newReq & #state . #pparamProposals .~ [defMessage]) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("divergence: new epoch gov: the EPOCH rule leaves a DRep's expiry alone and counts a dormant epoch", dormantEpoch == Right (EpochNo 1, [EpochNo 100]))
+  , ("divergence: new epoch gov: a DRep that expired before the pulser's epoch counts nothing", drepRatio 9 10 == 0 && drepRatio 10 10 == 1)
   , ("divergence: snapshot rotate: stake delegated to an unregistered pool is active stake", unregisteredPoolStake == Just 42)
   , ("snapshot rotate: stake overflow is UNSUPPORTED", rotateErr (rotateReq & #instantStake %~ (++ [defMessage & #credential .~ cred 4 & #amount .~ maxBound])) == HARNESS_ERROR_CODE_UNSUPPORTED)
   ]
@@ -144,6 +178,54 @@ tests =
       ]
     drepRowOf r i = ((call (#epochNewEpoch .~ r)) ^. #epochNewEpoch . #delta . #accountsChanged) !! i
     drepRow d = drepRowOf (newReq & #state . #accounts %~ (\(x : y : zs) -> x : (y & #drep .~ d) : zs)) 1 ^. #maybe'drep
+    -- The library's own rules, with no adapter: the EPOCH rule over a state
+    -- with one DRep (expiry 100) and no proposal, and the accepted ratio of
+    -- the only DRep (all the stake, voted yes) with the given expiry at the
+    -- given epoch.
+    drepKey = KeyHashObj (KeyHash (maybe (error "hash") id (hashFromBytes (BS.replicate 28 0xd1))))
+    dormantEpoch = do
+      props <- forestOf (GovRelation SNothing SNothing SNothing SNothing) []
+      let es0 = epochStateOf expiryParams props def (Coin 0) (RatifyState def mempty mempty False)
+            & esLStateL . lsCertStateL . certVStateL . vsDRepsL .~ Map.singleton drepKey (DRepState (EpochNo 100) SNothing (CompactCoin 0) Set.empty)
+      es1 <- runEpoch (EpochNo 11) es0
+      let vs = es1 ^. esLStateL . lsCertStateL . certVStateL
+      pure (vsNumDormantEpochs vs, map drepExpiry (Map.elems (vsDReps vs)))
+    drepRatio expiry epoch =
+      let env = (def :: RatifyEnv ConwayEra)
+            { reDRepDistr = Map.singleton (DRepCredential drepKey) (CompactCoin 100)
+            , reDRepState = Map.singleton drepKey (DRepState (EpochNo expiry) SNothing (CompactCoin 0) Set.empty)
+            , reCurrentEpoch = EpochNo epoch
+            }
+       in dRepAcceptedRatio env (Map.singleton drepKey VoteYes) (InfoAction :: GovAction ConwayEra)
+    -- Governance at the boundary into epoch 11, the cases of dxnode-go
+    -- cmd/dxnode-go/epoch_new_epoch_gov_test.go. DRep 0xd1 holds all the DRep
+    -- stake, pool 0xb1 all the pool stake, the committee is three members with
+    -- quorum 2/3, the treasury 5000 and the registered accounts 0x61 (balance 7)
+    -- and 0x62 (balance 11). Proposal 1 withdraws 1000 to 0x61 and every voter
+    -- accepts it; proposal 2 expired at epoch 10 and returns 300 to 0x62;
+    -- proposal 3 stays active. Treasury: 5000 - 1000 + 400 (proposal 1's deposit,
+    -- return account 0x50 unregistered).
+    govProp i act expires dep ret = G.proposal i act & #expiresEpoch .~ expires & #deposit .~ dep & #returnAccount .~ G.cred ret :: S.Proposal
+    govReq :: [S.Proposal] -> [S.VoteRecord] -> E.EpochNewEpochRequest
+    govReq props votes = newReq
+      & #state . #accounts .~ [defMessage & #credential .~ cred 1, defMessage & #credential .~ cred 0x61 & #balance .~ 7, defMessage & #credential .~ cred 0x62 & #balance .~ 11]
+      & #state . #pools .~ [pool 0xa0 1 11 & #maybe'retiringEpoch .~ Nothing]
+      & #state . #pots .~ (defMessage & #reserves .~ 10000000000 & #treasury .~ 5000)
+      & #state . #dreps .~ [defMessage & #credential .~ cred 0xd1 & #deposit .~ 500 & #expiry .~ 100]
+      & #state . #committee .~ G.testCommittee False
+      & #state . #proposals .~ props
+      & #state . #votes .~ votes
+      & #poolDistribution .~ [G.poolStake 0xb1 100]
+      & #drepDistribution .~ [defMessage & #drep .~ G.keyDRep 0xd1 & #stake .~ 100]
+    govOf r = call (#epochNewEpoch .~ r) ^. #epochNewEpoch
+    govDelta r = govOf r ^. #delta
+    govIds r = (map (fromIntegral . BS.head . (^. #txId)) (r ^. #enacted) :: [Int], map (fromIntegral . BS.head . (^. #txId)) (r ^. #expired), map (fromIntegral . BS.head . (^. #txId)) (r ^. #delta . #proposalsRemoved))
+    govBalances r = [(fromIntegral (BS.head (a ^. #credential . #hash)) :: Int, a ^. #balance) | a <- govDelta r ^. #accountsChanged]
+    wdReq = govReq [govProp 1 (G.withdrawalAction [(0x61, 1000)]) 15 400 0x50, govProp 2 G.actInfo 9 300 0x62, govProp 3 G.actInfo 15 0 0x50] (G.allVote 1 P.VOTE_YES)
+    pcReq = govReq [govProp 1 (G.pcAction 0) 15 400 0x62, govProp 3 G.actInfo 15 0 0x50] (G.allVote 1 P.VOTE_YES)
+    ncReq = govReq [govProp 1 G.actNoConfidence 15 400 0x62, govProp 3 G.actInfo 15 0 0x50]
+      [G.voteOn 1 P.VOTER_ROLE_DREP (G.cred 0xd1) P.VOTE_YES, G.spoVote 0xb1 P.VOTE_YES (G.actionId 1)]
+    rejReq = govReq [govProp 1 (G.withdrawalAction [(0x61, 1000)]) 15 400 0x50] (take 3 (G.allVote 1 P.VOTE_YES))
     -- A pending reward round, the case of dxnode-go
     -- cmd/dxnode-go/epoch_new_epoch_test.go. Pool a0 holds all 4.4999e13
     -- active stake (sigma = 1/1000 of the 4.4999e16 circulation) and made all

@@ -3,7 +3,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Test.Gov (tests) where
+module Test.Gov
+  ( tests
+  , actInfo
+  , actNoConfidence
+  , actionId
+  , allVote
+  , cred
+  , hfAction
+  , keyDRep
+  , pcAction
+  , poolStake
+  , proposal
+  , spoVote
+  , testCommittee
+  , voteOn
+  , withdrawalAction
+  ) where
 
 import Cardano.Crypto.Hash (hashFromBytes)
 import Cardano.Ledger.BaseTypes (BoundedRational (boundRational), EpochNo (..), ProtVer (..), StrictMaybe (..))
