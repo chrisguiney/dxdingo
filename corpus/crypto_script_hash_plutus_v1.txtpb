@@ -1,0 +1,5 @@
+# PlutusV1 binary, tag 1
+crypto_script_hash:  {
+  language:  SCRIPT_LANGUAGE_PLUTUS_V1
+  script:  "Y\x01\x00\x01\x00\x003\"\"22"
+}

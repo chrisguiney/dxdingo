@@ -1,0 +1,4 @@
+# cardano-base vrf_ver03_standard_10: empty alpha
+crypto_vrf_prove:  {
+  skey:  "\x9da\xb1\x9d\xef\xfdZ`\xba\x84J\xf4\x92\xec,\xc4DI\xc5i{2i\x19p;\xac\x03\x1c\xae\x7f`"
+}

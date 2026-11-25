@@ -1,0 +1,12 @@
+# a + b*size one lovelace above maxLovelaceVal
+byron_min_fee:  {
+  tx_fee_a:  {
+    numerator:  "45000000000000000"
+    denominator:  "1"
+  }
+  tx_fee_b:  {
+    numerator:  "1"
+    denominator:  "1"
+  }
+  size:  1
+}

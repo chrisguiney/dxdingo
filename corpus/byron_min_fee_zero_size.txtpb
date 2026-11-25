@@ -1,0 +1,11 @@
+# size 0 is the summand alone
+byron_min_fee:  {
+  tx_fee_a:  {
+    numerator:  "155381"
+    denominator:  "1"
+  }
+  tx_fee_b:  {
+    numerator:  "43946"
+    denominator:  "1000000"
+  }
+}
