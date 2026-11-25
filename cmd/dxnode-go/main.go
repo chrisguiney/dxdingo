@@ -19,6 +19,7 @@ func newRegistry() *dispatch.Registry {
 	r := dispatch.NewRegistry()
 	dispatch.Register(r, metaInfo(r))
 	dispatch.Register(r, memberReward)
+	dispatch.Register(r, drepDistribution)
 	return r
 }
 
@@ -37,7 +38,9 @@ func metaInfo(r *dispatch.Registry) func(context.Context, *v1.MetaInfoRequest) (
 }
 
 func main() {
-	if err := newRegistry().Serve(context.Background(), os.Stdin, os.Stdout); err != nil {
+	err := newRegistry().Serve(context.Background(), os.Stdin, os.Stdout)
+	closeScratch()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "dxnode-go:", err)
 		os.Exit(1)
 	}

@@ -23,9 +23,7 @@ func memberReward(_ context.Context, req *v1.RewardsMemberRewardRequest) (*v1.Re
 	}
 	got, err := rewards.MemberReward(req.GetPoolReward(), req.GetCost(), margin, req.GetMemberStake(), req.GetPoolStake())
 	if err != nil {
-		return &v1.RewardsMemberRewardResponse{Rejection: &v1.Rejection{Failures: []*v1.Failure{{
-			Rule: "rewards", Name: "DingoError", Detail: err.Error(),
-		}}}}, nil
+		return &v1.RewardsMemberRewardResponse{Rejection: dingoRejection("rewards", err)}, nil
 	}
 	return &v1.RewardsMemberRewardResponse{Reward: got}, nil
 }
