@@ -1,0 +1,10 @@
+# a zero Genesis window is unsupported on both nodes
+chainsel_genesis_density: {
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 105
+    tip_slot: 105
+  }
+}

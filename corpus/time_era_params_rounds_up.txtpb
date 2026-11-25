@@ -1,0 +1,17 @@
+# ceil(3 * 7 / (2/3)) = ceil(31.5) = 32
+time_era_params: {
+  era: ERA_MARY
+  globals: {
+    network_magic: 764824073
+    epoch_length: 100
+    slot_length: {
+      numerator: "1"
+      denominator: "1"
+    }
+    security_param: 7
+    active_slot_coeff: {
+      numerator: "2"
+      denominator: "3"
+    }
+  }
+}

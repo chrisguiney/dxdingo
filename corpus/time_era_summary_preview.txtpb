@@ -1,0 +1,102 @@
+# preview-shaped history with empty eras
+time_era_summary: {
+  era_history: {
+    eras: {
+      era: ERA_BYRON
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      epoch_length: 21600
+      slot_length: {
+        numerator: "20"
+        denominator: "1"
+      }
+      safe_zone: 4320
+    }
+    eras: {
+      era: ERA_SHELLEY
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      epoch_length: 86400
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 25920
+    }
+    eras: {
+      era: ERA_ALLEGRA
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      epoch_length: 86400
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 25920
+    }
+    eras: {
+      era: ERA_MARY
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      epoch_length: 86400
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 25920
+    }
+    eras: {
+      era: ERA_ALONZO
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      epoch_length: 86400
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 25920
+    }
+    eras: {
+      era: ERA_BABBAGE
+      start_slot: 259200
+      start_epoch: 3
+      start_time: {
+        numerator: "259200"
+        denominator: "1"
+      }
+      epoch_length: 86400
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 25920
+    }
+    eras: {
+      era: ERA_CONWAY
+      start_slot: 259200
+      start_epoch: 3
+      start_time: {
+        numerator: "259200"
+        denominator: "1"
+      }
+      epoch_length: 86400
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+      safe_zone: 25920
+    }
+    system_start_unix: 1506203091
+  }
+  tip_slot: 200000
+}

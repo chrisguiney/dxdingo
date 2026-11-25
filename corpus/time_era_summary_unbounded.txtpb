@@ -1,0 +1,34 @@
+# safe zone 0: the last era stays open
+time_era_summary: {
+  era_history: {
+    eras: {
+      era: ERA_BYRON
+      start_time: {
+        numerator: "0"
+        denominator: "1"
+      }
+      epoch_length: 21600
+      slot_length: {
+        numerator: "20"
+        denominator: "1"
+      }
+      safe_zone: 4320
+    }
+    eras: {
+      era: ERA_SHELLEY
+      start_slot: 4492800
+      start_epoch: 208
+      start_time: {
+        numerator: "89856000"
+        denominator: "1"
+      }
+      epoch_length: 432000
+      slot_length: {
+        numerator: "1"
+        denominator: "1"
+      }
+    }
+    system_start_unix: 1506203091
+  }
+  tip_slot: 5000000
+}

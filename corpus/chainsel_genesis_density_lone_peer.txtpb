@@ -1,0 +1,11 @@
+# one candidate is never disconnected
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 105
+    tip_slot: 105
+  }
+}

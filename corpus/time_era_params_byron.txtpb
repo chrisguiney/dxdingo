@@ -1,0 +1,17 @@
+# Byron: epoch 10k, safe zone and genesis window 2k, 20 s slots
+time_era_params: {
+  era: ERA_BYRON
+  globals: {
+    network_magic: 764824073
+    epoch_length: 432000
+    slot_length: {
+      numerator: "20"
+      denominator: "1"
+    }
+    security_param: 2160
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+  }
+}

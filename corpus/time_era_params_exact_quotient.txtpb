@@ -1,0 +1,17 @@
+# 3 * 5 / (1/3) = 45 exactly
+time_era_params: {
+  era: ERA_ALONZO
+  globals: {
+    network_magic: 764824073
+    epoch_length: 100
+    slot_length: {
+      numerator: "1"
+      denominator: "2"
+    }
+    security_param: 5
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "3"
+    }
+  }
+}

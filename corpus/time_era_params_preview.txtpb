@@ -1,0 +1,17 @@
+# 3 * 432 * 20 = 25920
+time_era_params: {
+  era: ERA_BABBAGE
+  globals: {
+    network_magic: 764824073
+    epoch_length: 86400
+    slot_length: {
+      numerator: "1"
+      denominator: "1"
+    }
+    security_param: 432
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+  }
+}

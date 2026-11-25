@@ -1,0 +1,17 @@
+# 3k/f = 3 * 2160 * 20 = 129600
+time_era_params: {
+  era: ERA_SHELLEY
+  globals: {
+    network_magic: 764824073
+    epoch_length: 432000
+    slot_length: {
+      numerator: "1"
+      denominator: "1"
+    }
+    security_param: 2160
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+  }
+}

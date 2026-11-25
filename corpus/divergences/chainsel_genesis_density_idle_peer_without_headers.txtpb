@@ -1,0 +1,25 @@
+# reference: an idling peer with no header after the intersection is disconnected when a rival has more than k; dingo skips pairs where either peer has no header after the intersection (TestDivergenceDensityIdlePeerWithoutHeaders)
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 101
+    slots: 102
+    slots: 103
+    slots: 104
+    slots: 105
+    slots: 106
+    slots: 107
+    slots: 108
+    slots: 109
+    slots: 110
+    tip_slot: 110
+  }
+  candidates: {
+    peer: "b"
+    tip_slot: 100
+    idling: true
+  }
+}

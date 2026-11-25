@@ -1,0 +1,28 @@
+# reference: four peers with one header each in a one-slot window all lose to each other, so all four are disconnected; dingo stops once a reported peer is no longer a rival and keeps the last (TestDivergenceDensityEqualDensityReportsOnePeer)
+chainsel_genesis_density: {
+  genesis_window: 1
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "p0"
+    slots: 101
+    tip_slot: 101
+  }
+  candidates: {
+    peer: "p1"
+    slots: 101
+    slots: 102
+    tip_slot: 102
+  }
+  candidates: {
+    peer: "p2"
+    slots: 101
+    tip_slot: 101
+  }
+  candidates: {
+    peer: "p3"
+    slots: 101
+    tip_slot: 101
+    idling: true
+  }
+}

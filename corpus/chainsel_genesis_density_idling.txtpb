@@ -1,0 +1,20 @@
+# an idling peer is held to what it delivered
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+  candidates: {
+    peer: "a"
+    slots: 101
+    slots: 102
+    slots: 103
+    slots: 104
+    tip_slot: 104
+  }
+  candidates: {
+    peer: "b"
+    slots: 105
+    tip_slot: 105
+    idling: true
+  }
+}

@@ -1,0 +1,6 @@
+# no candidates: nobody to disconnect
+chainsel_genesis_density: {
+  genesis_window: 10
+  security_param: 2
+  loe_slot: 100
+}
