@@ -1,0 +1,93 @@
+# utxow tx 1 of the babbage mainnet block: slot equals the ttl: the interval is half open
+rule_utxow:  {
+  context:  {
+    era:  ERA_BABBAGE
+    protocol_version:  {
+      major:  8
+    }
+    slot:  76226395
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    protocol_version:  {
+      major:  8
+    }
+    min_pool_cost:  170000000
+    coins_per_utxo_byte:  4310
+    price_mem:  {
+      numerator:  "577"
+      denominator:  "10000"
+    }
+    price_steps:  {
+      numerator:  "721"
+      denominator:  "10000000"
+    }
+    max_tx_ex_mem:  14000000
+    max_tx_ex_steps:  10000000000
+    max_block_ex_mem:  62000000
+    max_block_ex_steps:  20000000000
+    max_value_size:  5000
+    collateral_percentage:  150
+    max_collateral_inputs:  3
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "\xad_\x8e]\xe5C\x8dM\xb9\xb0\xc7p\xac\xa3XX&}\xe3GL\xa1\xc5\xfd\xb7\xf6\xdb-\x9b\xb2\x80j"
+        index:  2
+      }
+      txout:  "\xa2\x00X\x1da\x03ns^䙂K\x87\xba\xee^'\x89\xef}G\xaf\xd8\x1e6\xfe\x81o\x9dN\x90/\x01\x1a\x00LK@"
+    }
+    utxo:  {
+      txin:  {
+        tx_id:  "'\xe4\x8d\x01\x08a[׻ѵq\xb7F]\xc1\x03[\xe0\xdfa\x9aPI\x02\xe4\x86\xcfBF\xae\x0e"
+        index:  1
+      }
+      txout:  "\xa2\x00X\x1da\x03ns^䙂K\x87\xba\xee^'\x89\xef}G\xaf\xd8\x1e6\xfe\x81o\x9dN\x90/\x01\x1a\x0f1\x8b\x95"
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x84\xa4\x00\x82\x82X \xad_\x8e]\xe5C\x8dM\xb9\xb0\xc7p\xac\xa3XX&}\xe3GL\xa1\xc5\xfd\xb7\xf6\xdb-\x9b\xb2\x80j\x02\x82X '\xe4\x8d\x01\x08a[׻ѵq\xb7F]\xc1\x03[\xe0\xdfa\x9aPI\x02\xe4\x86\xcfBF\xae\x0e\x01\x01\x82\x82X9\x01ϫ\xb9\x8e\x9a7\x1a\xaa$3|\xe3v\x96\xd9~\x91\x1eQvW\xa9l\xbd\r#f\xa5\x01\xb0\xd9j\xd6\xd3a\xd1vnL\xb2j\xd2t\xa355&\xefX&;\xc7w\xd7\xf7g\x1a\x05\xf5\xe1\x00\x82X9\x01\x03ns^䙂K\x87\xba\xee^'\x89\xef}G\xaf\xd8\x1e6\xfe\x81o\x9dN\x90/ƾ(L\xb6\x93\xb5\x10Yr\xd9h6Q<\xa2\x05\xc3\xe3\xe602\x02\xc7{\x7fϰ\x1a\t\x85^(\x02\x1a\x00\x02\x97\xad\x03\x1a\x04\x8b\x1f[\xa1\x00\x81\x82X ,R\x05\xc7h]\x01ZS\x1a\xe0?Y\xd3\xebQ\xf4Zfո\x06\t\x13\xae\x06\x0f\x8f\xb7\xdc\x16\xa2X@\xeck\x7f\xe0?\xfa\xf8\xf4a\r\x84K\x87\x0c\xa8.\xf9t:\xd2\xfc\x07m)\xb8I\x98GhPjC$m_\xc0\x84\x98ˡw\x87\xe4\xa1\xd2\x07\x9bT\xfa\xe9\xfe\x1bs\x0b\xe8r$-u2\xa4$z\x03\xf5\xf6"
+}

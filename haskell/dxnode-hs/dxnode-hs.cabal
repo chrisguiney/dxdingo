@@ -63,6 +63,7 @@ library
     , plutus-ledger-api
     , serialise
     , small-steps
+    , time
     , transformers
     , typed-protocols
     , vector-map

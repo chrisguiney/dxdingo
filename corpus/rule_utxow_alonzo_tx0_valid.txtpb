@@ -1,0 +1,97 @@
+# utxow tx 0 of the alonzo mainnet block: unmodified: the synthesised state balances the transaction
+rule_utxow:  {
+  context:  {
+    era:  ERA_ALONZO
+    protocol_version:  {
+      major:  6
+    }
+    slot:  72338269
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    d:  {
+      numerator:  "0"
+      denominator:  "1"
+    }
+    protocol_version:  {
+      major:  6
+    }
+    min_pool_cost:  170000000
+    coins_per_utxo_word:  34482
+    price_mem:  {
+      numerator:  "577"
+      denominator:  "10000"
+    }
+    price_steps:  {
+      numerator:  "721"
+      denominator:  "10000000"
+    }
+    max_tx_ex_mem:  14000000
+    max_tx_ex_steps:  10000000000
+    max_block_ex_mem:  62000000
+    max_block_ex_steps:  20000000000
+    max_value_size:  5000
+    collateral_percentage:  150
+    max_collateral_inputs:  3
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "M\x87\xfbi\x88\xb7Y\xa7\x99\xe7E*\xf4s\xf1ܾ&Պ\xab\n:[\xba\xa2\xaa\x8e\x9b%\xcb\xc8"
+        index:  1
+      }
+      txout:  "\x82X\x1daU\xe5ڰ\x9c7.@\x1c[\xbbv{\xfb\xcc,zݓ3\x87\xc7h\x1f\x16\xbb\xc1\x9e\x82\x1a\x00LK@\xa1X\x1c\xb3\xe1\xcf\x0e\xf0\x1f\xbc\xad\xba\x90A\x94\xb9q\\ߪiW\x8dђ\x08\xa5\x03lk\xbe\xa1RBronze First Rider\x01"
+    }
+    utxo:  {
+      txin:  {
+        tx_id:  "\xf7\xc3\xf7\xdc\x19\xa8=\xbc\xd8Z\xbau\xb0\x07\x80\x11\x88\x8cH\xe9\xeaH\x0f\x0bw\xd1\xfe\x1ew\x11\xdb?"
+        index:  1
+      }
+      txout:  "\x82X\x1daU\xe5ڰ\x9c7.@\x1c[\xbbv{\xfb\xcc,zݓ3\x87\xc7h\x1f\x16\xbb\xc1\x9e\x1a\x019\xc09"
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x84\xa4\x00\x82\x82X M\x87\xfbi\x88\xb7Y\xa7\x99\xe7E*\xf4s\xf1ܾ&Պ\xab\n:[\xba\xa2\xaa\x8e\x9b%\xcb\xc8\x01\x82X \xf7\xc3\xf7\xdc\x19\xa8=\xbc\xd8Z\xbau\xb0\x07\x80\x11\x88\x8cH\xe9\xeaH\x0f\x0bw\xd1\xfe\x1ew\x11\xdb?\x01\x01\x82\x82X9\x01\x91\xa5\x1f\xbc\x7f(R\x89V\xc5Ų\x9b\xfa]n\x18\xafZ~\xdb=i\xd0\xd93`\xf1Ч\xd3\x1b\xaf44\xa8\x9bf$\x97\xac\xabf\xf2\x9b\xf5\x87qO\xaa\xf5f.Z\xa6\xe6\x1a\x011-\x00\x82X9\x01U\xe5ڰ\x9c7.@\x1c[\xbbv{\xfb\xcc,zݓ3\x87\xc7h\x1f\x16\xbb\xc1\x9eKk\x08F\xb3\xd7x\x13\xc1H\xd8\x10Q-G\xb0\xf5\x04y_n\xab\xa9Ɠ\x1f\x92\xa7\x82\x1a\x00R=\xb0\xa1X\x1c\xb3\xe1\xcf\x0e\xf0\x1f\xbc\xad\xba\x90A\x94\xb9q\\ߪiW\x8dђ\x08\xa5\x03lk\xbe\xa1RBronze First Rider\x01\x02\x1a\x00\x02\xa0\xc9\x03\x1a\x04O\xcb^\xa1\x00\x81\x82X \xfcg\xcf\xf3K(\x18\x88NH\x19\x1c\xd3\xc0\xbf\xbe\xe5?\x8a\x02\x85\x01\xfeI\xd1\x1f\x0f\xca[\xb6\n\xdbX@\x8fS\xfb쎟^\x13\xf7\xf2 i\xe5s\x82Q\x16\x89\x1c\x05Ls\xa2 (\x11\xa0\xb5.E\x9bq\xa4\xf4\x12\x01\x85\rcbX1\x8dK\x1b\x11\xa7\xfc1p3.\rP@\x14%\xee\xbc\xd3l\xff\x86\x00\xf5\xf6"
+}

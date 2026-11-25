@@ -1,0 +1,160 @@
+# utxo tx 1 of the conway mainnet block: max_tx_size below the transaction size
+rule_utxo:  {
+  context:  {
+    era:  ERA_CONWAY
+    protocol_version:  {
+      major:  10
+    }
+    slot:  159842129
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  100
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    protocol_version:  {
+      major:  10
+    }
+    min_pool_cost:  170000000
+    coins_per_utxo_byte:  4310
+    price_mem:  {
+      numerator:  "577"
+      denominator:  "10000"
+    }
+    price_steps:  {
+      numerator:  "721"
+      denominator:  "10000000"
+    }
+    max_tx_ex_mem:  14000000
+    max_tx_ex_steps:  10000000000
+    max_block_ex_mem:  62000000
+    max_block_ex_steps:  20000000000
+    max_value_size:  5000
+    collateral_percentage:  150
+    max_collateral_inputs:  3
+    pool_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      committee_normal:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      committee_no_confidence:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      hard_fork_initiation:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      pp_security_group:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+    }
+    drep_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      committee_normal:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      committee_no_confidence:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      update_to_constitution:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      hard_fork_initiation:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_network_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_economic_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_technical_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_gov_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      treasury_withdrawal:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+    }
+    committee_min_size:  7
+    committee_max_term_length:  146
+    gov_action_lifetime:  6
+    gov_action_deposit:  100000000000
+    drep_deposit:  500000000
+    drep_activity:  20
+    min_fee_ref_script_cost_per_byte:  {
+      numerator:  "15"
+      denominator:  "1"
+    }
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "\x87`\x87ƅW\x0c\xd9\x1ano\xf6\x01 \xccU\xa9\x10_VWkkQ\x916\x85\n\xb6hE\xe4"
+        index:  1
+      }
+      txout:  "\xa2\x00X\x1dab\xe4 t\xc7\\Z gT_!\xbc\x02\x98\xd0]\xbf\t0\x89\x9em\xe5\x12\x01\x1b\x00\x00\x00@\xb6\x0e\x1e,"
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x84\xa5\x00\x81\x82X \x87`\x87ƅW\x0c\xd9\x1ano\xf6\x01 \xccU\xa9\x10_VWkkQ\x916\x85\n\xb6hE\xe4\x01\x01\x82\x82X9\x01\"\x8e\xf2\xe8\x91im\x80Kp[uf\x05\x03\xd8\xcc\x1e\xc4\xd0\x1a\x8a\xf2\n6\x97\xf1-3\xd1\xdcH?\x1c\r\xb8\x83h_\x106\x0b\xa0G\x19\xf22\"ԕ\x1e(\x81\x88\xe0<\x1a\x01=\xe7\xe7\x82X9\x01b\xe4 t\xc7\\Z gT_!\xbc\x02\x98\xd0]\xbf\t0\x89\x9em\xe5\x12\x8c\x11\x98\xden\xbaU]\x96\xba\x1dqCP\x99\x08<\xe5\xc1V5\x95%\xa6@~.l\x1b\x00\x00\x00@\xb4͠|\x02\x1a\x00\x02\x95\xc9\x03\x1a\t\x86\xffR\x08\x1a\x03N\x198\xa1\x00\x81\x82X  \xfc\x80bn\x97SMA\x07:\xd5\x06{\xbc\xa2\xeb+C\xb4g\x94bö\x9d\x7fh\xe7傶X@\xaam\x08}\x15\xa4('\x96\x87\xdb\xeb\xba\xe6-<_.m\xfe\xb0|\xe6hO\xeei\xaf\xa6\x85\xed\u008dF\xa5\xd1&\xbc\xaf\xea\x9e>\x1b\x89\x141\xc4\xd8'+\xf2Z\xda3\xbdX\x1c\xf8\xf7\xf7QP\x96\x0b\xf5\xf6"
+}
