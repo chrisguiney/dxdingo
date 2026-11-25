@@ -1,0 +1,9 @@
+# outside the domain: both nodes skip
+rewards_member_reward {
+  pool_reward: 1000
+  cost: 1
+  margin { numerator: "1" denominator: "2" }
+  member_stake: 1
+  pool_stake: 0
+  total_stake: 4
+}

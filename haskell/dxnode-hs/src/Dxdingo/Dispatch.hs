@@ -21,16 +21,19 @@ import Proto.Dxdingo.V1.Envelope
   , HarnessErrorCode (..)
   , Reply
   )
+import Dxdingo.Rewards (memberReward)
 import Proto.Dxdingo.V1.Meta (MetaInfoResponse)
 
 -- | Envelope field names this node handles.
 implemented :: [Text]
-implemented = ["meta_info"]
+implemented = ["meta_info", "rewards_member_reward"]
 
 handle :: Call -> Reply
 handle call = case call ^. #maybe'request of
   Nothing -> harnessError HARNESS_ERROR_CODE_BAD_REQUEST "call has no request"
   Just (Call'MetaInfo _) -> base & #metaInfo .~ metaInfo
+  Just (Call'RewardsMemberReward req) ->
+    either (uncurry harnessError) (\r -> base & #rewardsMemberReward .~ r) (memberReward req)
   Just _ -> harnessError HARNESS_ERROR_CODE_UNIMPLEMENTED "not implemented by dxnode-hs"
   where
     base :: Reply

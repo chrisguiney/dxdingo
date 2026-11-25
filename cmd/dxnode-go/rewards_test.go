@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
+	"github.com/chrisguiney/dxdingo/internal/dispatch"
 )
 
 func rat(n, d string) *v1.Rational { return &v1.Rational{Numerator: n, Denominator: d} }
@@ -61,5 +62,33 @@ func TestRegistryReportsImplementedFunctions(t *testing.T) {
 	}
 	if !found["meta_info"] || !found["rewards_member_reward"] {
 		t.Fatalf("implemented = %v", info.GetImplemented())
+	}
+}
+
+// Inputs outside the reference's domain: StakeShare divides by total and
+// pool stake, and the margin must be a UnitInterval (a [0,1] ratio of two
+// Word64s). Both nodes reply UNSUPPORTED so the pair is skipped.
+func TestMemberRewardOutsideDomainIsUnsupported(t *testing.T) {
+	base := func() *v1.RewardsMemberRewardRequest {
+		return &v1.RewardsMemberRewardRequest{
+			PoolReward: 1000, Cost: 1, Margin: rat("1", "2"),
+			MemberStake: 1, PoolStake: 2, TotalStake: 4,
+		}
+	}
+	for name, mutate := range map[string]func(*v1.RewardsMemberRewardRequest){
+		"zero pool stake":     func(r *v1.RewardsMemberRewardRequest) { r.PoolStake = 0 },
+		"zero total stake":    func(r *v1.RewardsMemberRewardRequest) { r.TotalStake = 0 },
+		"margin above one":    func(r *v1.RewardsMemberRewardRequest) { r.Margin = rat("3", "2") },
+		"negative margin":     func(r *v1.RewardsMemberRewardRequest) { r.Margin = rat("-1", "2") },
+		"margin over 64 bits": func(r *v1.RewardsMemberRewardRequest) { r.Margin = rat("1", "18446744073709551617") },
+	} {
+		t.Run(name, func(t *testing.T) {
+			req := base()
+			mutate(req)
+			_, err := memberReward(context.Background(), req)
+			if code := dispatch.Code(err); code != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED {
+				t.Fatalf("err = %v (code %v), want UNSUPPORTED", err, code)
+			}
+		})
 	}
 }

@@ -58,6 +58,40 @@ main = do
       Right (r :: Reply) -> r ^. #id == 42
       Left _ -> False
 
+  let memberCall reward cost (mn, md) member pool total =
+        (defMessage :: Call)
+          & #id .~ 7
+          & #rewardsMemberReward
+            .~ ( defMessage
+                  & #poolReward .~ reward
+                  & #cost .~ cost
+                  & #margin .~ (defMessage & #numerator .~ mn & #denominator .~ md)
+                  & #memberStake .~ member
+                  & #poolStake .~ pool
+                  & #totalStake .~ total
+               )
+      rewardOf c = handle c ^. #rewardsMemberReward . #reward
+      codeOf c = handle c ^. #error . #code
+  -- Same cases as dxnode-go's TestMemberReward.
+  check "member reward: half the pool, 1% margin" $
+    rewardOf (memberCall 1000000000 340000000 ("1", "100") 25 50 1000) == 326700000
+  check "member reward: reward below cost is zero" $
+    rewardOf (memberCall 300000000 340000000 ("0", "1") 25 50 1000) == 0
+  check "member reward: floors" $
+    rewardOf (memberCall 10 0 ("0", "1") 1 3 3) == 3
+  check "member reward: zero pool stake is UNSUPPORTED" $
+    codeOf (memberCall 1000 1 ("1", "2") 1 0 4) == HARNESS_ERROR_CODE_UNSUPPORTED
+  check "member reward: zero total stake is UNSUPPORTED" $
+    codeOf (memberCall 1000 1 ("1", "2") 1 2 0) == HARNESS_ERROR_CODE_UNSUPPORTED
+  check "member reward: margin above one is UNSUPPORTED" $
+    codeOf (memberCall 1000 1 ("3", "2") 1 2 4) == HARNESS_ERROR_CODE_UNSUPPORTED
+  check "member reward: negative margin is UNSUPPORTED" $
+    codeOf (memberCall 1000 1 ("-1", "2") 1 2 4) == HARNESS_ERROR_CODE_UNSUPPORTED
+  check "member reward: margin over 64 bits is UNSUPPORTED" $
+    codeOf (memberCall 1000 1 ("1", "18446744073709551617") 1 2 4) == HARNESS_ERROR_CODE_UNSUPPORTED
+  check "member reward: malformed margin is BAD_REQUEST" $
+    codeOf (memberCall 1000 1 ("x", "2") 1 2 4) == HARNESS_ERROR_CODE_BAD_REQUEST
+
   n <- readIORef failures
   unless (n == 0) exitFailure
   putStrLn "all tests passed"

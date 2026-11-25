@@ -71,7 +71,10 @@ FROM toolchain AS hs-deps
 COPY haskell/cabal.project haskell/
 COPY haskell/dxnode-hs/dxnode-hs.cabal haskell/dxnode-hs/
 COPY Makefile ./
-RUN make tools-hs \
+# cabal update runs inside the project so it also fetches the CHaP index
+# that cabal.project declares.
+RUN cd haskell && cabal update && cd .. \
+    && make tools-hs \
     && cd haskell && cabal build --only-dependencies all
 
 FROM hs-deps AS build

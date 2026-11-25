@@ -1,0 +1,9 @@
+# margin 1: members get 0
+rewards_member_reward {
+  pool_reward: 1000000000
+  cost: 340000000
+  margin { numerator: "1" denominator: "1" }
+  member_stake: 25
+  pool_stake: 50
+  total_stake: 1000
+}

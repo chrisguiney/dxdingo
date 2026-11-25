@@ -113,3 +113,15 @@ func TestServeAnswersEachFrameAndSurvivesGarbage(t *testing.T) {
 		t.Fatalf("codes = %v, want %v", codes, want)
 	}
 }
+
+func TestCodeClassifiesErrors(t *testing.T) {
+	if got := dispatch.Code(dispatch.Unsupported(errors.New("x"))); got != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED {
+		t.Fatalf("Code(Unsupported) = %v", got)
+	}
+	if got := dispatch.Code(errors.New("x")); got != v1.HarnessErrorCode_HARNESS_ERROR_CODE_INTERNAL {
+		t.Fatalf("Code(plain) = %v", got)
+	}
+	if got := dispatch.Code(nil); got != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSPECIFIED {
+		t.Fatalf("Code(nil) = %v", got)
+	}
+}

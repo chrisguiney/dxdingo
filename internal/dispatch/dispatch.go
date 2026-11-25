@@ -147,3 +147,11 @@ func classify(err error) *v1.HarnessError {
 func harnessError(code v1.HarnessErrorCode, msg string) *v1.HarnessError {
 	return &v1.HarnessError{Code: code, Message: msg}
 }
+
+// Code returns the harness code a handler error maps to; UNSPECIFIED for nil.
+func Code(err error) v1.HarnessErrorCode {
+	if err == nil {
+		return v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSPECIFIED
+	}
+	return classify(err).GetCode()
+}
