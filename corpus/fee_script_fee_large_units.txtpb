@@ -1,0 +1,13 @@
+# units near 2^62 with small prices
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "1"
+    denominator:  "1000000000"
+  }
+  price_steps:  {
+    numerator:  "1"
+    denominator:  "1000000000"
+  }
+  ex_mem:  4611686018427387904
+  ex_steps:  4611686018427387904
+}

@@ -1,0 +1,13 @@
+# free execution
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "0"
+    denominator:  "1"
+  }
+  price_steps:  {
+    numerator:  "0"
+    denominator:  "1"
+  }
+  ex_mem:  14000000
+  ex_steps:  10000000000
+}

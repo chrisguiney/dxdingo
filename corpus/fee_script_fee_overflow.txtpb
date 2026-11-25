@@ -1,0 +1,13 @@
+# a result beyond a Word64 is not representable
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "2"
+    denominator:  "1"
+  }
+  price_steps:  {
+    numerator:  "1"
+    denominator:  "1"
+  }
+  ex_mem:  9223372036854775807
+  ex_steps:  9223372036854775807
+}

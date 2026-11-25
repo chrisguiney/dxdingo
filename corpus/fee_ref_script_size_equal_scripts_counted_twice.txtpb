@@ -1,0 +1,17 @@
+# two inputs with equal scripts count twice (non-distinct)
+fee_ref_script_size:  {
+  era:  ERA_CONWAY
+  tx:  "\x84\xa4\x00\x81\x82X \x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x00\x01\x81\x82X\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x1a\x00\x1e\x84\x80\x02\x1a\x00\x03\r@\x12\x81\x82X \x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x00\xa0\xf5\xf6"
+  utxo:  {
+    txin:  {
+      tx_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    txout:  "\xa3\x00X\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x01\x1a\x00LK@\x03\xd8\x18Y\x03\xed\x82\x02Y\x03\xe8pqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstu"
+  }
+  utxo:  {
+    txin:  {
+      tx_id:  "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    }
+    txout:  "\xa3\x00X\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x01\x1a\x00LK@\x03\xd8\x18Y\x03\xed\x82\x02Y\x03\xe8pqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstuvpqrstu"
+  }
+}

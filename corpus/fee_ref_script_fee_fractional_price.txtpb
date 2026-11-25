@@ -1,0 +1,9 @@
+# floor applied once to the exact rational total
+fee_ref_script_fee:  {
+  era:  ERA_CONWAY
+  cost_per_byte:  {
+    numerator:  "1"
+    denominator:  "3"
+  }
+  size:  25601
+}

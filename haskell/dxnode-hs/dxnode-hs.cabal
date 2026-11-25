@@ -155,7 +155,13 @@ test-suite dxnode-hs-test
     , base
     , bytestring
     , cardano-crypto-class
+    , cardano-ledger-alonzo
+    , cardano-ledger-binary
+    , cardano-ledger-conway
     , cardano-ledger-core
+    , cardano-ledger-mary
+    , cardano-strict-containers
+    , containers
     , dxnode-hs
     , dxnode-hs:proto
     , microlens

@@ -1,0 +1,13 @@
+# 2^64 - 2: the largest total that still fits
+fee_script_fee:  {
+  price_mem:  {
+    numerator:  "1"
+    denominator:  "1"
+  }
+  price_steps:  {
+    numerator:  "1"
+    denominator:  "1"
+  }
+  ex_mem:  9223372036854775807
+  ex_steps:  9223372036854775807
+}

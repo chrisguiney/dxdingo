@@ -1,0 +1,8 @@
+# no reference scripts cost nothing
+fee_ref_script_fee:  {
+  era:  ERA_CONWAY
+  cost_per_byte:  {
+    numerator:  "15"
+    denominator:  "1"
+  }
+}

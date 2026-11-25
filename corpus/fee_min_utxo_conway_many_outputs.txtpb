@@ -1,0 +1,8 @@
+# Conway output from a six-output transaction
+fee_min_utxo:  {
+  era:  ERA_CONWAY
+  pparams:  {
+    coins_per_utxo_byte:  4310
+  }
+  txout:  "\x82X9\x01:K\xb4\r\xab\x95\x94g\xecdߩR\xe0\x8f\x89rwd\x94\xef\xdcx5\x91!.F:K\xb4\r\xab\x95\x94g\xecdߩR\xe0\x8f\x89rwd\x94\xef\xdcx5\x91!.F\x1a\n\xc6B\xae"
+}
