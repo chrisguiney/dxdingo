@@ -33,6 +33,7 @@ library
     Dxdingo.Wire
   build-depends:
     , base                    >=4.18 && <5
+    , bimap
     , bytestring
     , cardano-binary
     , cardano-crypto-class
@@ -155,10 +156,13 @@ test-suite dxnode-hs-test
     , base
     , bytestring
     , cardano-crypto-class
+    , cardano-crypto-wrapper
     , cardano-ledger-binary
+    , cardano-ledger-byron
     , cardano-ledger-core
     , cardano-ledger-dijkstra
     , dxnode-hs
+    , ouroboros-consensus:cardano
     , dxnode-hs:proto
     , microlens
     , proto-lens

@@ -5,6 +5,9 @@ import (
 	"context"
 	"testing"
 
+	gledger "github.com/blinklabs-io/gouroboros/ledger"
+	"github.com/blinklabs-io/gouroboros/ledger/byron"
+
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
 	"github.com/chrisguiney/dxdingo/internal/byronfixture"
 	"github.com/chrisguiney/dxdingo/internal/dispatch"
@@ -234,5 +237,115 @@ func TestByronTxValidateReportsFirstFailureInReferenceOrder(t *testing.T) {
 				t.Fatalf("rejection = %v, want only %s", names, tc.want)
 			}
 		})
+	}
+}
+
+type preprodChain struct {
+	dlg     []*v1.ByronDelegation
+	headers [][]byte // main-block headers in chain order
+}
+
+func loadPreprod(t *testing.T) preprodChain {
+	t.Helper()
+	dir, err := byronfixture.ModuleDir("github.com/blinklabs-io/dingo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dlgs, err := byronfixture.PreprodDelegations(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks, err := byronfixture.PreprodBlocks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var c preprodChain
+	for _, d := range dlgs {
+		c.dlg = append(c.dlg, &v1.ByronDelegation{IssuerVkey: d.Issuer, DelegateVkey: d.Delegate})
+	}
+	for _, b := range blocks {
+		if b.Type == 0 {
+			continue
+		}
+		blk, err := gledger.NewBlockFromCbor(b.Type, b.CBOR)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.headers = append(c.headers, blk.Header().Cbor())
+	}
+	return c
+}
+
+func (c preprodChain) headerReq(header []byte, dlg []*v1.ByronDelegation) *v1.ByronHeaderValidateRequest {
+	return &v1.ByronHeaderValidateRequest{
+		ProtocolMagic: 1, SecurityParam: 2160, Pparams: byronTestParams(),
+		ChainState: &v1.ByronChainState{Delegations: dlg}, Header: header,
+	}
+}
+
+// Real preprod headers, validated against the preprod genesis delegations.
+func TestByronHeaderValidateAcceptsRealHeaders(t *testing.T) {
+	t.Parallel()
+	c := loadPreprod(t)
+	if len(c.headers) < 40 {
+		t.Fatalf("only %d main block headers", len(c.headers))
+	}
+	for i, h := range c.headers {
+		got, err := byronHeaderValidate(context.Background(), c.headerReq(h, c.dlg))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.GetRejection() != nil {
+			t.Fatalf("header %d rejected: %v", i, got.GetRejection())
+		}
+	}
+}
+
+func TestByronHeaderValidateRejects(t *testing.T) {
+	t.Parallel()
+	c := loadPreprod(t)
+	h := c.headers[3]
+	blk, err := byron.NewByronMainBlockHeaderFromCbor(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prev := blk.PrevHash()
+	at := bytes.Index(h, prev[:])
+	if at < 0 {
+		t.Fatal("previous hash not found in the header bytes")
+	}
+	tampered := bytes.Clone(h)
+	tampered[at+5] ^= 1
+
+	var without []*v1.ByronDelegation
+	for _, d := range c.dlg {
+		if !bytes.Equal(d.GetDelegateVkey()[:32], blk.ConsensusData.BlockSig[1].([]any)[0].([]any)[2].([]byte)[:32]) {
+			without = append(without, d)
+		}
+	}
+	if len(without) != len(c.dlg)-1 {
+		t.Fatalf("removed %d delegations, want 1", len(c.dlg)-len(without))
+	}
+	for name, tc := range map[string]struct {
+		req  *v1.ByronHeaderValidateRequest
+		want string
+	}{
+		"signed bytes changed":    {c.headerReq(tampered, c.dlg), "PBftInvalidSignature"},
+		"delegate not authorised": {c.headerReq(h, without), "PBftNotGenesisDelegate"},
+		"not a header":            {c.headerReq([]byte{0xff}, c.dlg), "DeserialiseFailure"},
+	} {
+		got, err := byronHeaderValidate(context.Background(), tc.req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if names := byronNames(got.GetRejection()); len(names) != 1 || names[0] != tc.want {
+			t.Fatalf("%s: rejection = %v, want only %s (%v)", name, names, tc.want, got)
+		}
+	}
+	state := &v1.ByronChainState{Delegations: c.dlg, RecentSigners: [][]byte{{1}}}
+	req := c.headerReq(h, nil)
+	req.ChainState = state
+	if _, err := byronHeaderValidate(context.Background(), req); dispatch.Code(err) != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED {
+		t.Fatalf("signature window: %v, want UNSUPPORTED", err)
 	}
 }

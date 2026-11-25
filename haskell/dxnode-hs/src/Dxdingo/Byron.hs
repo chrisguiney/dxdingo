@@ -10,7 +10,33 @@ module Dxdingo.Byron
   , implemented
   , byronMinFee
   , byronTxValidate
+  , byronHeaderValidate
   ) where
+
+import qualified Cardano.Chain.Block as CC
+import qualified Cardano.Chain.Delegation as Delegation
+import Cardano.Chain.Common (hashKey)
+import Cardano.Chain.Slotting (EpochSlots (..), SlotNumber (..))
+import Cardano.Crypto.DSIGN (SignedDSIGN (..), rawDeserialiseVerKeyDSIGN)
+import Cardano.Ledger.BaseTypes (unsafeNonZero)
+import Cardano.Slotting.Slot (SlotNo (..))
+import qualified Data.Bimap as Bimap
+import Ouroboros.Consensus.Byron.Crypto.DSIGN (ByronDSIGN, SigDSIGN (..), VerKeyDSIGN (..))
+import Ouroboros.Consensus.Byron.Ledger.PBFT (toPBftLedgerView)
+import Ouroboros.Consensus.Byron.Protocol (PBftByronCrypto)
+import Ouroboros.Consensus.Config.SecurityParam (SecurityParam (..))
+import Ouroboros.Consensus.Node.ProtocolInfo (NumCoreNodes (..))
+import Ouroboros.Consensus.Protocol.Abstract (ConsensusProtocol (updateChainDepState))
+import Ouroboros.Consensus.Protocol.PBFT
+  ( ConsensusConfig (..)
+  , PBftFields (..)
+  , PBftParams (..)
+  , PBftSignatureThreshold (..)
+  , PBftValidateView (..)
+  , PBftValidationErr (..)
+  , Ticked (..)
+  )
+import qualified Ouroboros.Consensus.Protocol.PBFT.State as PBftState
 
 import Cardano.Chain.Common
   ( LovelaceError (..)
@@ -203,11 +229,72 @@ byronTxValidate req = do
             & #utxoAdded .~ map entry (sortOn (key . fst) added)
             & #fee .~ fromInteger (total removed - total added)
 
+-- | The PBFT checks of 'updateChainDepState' for a header with no earlier
+-- signers: the delegate's signature over the signed header bytes, then that the
+-- signer is an active delegate (the first failure is reported, in that order).
+-- The PBftValidateView is assembled from the header the way
+-- 'Ouroboros.Consensus.Byron.Ledger.PBFT.validateView' does. A chain state
+-- with a signature window or previous slot is UNSUPPORTED, as in dxnode-go.
+byronHeaderValidate :: ByronHeaderValidateRequest -> Result ByronHeaderValidateResponse
+byronHeaderValidate req = do
+  st <- maybe (badRequest "chain_state missing") pure (req ^. #maybe'chainState)
+  when (not (null (st ^. #recentSigners)) || st ^. #maybe'prevSlot /= Nothing) $
+    unsupported "a PBFT signature window and previous slot are not modelled"
+  when (req ^. #securityParam == 0) $ unsupported "security_param must be nonzero"
+  when (null (st ^. #delegations)) $ unsupported "no delegations"
+  pairs <- forM (zip [0 :: Int ..] (st ^. #delegations)) $ \(i, d) -> do
+    let label = "delegations[" <> T.pack (show i) <> "]"
+    iss <- vkey (label <> ".issuer_vkey") (d ^. #issuerVkey)
+    del <- vkey (label <> ".delegate_vkey") (d ^. #delegateVkey)
+    pure (hashKey iss, hashKey del)
+  let issuers = map fst pairs
+      delegates = map snd pairs
+  when (Set.size (Set.fromList issuers) /= length issuers || Set.size (Set.fromList delegates) /= length delegates) $
+    unsupported "a delegation repeats an issuer or delegate"
+  let k = req ^. #securityParam
+      epochSlots = EpochSlots (10 * k)
+      pm = ProtocolMagicId (req ^. #protocolMagic)
+      ledgerView = toPBftLedgerView (Delegation.Map (Bimap.fromList pairs))
+      cfg =
+        PBftConfig
+          { pbftParams =
+              PBftParams
+                { pbftSecurityParam = SecurityParam (unsafeNonZero k)
+                , pbftNumNodes = NumCoreNodes (fromIntegral (length pairs))
+                , pbftSignatureThreshold = PBftSignatureThreshold 0.22
+                }
+          }
+  pure $ case decodeFullAnnotatedBytes byronProtVer "Header" (CC.decCBORAHeader epochSlots) (BSL.fromStrict (req ^. #header)) of
+    Left e -> defMessage & #rejection .~ rejection "PBFT" "DeserialiseFailure" (T.pack (show e))
+    Right hdr ->
+      let genKey = VerKeyByronDSIGN (CC.headerGenesisKey hdr)
+          fields =
+            PBftFields
+              { pbftIssuer = VerKeyByronDSIGN (Delegation.delegateVK (CC.delegationCertificate (CC.headerSignature hdr)))
+              , pbftGenKey = genKey
+              , pbftSignature = SignedDSIGN (SigByronDSIGN (CC.signature (CC.headerSignature hdr)))
+              }
+          view = PBftValidateRegular fields (CC.recoverSignedBytes epochSlots hdr) (pm, genKey)
+          SlotNumber slot = CC.headerSlot hdr
+       in case runExcept (updateChainDepState cfg view (SlotNo slot) (TickedPBftState ledgerView PBftState.empty)) of
+            Right _ -> defMessage
+            Left e -> defMessage & #rejection .~ rejection "PBFT" (pbftName e) (T.pack (show e))
+  where
+    vkey label bs = case rawDeserialiseVerKeyDSIGN @ByronDSIGN bs of
+      Just (VerKeyByronDSIGN vk) -> pure vk
+      Nothing -> badRequest (label <> " is not a 64-byte extended key")
+    pbftName = \case
+      PBftInvalidSignature _ -> "PBftInvalidSignature"
+      PBftNotGenesisDelegate {} -> "PBftNotGenesisDelegate"
+      PBftExceededSignThreshold {} -> "PBftExceededSignThreshold"
+      PBftInvalidSlot -> "PBftInvalidSlot"
+
 dispatch :: Call'Request -> Maybe Answer
 dispatch = \case
   Call'ByronMinFee q -> Just (respond #byronMinFee (byronMinFee q))
   Call'ByronTxValidate q -> Just (respond #byronTxValidate (byronTxValidate q))
+  Call'ByronHeaderValidate q -> Just (respond #byronHeaderValidate (byronHeaderValidate q))
   _ -> Nothing
 
 implemented :: [Text]
-implemented = ["byron_min_fee", "byron_tx_validate"]
+implemented = ["byron_min_fee", "byron_tx_validate", "byron_header_validate"]

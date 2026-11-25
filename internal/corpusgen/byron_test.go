@@ -1,6 +1,7 @@
 package corpusgen
 
 import (
+	"bytes"
 	"math/big"
 	"os"
 	"os/exec"
@@ -25,7 +26,43 @@ func TestGenerateByronCorpus(t *testing.T) {
 	var entries []entry
 	entries = append(entries, byronMinFeeCases()...)
 	entries = append(entries, byronTxCases(t)...)
+	entries = append(entries, byronHeaderCases(t)...)
 	writeCorpus(t, "", entries)
+	writeCorpus(t, "divergences", byronDivergences(t))
+}
+
+// byronDivergences are confirmed mismatches; see divergence_byron_crypto_test.go
+// and the "divergence:" checks in Test/Byron.hs.
+func byronDivergences(t *testing.T) []entry {
+	t.Helper()
+	dir, err := byronfixture.ModuleDir("github.com/blinklabs-io/dingo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dlgs, err := byronfixture.PreprodDelegations(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks, err := byronfixture.PreprodBlocks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var protoDlg []*v1.ByronDelegation
+	for _, d := range dlgs {
+		protoDlg = append(protoDlg, &v1.ByronDelegation{IssuerVkey: d.Issuer, DelegateVkey: d.Delegate})
+	}
+	blk, err := gledger.NewBlockFromCbor(blocks[4].Type, blocks[4].CBOR)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return []entry{{
+		"byron_header_validate_wrong_magic",
+		"mainnet magic against a preprod header: gouroboros compares the header's magic first (a non-PBFT error), the reference's PBFT check fails the signature",
+		&v1.Call{Request: &v1.Call_ByronHeaderValidate{ByronHeaderValidate: &v1.ByronHeaderValidateRequest{
+			ProtocolMagic: mainnetMagic, SecurityParam: 2160, Pparams: byronParams(65536),
+			ChainState: &v1.ByronChainState{Delegations: protoDlg}, Header: blk.Header().Cbor(),
+		}}},
+	}}
 }
 
 // moduleFile reads a file from a module in go.work, so the corpus can use the
@@ -230,4 +267,79 @@ func realByronTxCases(t *testing.T) []entry {
 		})
 	}
 	return out
+}
+
+// byronHeaderCases validate real preprod Byron main-block headers against the
+// preprod genesis delegations, and tampered variants of them.
+func byronHeaderCases(t *testing.T) []entry {
+	t.Helper()
+	dir, err := byronfixture.ModuleDir("github.com/blinklabs-io/dingo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dlgs, err := byronfixture.PreprodDelegations(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks, err := byronfixture.PreprodBlocks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var protoDlg []*v1.ByronDelegation
+	for _, d := range dlgs {
+		protoDlg = append(protoDlg, &v1.ByronDelegation{IssuerVkey: d.Issuer, DelegateVkey: d.Delegate})
+	}
+	var headers [][]byte
+	var ebb []byte
+	var main []*byron.ByronMainBlockHeader
+	for _, b := range blocks {
+		blk, err := gledger.NewBlockFromCbor(b.Type, b.CBOR)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if b.Type == byron.BlockTypeByronEbb {
+			ebb = blk.Header().Cbor()
+			continue
+		}
+		headers = append(headers, blk.Header().Cbor())
+		main = append(main, blk.Header().(*byron.ByronMainBlockHeader))
+	}
+	req := func(name, why string, magic uint32, k uint64, dlg []*v1.ByronDelegation, header []byte) entry {
+		return entry{name, why, &v1.Call{Request: &v1.Call_ByronHeaderValidate{ByronHeaderValidate: &v1.ByronHeaderValidateRequest{
+			ProtocolMagic: magic, SecurityParam: k, Pparams: byronParams(65536),
+			ChainState: &v1.ByronChainState{Delegations: dlg}, Header: header,
+		}}}}
+	}
+	h := headers[3]
+	prev := main[3].PrevHash()
+	flipAt := func(needle []byte, off int) []byte {
+		at := bytes.Index(h, needle)
+		if at < 0 {
+			t.Fatal("needle not in header")
+		}
+		return flip(h, at+off)
+	}
+	sig := main[3].ConsensusData.BlockSig[1].([]any)[1].([]byte)
+	delegate := main[3].ConsensusData.BlockSig[1].([]any)[0].([]any)[2].([]byte)
+	var without []*v1.ByronDelegation
+	for _, d := range protoDlg {
+		if !bytes.Equal(d.GetDelegateVkey(), delegate) {
+			without = append(without, d)
+		}
+	}
+	return []entry{
+		req("byron_header_validate_preprod_first", "first preprod main block header", preprodMagic, 2160, protoDlg, headers[0]),
+		req("byron_header_validate_preprod_3", "preprod main block 3: the case the unit tests use", preprodMagic, 2160, protoDlg, h),
+		req("byron_header_validate_preprod_22", "mid-chain preprod header", preprodMagic, 2160, protoDlg, headers[22]),
+		req("byron_header_validate_preprod_last", "last Byron header on preprod, slot 84242", preprodMagic, 2160, protoDlg, headers[len(headers)-1]),
+		req("byron_header_validate_tampered_prev_hash", "one bit flipped in the signed previous hash", preprodMagic, 2160, protoDlg, flipAt(prev[:], 5)),
+		req("byron_header_validate_tampered_signature", "one bit flipped in the delegate's block signature", preprodMagic, 2160, protoDlg, flipAt(sig, 10)),
+		req("byron_header_validate_signer_not_delegate", "the signer's delegation removed from the active set", preprodMagic, 2160, without, h),
+		req("byron_header_validate_wrong_k", "k = 1 changes the epoch length, so the signed slot differs", preprodMagic, 1, protoDlg, h),
+		req("byron_header_validate_boundary_header", "epoch boundary header is not a main-block header", preprodMagic, 2160, protoDlg, ebb),
+		req("byron_header_validate_garbage", "bytes that are not a header", preprodMagic, 2160, protoDlg, []byte{0xff}),
+		req("byron_header_validate_trailing_byte", "valid header plus a trailing byte", preprodMagic, 2160, protoDlg, append(bytes.Clone(h), 0x00)),
+		req("byron_header_validate_zero_k", "security_param 0: UNSUPPORTED on both", preprodMagic, 0, protoDlg, h),
+		req("byron_header_validate_no_delegations", "empty delegation set: UNSUPPORTED on both", preprodMagic, 2160, nil, h),
+	}
 }

@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 
 	"github.com/blinklabs-io/dingo/ledger/eras"
+	byronconsensus "github.com/blinklabs-io/gouroboros/consensus/byron"
 	"github.com/blinklabs-io/gouroboros/ledger/byron"
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/blinklabs-io/gouroboros/ledger/shelley"
@@ -279,7 +281,99 @@ func byronSortEntries(es []*v1.UtxoEntry) {
 	sort.Slice(es, func(i, j int) bool { return byronTxInLess(es[i].GetTxin(), es[j].GetTxin()) })
 }
 
+// byronPBFTConfig builds gouroboros' Byron configuration from the request's
+// delegation set: every issuer is a genesis key, and its delegate signs
+// blocks for it. Epochs have 10k slots. A chain state carrying a signature
+// window or a previous slot cannot be modelled (the reference's PBftState
+// needs a slot per signer), so it is UNSUPPORTED rather than ignored.
+func byronPBFTConfig(magic uint32, k uint64, st *v1.ByronChainState) (byronconsensus.ByronConfig, error) {
+	var zero byronconsensus.ByronConfig
+	if k == 0 {
+		return zero, dispatch.Unsupported(errors.New("security_param must be nonzero"))
+	}
+	if st == nil {
+		return zero, dispatch.BadRequest(errors.New("chain_state missing"))
+	}
+	if len(st.GetRecentSigners()) > 0 || st.PrevSlot != nil {
+		return zero, dispatch.Unsupported(errors.New("a PBFT signature window and previous slot are not modelled"))
+	}
+	cfg := byronconsensus.ByronConfig{
+		ProtocolMagic:      magic,
+		SlotsPerEpoch:      10 * k,
+		SecurityParam:      k,
+		NumGenesisKeys:     len(st.GetDelegations()),
+		GenesisDelegations: map[lcommon.Blake2b224]lcommon.Blake2b224{},
+	}
+	if len(st.GetDelegations()) == 0 {
+		return zero, dispatch.Unsupported(errors.New("no delegations"))
+	}
+	delegates := map[lcommon.Blake2b224]bool{}
+	for i, d := range st.GetDelegations() {
+		issuer, err := byronconsensus.PBFTVerificationKeyHash(d.GetIssuerVkey())
+		if err != nil {
+			return zero, dispatch.BadRequest(fmt.Errorf("delegations[%d].issuer_vkey: %w", i, err))
+		}
+		delegate, err := byronconsensus.PBFTVerificationKeyHash(d.GetDelegateVkey())
+		if err != nil {
+			return zero, dispatch.BadRequest(fmt.Errorf("delegations[%d].delegate_vkey: %w", i, err))
+		}
+		// The reference keeps the delegation map as a Bimap, so a repeated
+		// issuer or delegate is not a map it can hold.
+		if _, dup := cfg.GenesisDelegations[issuer]; dup || delegates[delegate] {
+			return zero, dispatch.Unsupported(fmt.Errorf("delegations[%d] repeats an issuer or delegate", i))
+		}
+		delegates[delegate] = true
+		cfg.GenesisKeyHashes = append(cfg.GenesisKeyHashes, issuer.Bytes())
+		cfg.GenesisDelegations[issuer] = delegate
+	}
+	return cfg, nil
+}
+
+// byronPBFTFailureName maps a gouroboros PBFT error onto the reference's
+// PBftValidationErr constructor. gouroboros reports plain errors, so the
+// condition is read from the message.
+func byronPBFTFailureName(err error) string {
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "signature verification failed"):
+		return "PBftInvalidSignature"
+	case strings.Contains(msg, "does not authorize delegate"), strings.Contains(msg, "is not configured"):
+		return "PBftNotGenesisDelegate"
+	case strings.Contains(msg, "exceeds") || strings.Contains(msg, "threshold"):
+		return "PBftExceededSignThreshold"
+	}
+	return "DingoError"
+}
+
+// byronHeaderValidate maps to gouroboros ValidatePBFTHeader (delegate
+// signature and active delegation) followed by PBFTState.Transition on an
+// empty window, the checks of the reference's PBFT updateChainDepState for a
+// header with no earlier signers.
+func byronHeaderValidate(_ context.Context, req *v1.ByronHeaderValidateRequest) (*v1.ByronHeaderValidateResponse, error) {
+	cfg, err := byronPBFTConfig(req.GetProtocolMagic(), req.GetSecurityParam(), req.GetChainState())
+	if err != nil {
+		return nil, err
+	}
+	header, err := byron.NewByronMainBlockHeaderFromCbor(req.GetHeader())
+	if err != nil {
+		return &v1.ByronHeaderValidateResponse{Rejection: byronRejection("PBFT", "DeserialiseFailure", err)}, nil
+	}
+	issuer, err := byronconsensus.ValidatePBFTHeader(header, cfg)
+	if err != nil {
+		return &v1.ByronHeaderValidateResponse{Rejection: byronRejection("PBFT", byronPBFTFailureName(err), err)}, nil
+	}
+	window, err := byronconsensus.NewPBFTStateFromConfig(nil, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := window.Transition(issuer.GenesisKeyHash); err != nil {
+		return &v1.ByronHeaderValidateResponse{Rejection: byronRejection("PBFT", byronPBFTFailureName(err), err)}, nil
+	}
+	return &v1.ByronHeaderValidateResponse{}, nil
+}
+
 func registerByron(r *dispatch.Registry) {
 	dispatch.Register(r, byronMinFee)
 	dispatch.Register(r, byronTxValidate)
+	dispatch.Register(r, byronHeaderValidate)
 }
