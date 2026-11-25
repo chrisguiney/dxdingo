@@ -1,0 +1,9 @@
+# reference: NeutralNonce ⭒ lab = lab; dingo hashes its 32-zero neutral candidate (TestDivergenceNeutralCandidateIsHashed)
+praos_nonce_epoch: {
+  era: ERA_SHELLEY
+  candidate: {}
+  previous_lab: {
+    hash: "\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb\xbb"
+  }
+  extra_entropy: {}
+}

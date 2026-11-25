@@ -1,0 +1,12 @@
+# 340 + floor(660 * (0.01 + 0.99 * 0.2)) ADA
+rewards_leader_reward: {
+  pool_reward: 1000000000
+  cost: 340000000
+  margin: {
+    numerator: "1"
+    denominator: "100"
+  }
+  owner_stake: 10
+  pool_stake: 50
+  total_stake: 1000
+}

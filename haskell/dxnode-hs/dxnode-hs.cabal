@@ -13,14 +13,22 @@ library
   hs-source-dirs:  src
   exposed-modules:
     Dxdingo.Convert
+    Dxdingo.Crypto
     Dxdingo.Dispatch
+    Dxdingo.Domain
+    Dxdingo.Praos
     Dxdingo.Rewards
     Dxdingo.Wire
   build-depends:
     , base                    >=4.18 && <5
     , bytestring
+    , cardano-crypto-class
+    , cardano-crypto-praos
     , cardano-ledger-core     ^>=1.21
     , cardano-ledger-shelley  ^>=1.19
+    , cardano-protocol-tpraos ^>=1.6
+    , cardano-slotting
+    , containers
     , dxnode-hs:proto
     , microlens
     , proto-lens
@@ -91,6 +99,8 @@ test-suite dxnode-hs-test
   build-depends:
     , base
     , bytestring
+    , cardano-crypto-class
+    , cardano-ledger-core
     , dxnode-hs
     , dxnode-hs:proto
     , microlens

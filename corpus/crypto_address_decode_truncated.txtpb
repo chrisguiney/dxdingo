@@ -1,0 +1,4 @@
+# two bytes: both reject
+crypto_address_decode: {
+  raw: "\x01\x02"
+}

@@ -1,0 +1,11 @@
+# TPraos: 64-byte value, p = 0.0250
+praos_leader_check: {
+  era: ERA_SHELLEY
+  leader_value: "\x06fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  pool_stake: 1
+  total_stake: 2
+  active_slot_coeff: {
+    numerator: "1"
+    denominator: "20"
+  }
+}

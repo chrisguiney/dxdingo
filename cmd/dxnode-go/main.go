@@ -20,6 +20,16 @@ func newRegistry() *dispatch.Registry {
 	dispatch.Register(r, metaInfo(r))
 	dispatch.Register(r, memberReward)
 	dispatch.Register(r, drepDistribution)
+	dispatch.Register(r, leaderReward)
+	dispatch.Register(r, maxPool)
+	dispatch.Register(r, apparentPerformance)
+	dispatch.Register(r, vkeyWitness)
+	dispatch.Register(r, vrfVerify)
+	dispatch.Register(r, kesVerify)
+	dispatch.Register(r, addressDecode)
+	dispatch.Register(r, leaderCheck)
+	dispatch.Register(r, nonceEpoch)
+	dispatch.Register(r, overlaySchedule)
 	return r
 }
 

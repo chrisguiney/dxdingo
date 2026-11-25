@@ -1,51 +1,105 @@
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Reward functions, answered by cardano-ledger-shelley.
+-- | Reward functions, answered by cardano-ledger-shelley and -core.
 module Dxdingo.Rewards
   ( memberReward
+  , leaderReward
+  , maxPool
+  , apparentPerformance
   ) where
 
-import Cardano.Ledger.BaseTypes (BoundedRational (boundRational), UnitInterval)
+import Cardano.Ledger.BaseTypes (NonNegativeInterval, UnitInterval, nonZero)
 import Cardano.Ledger.Coin (Coin (..))
-import Cardano.Ledger.Shelley.Rewards (StakeShare (..), calcStakePoolMemberReward)
+import Cardano.Ledger.Shelley.Rewards
+  ( StakeShare (..)
+  , calcStakePoolMemberReward
+  , calcStakePoolOperatorReward
+  , mkApparentPerformance
+  )
+import Cardano.Ledger.State (maxPool')
 import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import Data.Ratio ((%))
-import Data.Text (Text)
 import qualified Data.Text as T
-import Dxdingo.Convert (rational)
+import Data.Word (Word16, Word64)
+import Dxdingo.Domain
 import Lens.Micro ((&), (.~), (^.))
-import Proto.Dxdingo.V1.Envelope (HarnessErrorCode (..))
 import Proto.Dxdingo.V1.Rewards
-  ( RewardsMemberRewardRequest
-  , RewardsMemberRewardResponse
-  )
 
 -- | 'calcStakePoolMemberReward' with t = member / total and
--- sigma = pool / total. Inputs outside its domain (a zero denominator, or a
--- margin that is not a 'UnitInterval') are UNSUPPORTED, as in dxnode-go.
-memberReward ::
-  RewardsMemberRewardRequest ->
-  Either (HarnessErrorCode, Text) RewardsMemberRewardResponse
+-- sigma = pool / total.
+memberReward :: RewardsMemberRewardRequest -> Result RewardsMemberRewardResponse
 memberReward req = do
-  m <- maybe (Left (HARNESS_ERROR_CODE_BAD_REQUEST, "margin: malformed rational")) Right $
-    rational =<< (req ^. #maybe'margin)
-  margin <-
-    maybe (Left (HARNESS_ERROR_CODE_UNSUPPORTED, "margin is not a UnitInterval")) Right $
-      boundRational m :: Either (HarnessErrorCode, Text) UnitInterval
-  let total = toInteger (req ^. #totalStake)
-      pool = toInteger (req ^. #poolStake)
-  if total == 0 || pool == 0
-    then Left (HARNESS_ERROR_CODE_UNSUPPORTED, "pool_stake and total_stake must be nonzero")
-    else do
-      let Coin reward =
-            calcStakePoolMemberReward
-              (Coin (toInteger (req ^. #poolReward)))
-              (Coin (toInteger (req ^. #cost)))
-              margin
-              (StakeShare (toInteger (req ^. #memberStake) % total))
-              (StakeShare (pool % total))
-      if reward < 0
-        then Left (HARNESS_ERROR_CODE_INTERNAL, "negative reward: " <> T.pack (show reward))
-        else Right (defMessage & #reward .~ fromInteger reward)
+  margin <- unitIntervalArg "margin" (req ^. #maybe'margin)
+  total <- nonzero "total_stake" (req ^. #totalStake)
+  pool <- nonzero "pool_stake" (req ^. #poolStake)
+  reward <-
+    coinWord64 $
+      calcStakePoolMemberReward
+        (coin (req ^. #poolReward))
+        (coin (req ^. #cost))
+        margin
+        (StakeShare (toInteger (req ^. #memberStake) % total))
+        (StakeShare (pool % total))
+  pure (defMessage & #reward .~ reward)
+
+-- | 'calcStakePoolOperatorReward' with s = owner / total and
+-- sigma = pool / total.
+leaderReward :: RewardsLeaderRewardRequest -> Result RewardsLeaderRewardResponse
+leaderReward req = do
+  margin <- unitIntervalArg "margin" (req ^. #maybe'margin)
+  total <- nonzero "total_stake" (req ^. #totalStake)
+  pool <- nonzero "pool_stake" (req ^. #poolStake)
+  reward <-
+    coinWord64 $
+      calcStakePoolOperatorReward
+        (coin (req ^. #poolReward))
+        (coin (req ^. #cost))
+        margin
+        (StakeShare (toInteger (req ^. #ownerStake) % total))
+        (StakeShare (pool % total))
+  pure (defMessage & #reward .~ reward)
+
+-- | 'maxPool'' with sigma = pool / total and pR = pledge / total.
+maxPool :: RewardsMaxPoolRequest -> Result RewardsMaxPoolResponse
+maxPool req = do
+  let pp = req ^. #pparams
+  a0 <- boundedArg "a0" (pp ^. #maybe'a0) :: Result NonNegativeInterval
+  nOpt <- case pp ^. #maybe'nOpt of
+    Just n | n >= 1 && n <= 0xffff -> pure (fromIntegral n :: Word16)
+    _ -> unsupported "n_opt must be in [1, 65535]"
+  nOptNZ <- maybe (unsupported "n_opt is zero") pure (nonZero nOpt)
+  total <- nonzero "total_stake" (req ^. #totalStake)
+  m <-
+    coinWord64 $
+      maxPool'
+        a0
+        nOptNZ
+        (coin (req ^. #poolPot))
+        (toInteger (req ^. #poolStake) % total)
+        (toInteger (req ^. #pledge) % total)
+  pure (defMessage & #maxPool .~ m)
+
+-- | 'mkApparentPerformance' with sigma = pool / total active stake.
+apparentPerformance ::
+  RewardsApparentPerformanceRequest -> Result RewardsApparentPerformanceResponse
+apparentPerformance req = do
+  d <- unitIntervalArg "d" (req ^. #maybe'd)
+  total <- nonzero "total_active_stake" (req ^. #totalActiveStake)
+  let p =
+        mkApparentPerformance
+          (d :: UnitInterval)
+          (toInteger (req ^. #poolStake) % total)
+          (fromIntegral (req ^. #blocks))
+          (fromIntegral (req ^. #blocksTotal))
+  pure (defMessage & #performance .~ rationalProto p)
+
+coin :: Integral a => a -> Coin
+coin = Coin . toInteger
+
+coinWord64 :: Coin -> Result Word64
+coinWord64 (Coin c)
+  | c < 0 || c > toInteger (maxBound :: Word64) =
+      internal ("coin out of Word64 range: " <> T.pack (show c))
+  | otherwise = pure (fromInteger c)

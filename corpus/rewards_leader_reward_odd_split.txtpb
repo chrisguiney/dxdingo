@@ -1,0 +1,12 @@
+# unreduced margin, uneven owner share
+rewards_leader_reward: {
+  pool_reward: 987654321
+  cost: 1234
+  margin: {
+    numerator: "50"
+    denominator: "200"
+  }
+  owner_stake: 3
+  pool_stake: 13
+  total_stake: 1000000
+}

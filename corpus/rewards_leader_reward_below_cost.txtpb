@@ -1,0 +1,12 @@
+# f <= cost: the operator takes f
+rewards_leader_reward: {
+  pool_reward: 300000000
+  cost: 340000000
+  margin: {
+    numerator: "0"
+    denominator: "1"
+  }
+  owner_stake: 10
+  pool_stake: 50
+  total_stake: 1000
+}

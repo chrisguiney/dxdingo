@@ -1,0 +1,11 @@
+# Praos: the largest value never leads
+praos_leader_check: {
+  era: ERA_BABBAGE
+  leader_value: "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+  pool_stake: 1
+  total_stake: 2
+  active_slot_coeff: {
+    numerator: "1"
+    denominator: "20"
+  }
+}

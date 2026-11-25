@@ -1,0 +1,9 @@
+# beta divides by max 1 blocks_total
+rewards_apparent_performance: {
+  d: {
+    numerator: "1"
+    denominator: "2"
+  }
+  pool_stake: 7
+  total_active_stake: 100
+}

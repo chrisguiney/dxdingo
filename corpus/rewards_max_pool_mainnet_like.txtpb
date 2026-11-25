@@ -1,0 +1,14 @@
+# mainnet-sized pot and supply
+rewards_max_pool: {
+  pparams: {
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+  }
+  pool_pot: 7000000000000
+  total_stake: 34000000000000000
+  pool_stake: 70000000000000
+  pledge: 1000000000000
+}

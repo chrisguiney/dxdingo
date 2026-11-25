@@ -1,0 +1,11 @@
+# Praos: value 0 always leads
+praos_leader_check: {
+  era: ERA_BABBAGE
+  leader_value: "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+  pool_stake: 1
+  total_stake: 2
+  active_slot_coeff: {
+    numerator: "1"
+    denominator: "20"
+  }
+}

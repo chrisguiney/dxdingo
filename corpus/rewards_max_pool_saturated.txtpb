@@ -1,0 +1,14 @@
+# sigma and pledge above z0 are capped at 1/k
+rewards_max_pool: {
+  pparams: {
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+  }
+  pool_pot: 1000000000
+  total_stake: 1000000
+  pool_stake: 10000
+  pledge: 9000
+}

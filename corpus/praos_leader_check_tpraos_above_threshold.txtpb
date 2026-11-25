@@ -1,0 +1,11 @@
+# TPraos: 64-byte value, p = 0.0255
+praos_leader_check: {
+  era: ERA_ALONZO
+  leader_value: "\x06\x87+\x02\x0cI\xba^5?|\xed\x91hr\xb0 ě\xa5\xe3S\xf7\xce\xd9\x16\x87+\x02\x0cI\xba^5?|\xed\x91hr\xb0 ě\xa5\xe3S\xf7\xce\xd9\x16\x87+\x02\x0cI\xba^5?|\xed\x91h"
+  pool_stake: 1
+  total_stake: 2
+  active_slot_coeff: {
+    numerator: "1"
+    denominator: "20"
+  }
+}

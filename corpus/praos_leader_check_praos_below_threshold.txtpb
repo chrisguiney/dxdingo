@@ -1,0 +1,11 @@
+# Praos: p = 0.0250 < 0.02532
+praos_leader_check: {
+  era: ERA_CONWAY
+  leader_value: "\x06fffffffffffffffffffffffffffffff"
+  pool_stake: 1
+  total_stake: 2
+  active_slot_coeff: {
+    numerator: "1"
+    denominator: "20"
+  }
+}

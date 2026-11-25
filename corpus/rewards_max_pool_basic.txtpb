@@ -1,0 +1,14 @@
+# a0 3/10, k 500, sigma 1/1000, pledge 1/2000: 812500
+rewards_max_pool: {
+  pparams: {
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+  }
+  pool_pot: 1000000000
+  total_stake: 1000000
+  pool_stake: 1000
+  pledge: 500
+}

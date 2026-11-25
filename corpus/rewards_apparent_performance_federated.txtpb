@@ -1,0 +1,11 @@
+# d >= 0.8: performance is 1
+rewards_apparent_performance: {
+  d: {
+    numerator: "9"
+    denominator: "10"
+  }
+  pool_stake: 1
+  total_active_stake: 4
+  blocks: 3
+  blocks_total: 10
+}

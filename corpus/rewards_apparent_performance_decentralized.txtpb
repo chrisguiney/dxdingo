@@ -1,0 +1,11 @@
+# beta / sigma = (3/10) / (1/4)
+rewards_apparent_performance: {
+  d: {
+    numerator: "0"
+    denominator: "1"
+  }
+  pool_stake: 1
+  total_active_stake: 4
+  blocks: 3
+  blocks_total: 10
+}
