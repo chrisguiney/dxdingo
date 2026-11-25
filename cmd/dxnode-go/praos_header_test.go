@@ -34,7 +34,7 @@ func b2b224(b []byte) []byte {
 	return h.Sum(nil)
 }
 
-func u32(n uint32) *uint32 { return &n }
+func u32Ptr(n uint32) *uint32 { return &n }
 
 // Fixture facts, read from the headers' CBOR:
 //
@@ -64,7 +64,7 @@ func TestHeaderEnvelope(t *testing.T) {
 			t.Parallel()
 			got, err := headerEnvelope(context.Background(), &v1.PraosHeaderEnvelopeRequest{
 				Era: h.Era, Header: h.CBOR,
-				Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32(tc.maxHeader), MaxBlockBodySize: u32(tc.maxBody)},
+				Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32Ptr(tc.maxHeader), MaxBlockBodySize: u32Ptr(tc.maxBody)},
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -75,7 +75,7 @@ func TestHeaderEnvelope(t *testing.T) {
 		})
 	}
 	for name, req := range map[string]*v1.PraosHeaderEnvelopeRequest{
-		"truncated header": {Era: h.Era, Header: h.CBOR[:100], Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32(1100), MaxBlockBodySize: u32(90112)}},
+		"truncated header": {Era: h.Era, Header: h.CBOR[:100], Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32Ptr(1100), MaxBlockBodySize: u32Ptr(90112)}},
 	} {
 		got, err := headerEnvelope(context.Background(), req)
 		if err != nil {
@@ -91,13 +91,13 @@ func TestHeaderEnvelope(t *testing.T) {
 	}
 	// The reference holds the header bound as a Word16.
 	_, err = headerEnvelope(context.Background(), &v1.PraosHeaderEnvelopeRequest{
-		Era: h.Era, Header: h.CBOR, Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32(65536), MaxBlockBodySize: u32(1)},
+		Era: h.Era, Header: h.CBOR, Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32Ptr(65536), MaxBlockBodySize: u32Ptr(1)},
 	})
 	if dispatch.Code(err) != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED {
 		t.Fatalf("header bound above Word16: err = %v, want UNSUPPORTED", err)
 	}
 	_, err = headerEnvelope(context.Background(), &v1.PraosHeaderEnvelopeRequest{
-		Era: v1.Era_ERA_BYRON, Header: h.CBOR, Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32(1), MaxBlockBodySize: u32(1)},
+		Era: v1.Era_ERA_BYRON, Header: h.CBOR, Pparams: &v1.ProtocolParameters{MaxBlockHeaderSize: u32Ptr(1), MaxBlockBodySize: u32Ptr(1)},
 	})
 	if dispatch.Code(err) != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED {
 		t.Fatalf("byron: err = %v, want UNSUPPORTED", err)
