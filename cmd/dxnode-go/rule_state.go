@@ -426,5 +426,5 @@ func ruleProtocolParameters(era v1.Era, p *v1.ProtocolParameters) (common.Protoc
 			MaxCollateralInputs: uint(p.GetMaxCollateralInputs()),
 		}, nil
 	}
-	return nil, dispatch.Unsupported(fmt.Errorf("rule functions are modelled for Alonzo, Babbage and Conway, not %v", era))
+	return legacyProtocolParameters(era, p)
 }

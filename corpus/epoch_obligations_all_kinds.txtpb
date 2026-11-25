@@ -1,0 +1,49 @@
+# every deposit kind contributes to its own total and the sum
+epoch_obligations: {
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    deposit: 2000000
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    }
+    deposit: 2000000
+  }
+  pools: {
+    pool_id: "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    stage: POOL_STAGE_CURRENT
+    margin: {
+      numerator: "1"
+      denominator: "100"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+    }
+    deposit: 500000000
+  }
+  dreps: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03"
+    }
+    deposit: 500000000
+  }
+  proposals: {
+    id: {
+      tx_id: "\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07\x07"
+    }
+    proposed_epoch: 4
+    expires_epoch: 10
+    deposit: 100000000000
+    return_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+  }
+}

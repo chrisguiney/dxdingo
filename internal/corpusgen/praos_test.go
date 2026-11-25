@@ -15,8 +15,8 @@ import (
 )
 
 func TestGeneratePraosCorpus(t *testing.T) {
-	writeCorpus(t, "", append(praosCases(), praosHeaderCases(t)...))
-	writeCorpus(t, "divergences", praosDivergenceCases())
+	writeCorpus(t, "", append(append(praosCases(), praosHeaderCases(t)...), tpraosCases(t)...))
+	writeCorpus(t, "divergences", append(praosDivergenceCases(), tpraosDivergenceCases(t)...))
 }
 
 func praosCases() []entry {

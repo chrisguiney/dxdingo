@@ -1,4 +1,4 @@
-# utxow tx 0 of the alonzo mainnet block: slot equals the ttl: the interval is half open
+# utxow tx 0 of the alonzo mainnet block: slot is past the ttl (equal to it from Allegra on, one more in Shelley whose ttl is inclusive)
 rule_utxow:  {
   context:  {
     era:  ERA_ALONZO

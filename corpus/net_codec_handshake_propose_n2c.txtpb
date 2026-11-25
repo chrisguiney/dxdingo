@@ -1,0 +1,8 @@
+# node-to-client versions in wire form
+net_codec_handshake: {
+  codec: {
+    version: 32787
+    state: "StPropose"
+    message: "\x82\x00\xa3\x19\x80\x10\x82\x1a-\x96J\t\xf4\x19\x80\x13\x82\x1a-\x96J\t\xf5\x19\x80\x17\x82\x1a-\x96J\t\xf4"
+  }
+}

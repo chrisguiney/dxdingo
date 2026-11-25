@@ -38,31 +38,27 @@ func purposeOf(t lcommon.GovActionType) int {
 	return 0
 }
 
-// govProposalTree maps to governance.PlanOrphanRemovals. The parent of each
-// proposal is the previous action id inside its action CBOR, as in the
-// reference; the request's parent and action_type fields are not read.
-//
-// The reference builds its proposal forest only from consistent input (every
-// parent is the enacted root of its purpose or an earlier proposal of that
-// purpose), so an inconsistent request is UNSUPPORTED.
-func govProposalTree(_ context.Context, req *v1.GovProposalTreeRequest) (*v1.GovProposalTreeResponse, error) {
+// proposalForest decodes the proposals and checks that they form a forest
+// under the enacted roots, in request order. The parent of each proposal is
+// the previous action id inside its action CBOR.
+func proposalForest(proposals []*v1.Proposal, enact *v1.EnactState) ([]*treeNode, map[string]*treeNode, error) {
 	roots := map[int]*v1.GovActionId{
-		1: req.GetEnactState().GetPrevPparamUpdate(), 2: req.GetEnactState().GetPrevHardFork(),
-		3: req.GetEnactState().GetPrevCommittee(), 4: req.GetEnactState().GetPrevConstitution(),
+		1: enact.GetPrevPparamUpdate(), 2: enact.GetPrevHardFork(),
+		3: enact.GetPrevCommittee(), 4: enact.GetPrevConstitution(),
 	}
 	byID := map[string]*treeNode{}
 	var order []*treeNode
-	for _, p := range req.GetProposals() {
+	for _, p := range proposals {
 		action, err := decodeGovAction(p.GetAction())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if len(p.GetId().GetTxId()) != 32 {
-			return nil, dispatch.BadRequest(errors.New("proposal id: want 32-byte tx id"))
+			return nil, nil, dispatch.BadRequest(errors.New("proposal id: want 32-byte tx id"))
 		}
 		key := idKey(p.GetId())
 		if _, dup := byID[key]; dup {
-			return nil, dispatch.BadRequest(fmt.Errorf("duplicate proposal %s", key))
+			return nil, nil, dispatch.BadRequest(fmt.Errorf("duplicate proposal %s", key))
 		}
 		row := &models.GovernanceProposal{
 			TxHash: p.GetId().GetTxId(), ActionIndex: p.GetId().GetIndex(), ActionType: uint8(action.Type),
@@ -78,12 +74,27 @@ func govProposalTree(_ context.Context, req *v1.GovProposalTreeRequest) (*v1.Gov
 		if purpose != 0 && !sameOptionalID(parentID, roots[purpose]) {
 			earlier, ok := byID[idKey(parentID)]
 			if parentID == nil || !ok || purposeOf(earlier.typ) != purpose {
-				return nil, dispatch.Unsupported(fmt.Errorf("proposal %s names a parent that is not its purpose root or an earlier proposal", key))
+				return nil, nil, dispatch.Unsupported(fmt.Errorf("proposal %s names a parent that is not its purpose root or an earlier proposal", key))
 			}
 		}
 		node := &treeNode{id: p.GetId(), typ: action.Type, proposal: row}
 		byID[key] = node
 		order = append(order, node)
+	}
+	return order, byID, nil
+}
+
+// govProposalTree maps to governance.PlanOrphanRemovals. The parent of each
+// proposal is the previous action id inside its action CBOR, as in the
+// reference; the request's parent and action_type fields are not read.
+//
+// The reference builds its proposal forest only from consistent input (every
+// parent is the enacted root of its purpose or an earlier proposal of that
+// purpose), so an inconsistent request is UNSUPPORTED.
+func govProposalTree(_ context.Context, req *v1.GovProposalTreeRequest) (*v1.GovProposalTreeResponse, error) {
+	order, byID, err := proposalForest(req.GetProposals(), req.GetEnactState())
+	if err != nil {
+		return nil, err
 	}
 
 	pick := func(name string, ids []*v1.GovActionId) ([]*models.GovernanceProposal, error) {

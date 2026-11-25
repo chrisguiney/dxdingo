@@ -1,0 +1,8 @@
+# amount above Word8
+net_codec_peer_sharing: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x82\x00\x19\x01\x00"
+  }
+}

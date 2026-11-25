@@ -1,0 +1,819 @@
+# twelve pools, seventy-two delegators
+stake_pool_distribution: {
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "0000000000000000000000000000"
+    }
+    amount: 1000000
+    pool_id: "                            "
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "1111111111111111111111111111"
+    }
+    amount: 1001234
+    pool_id: "                            "
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "2222222222222222222222222222"
+    }
+    amount: 1002468
+    pool_id: "                            "
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "3333333333333333333333333333"
+    }
+    amount: 1003702
+    pool_id: "                            "
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "4444444444444444444444444444"
+    }
+    amount: 1004936
+    pool_id: "                            "
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "5555555555555555555555555555"
+    }
+    amount: 1006170
+    pool_id: "                            "
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "6666666666666666666666666666"
+    }
+    amount: 1077777
+    pool_id: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "7777777777777777777777777777"
+    }
+    amount: 1079011
+    pool_id: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "8888888888888888888888888888"
+    }
+    amount: 1080245
+    pool_id: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "9999999999999999999999999999"
+    }
+    amount: 1081479
+    pool_id: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "::::::::::::::::::::::::::::"
+    }
+    amount: 1082713
+    pool_id: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: ";;;;;;;;;;;;;;;;;;;;;;;;;;;;"
+    }
+    amount: 1083947
+    pool_id: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    }
+    amount: 1155554
+    pool_id: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "============================"
+    }
+    amount: 1156788
+    pool_id: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: ">>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    }
+    amount: 1158022
+    pool_id: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "????????????????????????????"
+    }
+    amount: 1159256
+    pool_id: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+    }
+    amount: 1160490
+    pool_id: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+    amount: 1161724
+    pool_id: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "BBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+    }
+    amount: 1233331
+    pool_id: "############################"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "CCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+    }
+    amount: 1234565
+    pool_id: "############################"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "DDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+    }
+    amount: 1235799
+    pool_id: "############################"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "EEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+    }
+    amount: 1237033
+    pool_id: "############################"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "FFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+    }
+    amount: 1238267
+    pool_id: "############################"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "GGGGGGGGGGGGGGGGGGGGGGGGGGGG"
+    }
+    amount: 1239501
+    pool_id: "############################"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "HHHHHHHHHHHHHHHHHHHHHHHHHHHH"
+    }
+    amount: 1311108
+    pool_id: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "IIIIIIIIIIIIIIIIIIIIIIIIIIII"
+    }
+    amount: 1312342
+    pool_id: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "JJJJJJJJJJJJJJJJJJJJJJJJJJJJ"
+    }
+    amount: 1313576
+    pool_id: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "KKKKKKKKKKKKKKKKKKKKKKKKKKKK"
+    }
+    amount: 1314810
+    pool_id: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "LLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+    }
+    amount: 1316044
+    pool_id: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "MMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+    }
+    amount: 1317278
+    pool_id: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "NNNNNNNNNNNNNNNNNNNNNNNNNNNN"
+    }
+    amount: 1388885
+    pool_id: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "OOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+    }
+    amount: 1390119
+    pool_id: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "PPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+    }
+    amount: 1391353
+    pool_id: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+    }
+    amount: 1392587
+    pool_id: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "RRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+    }
+    amount: 1393821
+    pool_id: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "SSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+    }
+    amount: 1395055
+    pool_id: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "TTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+    }
+    amount: 1466662
+    pool_id: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "UUUUUUUUUUUUUUUUUUUUUUUUUUUU"
+    }
+    amount: 1467896
+    pool_id: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "VVVVVVVVVVVVVVVVVVVVVVVVVVVV"
+    }
+    amount: 1469130
+    pool_id: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "WWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+    }
+    amount: 1470364
+    pool_id: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    }
+    amount: 1471598
+    pool_id: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "YYYYYYYYYYYYYYYYYYYYYYYYYYYY"
+    }
+    amount: 1472832
+    pool_id: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+    }
+    amount: 1544439
+    pool_id: "''''''''''''''''''''''''''''"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "[[[[[[[[[[[[[[[[[[[[[[[[[[[["
+    }
+    amount: 1545673
+    pool_id: "''''''''''''''''''''''''''''"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
+    }
+    amount: 1546907
+    pool_id: "''''''''''''''''''''''''''''"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "]]]]]]]]]]]]]]]]]]]]]]]]]]]]"
+    }
+    amount: 1548141
+    pool_id: "''''''''''''''''''''''''''''"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    }
+    amount: 1549375
+    pool_id: "''''''''''''''''''''''''''''"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "____________________________"
+    }
+    amount: 1550609
+    pool_id: "''''''''''''''''''''''''''''"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "````````````````````````````"
+    }
+    amount: 1622216
+    pool_id: "(((((((((((((((((((((((((((("
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+    amount: 1623450
+    pool_id: "(((((((((((((((((((((((((((("
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+    amount: 1624684
+    pool_id: "(((((((((((((((((((((((((((("
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "cccccccccccccccccccccccccccc"
+    }
+    amount: 1625918
+    pool_id: "(((((((((((((((((((((((((((("
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "dddddddddddddddddddddddddddd"
+    }
+    amount: 1627152
+    pool_id: "(((((((((((((((((((((((((((("
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "eeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    }
+    amount: 1628386
+    pool_id: "(((((((((((((((((((((((((((("
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "ffffffffffffffffffffffffffff"
+    }
+    amount: 1699993
+    pool_id: "))))))))))))))))))))))))))))"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "gggggggggggggggggggggggggggg"
+    }
+    amount: 1701227
+    pool_id: "))))))))))))))))))))))))))))"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "hhhhhhhhhhhhhhhhhhhhhhhhhhhh"
+    }
+    amount: 1702461
+    pool_id: "))))))))))))))))))))))))))))"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "iiiiiiiiiiiiiiiiiiiiiiiiiiii"
+    }
+    amount: 1703695
+    pool_id: "))))))))))))))))))))))))))))"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "jjjjjjjjjjjjjjjjjjjjjjjjjjjj"
+    }
+    amount: 1704929
+    pool_id: "))))))))))))))))))))))))))))"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "kkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+    }
+    amount: 1706163
+    pool_id: "))))))))))))))))))))))))))))"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "llllllllllllllllllllllllllll"
+    }
+    amount: 1777770
+    pool_id: "****************************"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "mmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+    }
+    amount: 1779004
+    pool_id: "****************************"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "nnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+    }
+    amount: 1780238
+    pool_id: "****************************"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "oooooooooooooooooooooooooooo"
+    }
+    amount: 1781472
+    pool_id: "****************************"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "pppppppppppppppppppppppppppp"
+    }
+    amount: 1782706
+    pool_id: "****************************"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "qqqqqqqqqqqqqqqqqqqqqqqqqqqq"
+    }
+    amount: 1783940
+    pool_id: "****************************"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "rrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+    }
+    amount: 1855547
+    pool_id: "++++++++++++++++++++++++++++"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "ssssssssssssssssssssssssssss"
+    }
+    amount: 1856781
+    pool_id: "++++++++++++++++++++++++++++"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "tttttttttttttttttttttttttttt"
+    }
+    amount: 1858015
+    pool_id: "++++++++++++++++++++++++++++"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "uuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+    }
+    amount: 1859249
+    pool_id: "++++++++++++++++++++++++++++"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "vvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+    }
+    amount: 1860483
+    pool_id: "++++++++++++++++++++++++++++"
+  }
+  snapshot: {
+    snapshot: SNAPSHOT_KIND_MARK
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "wwwwwwwwwwwwwwwwwwwwwwwwwwww"
+    }
+    amount: 1861717
+    pool_id: "++++++++++++++++++++++++++++"
+  }
+  pools: {
+    pool_id: "                            "
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91\x91"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92\x92"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "############################"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93\x93"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94\x94"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95\x95"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96\x96"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "''''''''''''''''''''''''''''"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97\x97"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "(((((((((((((((((((((((((((("
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "))))))))))))))))))))))))))))"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99\x99"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "****************************"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a\x9a"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools: {
+    pool_id: "++++++++++++++++++++++++++++"
+    stage: POOL_STAGE_CURRENT
+    vrf_key_hash: "\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b\x9b"
+    cost: 340000000
+    margin: {
+      numerator: "1"
+      denominator: "10"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+}

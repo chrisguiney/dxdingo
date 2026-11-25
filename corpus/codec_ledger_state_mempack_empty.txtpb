@@ -1,0 +1,5 @@
+# no bytes
+codec_ledger_state: {
+  era: ERA_CONWAY
+  format: LEDGER_STATE_FORMAT_MEMPACK_TXOUT
+}

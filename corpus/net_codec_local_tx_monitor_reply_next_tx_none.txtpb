@@ -1,0 +1,8 @@
+# the mempool is exhausted
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StBusyNextTx"
+    message: "\x81\x06"
+  }
+}

@@ -1,0 +1,125 @@
+# the protocol version becomes 10.0
+gov_enact: {
+  pparams: {
+    min_fee_a: 44
+    min_fee_b: 155381
+    max_block_body_size: 65536
+    max_tx_size: 16384
+    max_block_header_size: 1100
+    key_deposit: 2000000
+    pool_deposit: 500000000
+    max_epoch: 18
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+    rho: {
+      numerator: "3"
+      denominator: "1000"
+    }
+    tau: {
+      numerator: "1"
+      denominator: "5"
+    }
+    protocol_version: {
+      major: 10
+    }
+    min_pool_cost: 170000000
+    coins_per_utxo_byte: 4310
+    price_mem: {
+      numerator: "577"
+      denominator: "10000"
+    }
+    price_steps: {
+      numerator: "721"
+      denominator: "10000000"
+    }
+    max_tx_ex_mem: 14000000
+    max_tx_ex_steps: 10000000000
+    max_block_ex_mem: 62000000
+    max_block_ex_steps: 20000000000
+    max_value_size: 5000
+    collateral_percentage: 150
+    max_collateral_inputs: 3
+    pool_voting_thresholds: {
+      motion_no_confidence: {
+        numerator: "51"
+        denominator: "100"
+      }
+      committee_normal: {
+        numerator: "13"
+        denominator: "25"
+      }
+      committee_no_confidence: {
+        numerator: "53"
+        denominator: "100"
+      }
+      hard_fork_initiation: {
+        numerator: "27"
+        denominator: "50"
+      }
+      pp_security_group: {
+        numerator: "11"
+        denominator: "20"
+      }
+    }
+    drep_voting_thresholds: {
+      motion_no_confidence: {
+        numerator: "61"
+        denominator: "100"
+      }
+      committee_normal: {
+        numerator: "31"
+        denominator: "50"
+      }
+      committee_no_confidence: {
+        numerator: "63"
+        denominator: "100"
+      }
+      update_to_constitution: {
+        numerator: "16"
+        denominator: "25"
+      }
+      hard_fork_initiation: {
+        numerator: "13"
+        denominator: "20"
+      }
+      pp_network_group: {
+        numerator: "33"
+        denominator: "50"
+      }
+      pp_economic_group: {
+        numerator: "67"
+        denominator: "100"
+      }
+      pp_technical_group: {
+        numerator: "17"
+        denominator: "25"
+      }
+      pp_gov_group: {
+        numerator: "69"
+        denominator: "100"
+      }
+      treasury_withdrawal: {
+        numerator: "7"
+        denominator: "10"
+      }
+    }
+    committee_min_size: 3
+    committee_max_term_length: 146
+    gov_action_lifetime: 6
+    gov_action_deposit: 100000000000
+    drep_deposit: 500000000
+    drep_activity: 20
+    min_fee_ref_script_cost_per_byte: {
+      numerator: "15"
+      denominator: "1"
+    }
+  }
+  state: {}
+  action_id: {
+    tx_id: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  }
+  action: "\x83\x01\xf6\x82\n\x00"
+}

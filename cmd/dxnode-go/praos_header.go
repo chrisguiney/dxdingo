@@ -10,43 +10,63 @@ import (
 	"github.com/blinklabs-io/dingo/ledger/eras"
 	"github.com/blinklabs-io/gouroboros/consensus"
 	gledger "github.com/blinklabs-io/gouroboros/ledger"
+	"github.com/blinklabs-io/gouroboros/ledger/allegra"
+	"github.com/blinklabs-io/gouroboros/ledger/alonzo"
 	"github.com/blinklabs-io/gouroboros/ledger/babbage"
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/blinklabs-io/gouroboros/ledger/conway"
+	"github.com/blinklabs-io/gouroboros/ledger/mary"
+	"github.com/blinklabs-io/gouroboros/ledger/shelley"
 	"github.com/blinklabs-io/gouroboros/vrf"
 
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
 	"github.com/chrisguiney/dxdingo/internal/dispatch"
 )
 
-// praosHeader is a decoded Babbage or Conway block header: the fields the
-// consensus checks read, next to the decoded header they come from.
+// praosHeader is a decoded Shelley to Conway block header: the fields the
+// consensus checks read, next to the decoded header they come from. For the
+// TPraos eras (Shelley to Alonzo) vrfProof and vrfOutput are the leader VRF
+// certificate and the nonce certificate is kept apart.
 type praosHeader struct {
-	hdr       lcommon.BlockHeader
-	slot      uint64
-	issuer    []byte
-	vrfKey    []byte
-	vrfProof  []byte
-	vrfOutput []byte
+	hdr         lcommon.BlockHeader
+	tpraos      bool
+	blockNo     uint64
+	slot        uint64
+	prevHash    []byte
+	issuer      []byte
+	vrfKey      []byte
+	vrfProof    []byte
+	vrfOutput   []byte
+	nonceProof  []byte
+	nonceOutput []byte
 }
 
-// praosBlockType is the gouroboros block type for a Praos era. Eras before
-// Babbage run TPraos and Dijkstra is not modelled.
-func praosBlockType(era v1.Era) (uint, error) {
+// praosBlockType is the gouroboros block type of an era's headers and whether
+// the era runs TPraos (Shelley to Alonzo) rather than Praos. Dijkstra is not
+// modelled.
+func praosBlockType(era v1.Era) (bt uint, tpraos bool, err error) {
 	switch era {
+	case v1.Era_ERA_SHELLEY:
+		return gledger.BlockTypeShelley, true, nil
+	case v1.Era_ERA_ALLEGRA:
+		return gledger.BlockTypeAllegra, true, nil
+	case v1.Era_ERA_MARY:
+		return gledger.BlockTypeMary, true, nil
+	case v1.Era_ERA_ALONZO:
+		return gledger.BlockTypeAlonzo, true, nil
 	case v1.Era_ERA_BABBAGE:
-		return gledger.BlockTypeBabbage, nil
+		return gledger.BlockTypeBabbage, false, nil
 	case v1.Era_ERA_CONWAY:
-		return gledger.BlockTypeConway, nil
+		return gledger.BlockTypeConway, false, nil
 	}
-	return 0, dispatch.Unsupported(fmt.Errorf("no Praos header check in %v", era))
+	return 0, false, dispatch.Unsupported(fmt.Errorf("no header check in %v", era))
 }
 
 // decodePraosHeader decodes a block header, as it appears in a block, with
 // gouroboros. A decode failure is returned as the error and reported by the
 // callers as the rejection DeserialiseFailure.
 func decodePraosHeader(era v1.Era, raw []byte) (*praosHeader, error) {
-	bt, err := praosBlockType(era)
+	bt, tpraos, err := praosBlockType(era)
 	if err != nil {
 		return nil, err
 	}
@@ -55,14 +75,31 @@ func decodePraosHeader(era v1.Era, raw []byte) (*praosHeader, error) {
 		return nil, &decodeError{err}
 	}
 	issuer := hdr.IssuerVkey()
-	out := &praosHeader{hdr: hdr, slot: hdr.SlotNumber(), issuer: issuer[:]}
+	prev := hdr.PrevHash()
+	out := &praosHeader{
+		hdr: hdr, tpraos: tpraos, blockNo: hdr.BlockNumber(), slot: hdr.SlotNumber(),
+		prevHash: prev.Bytes(), issuer: issuer[:],
+	}
+	var tp *shelley.ShelleyBlockHeaderBody
 	switch h := hdr.(type) {
 	case *babbage.BabbageBlockHeader:
 		out.vrfKey, out.vrfProof, out.vrfOutput = h.Body.VrfKey, h.Body.VrfResult.Proof, h.Body.VrfResult.Output
 	case *conway.ConwayBlockHeader:
 		out.vrfKey, out.vrfProof, out.vrfOutput = h.Body.VrfKey, h.Body.VrfResult.Proof, h.Body.VrfResult.Output
+	case *shelley.ShelleyBlockHeader:
+		tp = &h.Body
+	case *allegra.AllegraBlockHeader:
+		tp = &h.Body
+	case *mary.MaryBlockHeader:
+		tp = &h.Body
+	case *alonzo.AlonzoBlockHeader:
+		tp = &h.Body
 	default:
 		return nil, dispatch.Unsupported(fmt.Errorf("unexpected header type %T", hdr))
+	}
+	if tp != nil {
+		out.vrfKey, out.vrfProof, out.vrfOutput = tp.VrfKey, tp.LeaderVrf.Proof, tp.LeaderVrf.Output
+		out.nonceProof, out.nonceOutput = tp.NonceVrf.Proof, tp.NonceVrf.Output
 	}
 	return out, nil
 }
@@ -81,7 +118,11 @@ func deserialiseFailure(err error) *v1.Rejection {
 // praosRejection is a single-failure rejection under the rule Praos, the
 // reference's PraosValidationErr.
 func praosRejection(name string, detail error) *v1.Rejection {
-	return &v1.Rejection{Failures: []*v1.Failure{{Rule: "Praos", Name: name, Detail: detail.Error()}}}
+	return ruleRejection("Praos", name, detail)
+}
+
+func ruleRejection(rule, name string, detail error) *v1.Rejection {
+	return &v1.Rejection{Failures: []*v1.Failure{{Rule: rule, Name: name, Detail: detail.Error()}}}
 }
 
 // decodeOrReject decodes the header; a header that does not decode is the
@@ -106,7 +147,7 @@ func decodeOrReject(era v1.Era, raw []byte) (*praosHeader, *v1.Rejection, error)
 // order: the encoded header against maxBlockHeaderSize, then the body size the
 // header declares against maxBlockBodySize.
 func headerEnvelope(_ context.Context, req *v1.PraosHeaderEnvelopeRequest) (*v1.PraosHeaderEnvelopeResponse, error) {
-	if _, err := praosBlockType(req.GetEra()); err != nil {
+	if _, _, err := praosBlockType(req.GetEra()); err != nil {
 		return nil, err
 	}
 	pp := req.GetPparams()
@@ -116,11 +157,17 @@ func headerEnvelope(_ context.Context, req *v1.PraosHeaderEnvelopeRequest) (*v1.
 	if *pp.MaxBlockHeaderSize > math.MaxUint16 {
 		return nil, dispatch.Unsupported(errors.New("max_block_header_size does not fit a Word16"))
 	}
+	if err := checkParent(req.GetParent()); err != nil {
+		return nil, err
+	}
 	h, rej, err := decodeOrReject(req.GetEra(), req.GetHeader())
 	if err != nil {
 		return nil, err
 	}
 	if rej != nil {
+		return &v1.PraosHeaderEnvelopeResponse{Rejection: rej}, nil
+	}
+	if rej := envelopePosition(h, req.GetParent()); rej != nil {
 		return &v1.PraosHeaderEnvelopeResponse{Rejection: rej}, nil
 	}
 	if err := ledger.CheckHeaderSizeLimit(uint64(len(h.hdr.Cbor())), uint64(*pp.MaxBlockHeaderSize)); err != nil {
@@ -159,12 +206,29 @@ func vrfCheck(_ context.Context, req *v1.PraosVrfCheckRequest) (*v1.PraosVrfChec
 	if err := sizedHash("pool_vrf_key_hash", req.GetPoolVrfKeyHash(), 32); err != nil {
 		return nil, err
 	}
+	var env *overlayEnv
+	if _, tpraos, err := praosBlockType(req.GetEra()); err == nil && tpraos {
+		var err error
+		if env, err = overlayEnvOf(req.GetOverlay()); err != nil {
+			return nil, err
+		}
+	}
 	h, rej, err := decodeOrReject(req.GetEra(), req.GetHeader())
 	if err != nil {
 		return nil, err
 	}
 	if rej != nil {
 		return &v1.PraosVrfCheckResponse{Rejection: rej}, nil
+	}
+	if h.tpraos {
+		fs, err := tpraosVrfChecks(h, eta0, req.GetPoolVrfKeyHash(), env)
+		if err != nil {
+			return nil, err
+		}
+		if len(fs) > 0 {
+			return &v1.PraosVrfCheckResponse{Rejection: failuresRejection(fs)}, nil
+		}
+		return &v1.PraosVrfCheckResponse{LeaderValue: h.vrfOutput, NonceValue: tpraosNonceValue(h.nonceOutput)}, nil
 	}
 	if err := ledger.CheckRegisteredVrfKey(h.slot, h.poolID(), h.vrfKey, req.GetPoolVrfKeyHash()); err != nil {
 		return &v1.PraosVrfCheckResponse{Rejection: praosRejection("VRFKeyWrongVRFKey", err)}, nil
@@ -227,6 +291,14 @@ func kesCheck(_ context.Context, req *v1.PraosKesCheckRequest) (*v1.PraosKesChec
 	if rej != nil {
 		return &v1.PraosKesCheckResponse{Rejection: rej}, nil
 	}
+	if h.tpraos {
+		same := func(n uint64) (uint64, bool) { return n, true }
+		fs, evolution, err := tpraosOcert(h, req.GetSlotsPerKesPeriod(), req.GetMaxKesEvolutions(), same, tpraosEraID(req.GetEra()))
+		if err != nil {
+			return nil, err
+		}
+		return &v1.PraosKesCheckResponse{Rejection: failuresRejection(fs), KesPeriod: evolution}, nil
+	}
 	evolution, _, rej, err := praosKes(h, req.GetSlotsPerKesPeriod(), req.GetMaxKesEvolutions())
 	if err != nil {
 		return nil, err
@@ -238,7 +310,8 @@ func kesCheck(_ context.Context, req *v1.PraosKesCheckRequest) (*v1.PraosKesChec
 }
 
 // praosEraOf is the era whose header format a protocol major version uses:
-// Babbage at 7 and 8, Conway from 9. Earlier versions run TPraos.
+// Babbage at 7 and 8, Conway from 9, and the TPraos eras before (see
+// tpraosEraOf).
 func praosEraOf(major uint32) (v1.Era, error) {
 	switch {
 	case major >= 9:
@@ -246,7 +319,10 @@ func praosEraOf(major uint32) (v1.Era, error) {
 	case major >= 7:
 		return v1.Era_ERA_BABBAGE, nil
 	}
-	return 0, dispatch.Unsupported(fmt.Errorf("protocol version %d runs TPraos", major))
+	if era, ok := tpraosEraOf(major); ok {
+		return era, nil
+	}
+	return 0, dispatch.Unsupported(fmt.Errorf("no header format at protocol version %d", major))
 }
 
 // opcertCheck maps to dingo ledger.CheckOpCertCounter, after the checks that
@@ -264,6 +340,29 @@ func opcertCheck(_ context.Context, req *v1.PraosOpCertCheckRequest) (*v1.PraosO
 	}
 	if rej != nil {
 		return &v1.PraosOpCertCheckResponse{Rejection: rej}, nil
+	}
+	if h.tpraos {
+		recorded := func(uint64) (uint64, bool) {
+			switch {
+			case req.LastCounter != nil:
+				return req.GetLastCounter(), true
+			case req.GetPoolRegistered() || req.GetIssuerIsGenesisDelegate():
+				return 0, true
+			}
+			return 0, false
+		}
+		fs, _, err := tpraosOcert(h, req.GetSlotsPerKesPeriod(), req.GetMaxKesEvolutions(), recorded, tpraosEraID(era))
+		if err != nil {
+			return nil, err
+		}
+		if len(fs) > 0 {
+			return &v1.PraosOpCertCheckResponse{Rejection: failuresRejection(fs)}, nil
+		}
+		oc, err := gledger.ExtractOpCertFromHeader(h.hdr)
+		if err != nil {
+			return nil, err
+		}
+		return &v1.PraosOpCertCheckResponse{NewCounter: oc.IssueNumber}, nil
 	}
 	_, counter, rej, err := praosKes(h, req.GetSlotsPerKesPeriod(), req.GetMaxKesEvolutions())
 	if err != nil {
@@ -292,8 +391,8 @@ func opcertCheck(_ context.Context, req *v1.PraosOpCertCheckRequest) (*v1.PraosO
 }
 
 // vrfKeyRegistered maps to dingo ledger.CheckRegisteredVrfKey, after the
-// lookup of the issuing pool in the distribution. The request names no era;
-// Babbage and Conway headers share one format, so it is decoded as Conway.
+// lookup of the issuing pool in the distribution. An unset era is Conway;
+// Babbage and Conway headers share one format.
 func vrfKeyRegistered(_ context.Context, req *v1.PraosVrfKeyRegisteredRequest) (*v1.PraosVrfKeyRegisteredResponse, error) {
 	dist := make(map[string][]byte, len(req.GetPoolDistribution()))
 	for _, p := range req.GetPoolDistribution() {
@@ -308,7 +407,11 @@ func vrfKeyRegistered(_ context.Context, req *v1.PraosVrfKeyRegisteredRequest) (
 		}
 		dist[string(p.GetPoolId())] = p.GetVrfKeyHash()
 	}
-	h, rej, err := decodeOrReject(v1.Era_ERA_CONWAY, req.GetHeader())
+	era := req.GetEra()
+	if era == v1.Era_ERA_UNSPECIFIED {
+		era = v1.Era_ERA_CONWAY
+	}
+	h, rej, err := decodeOrReject(era, req.GetHeader())
 	if err != nil {
 		return nil, err
 	}
@@ -316,12 +419,16 @@ func vrfKeyRegistered(_ context.Context, req *v1.PraosVrfKeyRegisteredRequest) (
 		return &v1.PraosVrfKeyRegisteredResponse{Rejection: rej}, nil
 	}
 	pool := h.poolID()
+	rule := "Praos"
+	if h.tpraos {
+		rule = ruleOVERLAY
+	}
 	registered, ok := dist[string(pool)]
 	if !ok {
-		return &v1.PraosVrfKeyRegisteredResponse{Rejection: praosRejection("VRFKeyUnknown", fmt.Errorf("pool %x is not in the distribution", pool))}, nil
+		return &v1.PraosVrfKeyRegisteredResponse{Rejection: ruleRejection(rule, "VRFKeyUnknown", fmt.Errorf("pool %x is not in the distribution", pool))}, nil
 	}
 	if err := ledger.CheckRegisteredVrfKey(h.slot, pool, h.vrfKey, registered); err != nil {
-		return &v1.PraosVrfKeyRegisteredResponse{Rejection: praosRejection("VRFKeyWrongVRFKey", err)}, nil
+		return &v1.PraosVrfKeyRegisteredResponse{Rejection: ruleRejection(rule, "VRFKeyWrongVRFKey", err)}, nil
 	}
 	return &v1.PraosVrfKeyRegisteredResponse{PoolId: pool}, nil
 }

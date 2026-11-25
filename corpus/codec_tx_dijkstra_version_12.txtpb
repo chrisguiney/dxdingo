@@ -1,0 +1,8 @@
+# protocol version 12 is the era
+codec_tx: {
+  era: ERA_DIJKSTRA
+  protocol_version: {
+    major: 12
+  }
+  cbor: "\x83\xa3\x00\x80\x01\x80\x02\x00\xa0\xf6"
+}

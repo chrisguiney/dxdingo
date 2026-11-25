@@ -1,0 +1,6 @@
+# a server message in the client's state
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StIdle"
+  message_type: "MsgAwaitReply"
+}

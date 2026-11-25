@@ -11,7 +11,10 @@ option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1"
 
 // NetCodecRequest is shared by every mini-protocol codec function.
 message NetCodecRequest {
-  // Negotiated node-to-node or node-to-client version.
+  // Negotiated version. Node-to-node versions are 14 to 16. Node-to-client
+  // versions 16 to 23 are written in wire form with the high bit set (32784
+  // to 32791). Other values are UNSUPPORTED, as is a protocol on the wrong
+  // side.
   uint32 version = 1;
   string state = 2;
   // Era of embedded block, header or tx payloads.
@@ -64,6 +67,9 @@ message NetCodecTxSubmission2Response {
 
 message NetCodecLocalStateQueryRequest {
   NetCodecRequest codec = 1;
+  // CBOR of the query in flight, required when the state is "StQuerying":
+  // the reference decodes a MsgResult by the result type of that query.
+  bytes query = 2;
 }
 
 message NetCodecLocalStateQueryResponse {
@@ -183,6 +189,10 @@ enum Agency {
 message NetAgencyRequest {
   MiniProtocol protocol = 1;
   string state = 2;
+  // The Haskell constructor name. MsgRequestTxIds carries its blocking
+  // style as a suffix ("MsgRequestTxIdsBlocking", "MsgRequestTxIdsNonBlocking")
+  // and the local-tx-monitor state "StBusy" is split by the query in flight
+  // ("StBusyNextTx", "StBusyHasTx", "StBusyGetSizes", "StBusyGetMeasures").
   string message_type = 3;
 }
 

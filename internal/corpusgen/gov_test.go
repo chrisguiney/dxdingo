@@ -10,18 +10,23 @@ import (
 
 func TestGenerateGovCorpus(t *testing.T) {
 	writeCorpus(t, "", govCases())
+	writeCorpus(t, "", govBoundaryCases())
 	writeCorpus(t, "divergences", govDivergenceCases())
 }
 
 // govDivergenceCases holds confirmed mismatches; cmd/dxnode-go/divergence_gov_test.go
 // and the divergence checks in Test/Gov.hs call the libraries directly.
 func govDivergenceCases() []entry {
-	return append(govDivergenceExpiry(), []entry{
+	return append(append(append(govDivergenceExpiry(), govDivergenceZeroExpiry()...), govDivergenceDormantBoundary()...), []entry{
 		{"gov_thresholds_pc_empty_update", "an update touching no group: the reference threshold is zero, dingo falls back to the governance group; the ledger rejects such an update as malformed",
 			&v1.Call{Request: &v1.Call_GovThresholds{GovThresholds: &v1.GovThresholdsRequest{
 				ProtocolVersion: gpv(10), Pparams: govParams(10, 3), Committee: govCommittee(false), Action: govHex("8400f6a0f6"), Epoch: 50,
 			}}}},
 	}...)
+}
+
+func govBoundaryCases() []entry {
+	return append(append(govRatifyCases(), govEnactCases()...), govProposalExpiryCases()...)
 }
 
 func govHex(s string) []byte {

@@ -1,0 +1,8 @@
+# local state query is node-to-client only
+net_codec_local_state_query: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x81\x07"
+  }
+}

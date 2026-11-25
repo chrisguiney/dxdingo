@@ -1,0 +1,9 @@
+# MsgResult decoded by the result type of Query_Conway_GetLedgerTip
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StQuerying"
+    message: "\x82\x04\x81\x82\tX F\r/6\xa1\xa2\xa8\x8d\xbfo\xf0\x90\xc8m\x1e\x12\x13\xc6\xcd\xed|\x1c\x05\xb9zj3dJ\x17\xa8M"
+  }
+  query: "\x82\x00\x82\x06\x81\x00"
+}

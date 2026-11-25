@@ -1,0 +1,8 @@
+# MsgKeepAlive without a cookie
+net_codec_keep_alive: {
+  codec: {
+    version: 14
+    state: "StClient"
+    message: "\x81\x00"
+  }
+}

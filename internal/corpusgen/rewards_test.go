@@ -24,7 +24,7 @@ func rewardsCases() []entry {
 			D: d, PoolStake: pool, TotalActiveStake: total, Blocks: n, BlocksTotal: nbar,
 		}}}}
 	}
-	return []entry{
+	base := []entry{
 		leader("rewards_leader_reward_owner_fifth", "340 + floor(660 * (0.01 + 0.99 * 0.2)) ADA", 1_000_000_000, 340_000_000, rat("1", "100"), 10, 50, 1000),
 		leader("rewards_leader_reward_below_cost", "f <= cost: the operator takes f", 300_000_000, 340_000_000, rat("0", "1"), 10, 50, 1000),
 		leader("rewards_leader_reward_odd_split", "unreduced margin, uneven owner share", 987_654_321, 1234, rat("50", "200"), 3, 13, 1_000_000),
@@ -35,4 +35,5 @@ func rewardsCases() []entry {
 		perf("rewards_apparent_performance_federated", "d >= 0.8: performance is 1", rat("9", "10"), 1, 4, 3, 10),
 		perf("rewards_apparent_performance_no_blocks_total", "beta divides by max 1 blocks_total", rat("1", "2"), 7, 100, 0, 0),
 	}
+	return append(base, rewardsUpdateCases()...)
 }

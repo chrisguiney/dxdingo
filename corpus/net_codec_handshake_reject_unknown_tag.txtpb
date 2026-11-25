@@ -1,0 +1,8 @@
+# tag 4 does not exist
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StPropose"
+    message: "\x81\x04"
+  }
+}

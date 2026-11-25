@@ -235,8 +235,10 @@ func TestOpcertCheck(t *testing.T) {
 	if err != nil || rejName(got.GetRejection()) != "InvalidKesSignatureOCERT" {
 		t.Fatalf("tampered KES signature: %v %v", got.GetRejection(), err)
 	}
-	if _, err := run(h.CBOR, one(10), true, 6); dispatch.Code(err) != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED {
-		t.Fatalf("TPraos protocol version: err = %v, want UNSUPPORTED", err)
+	// Versions 2 to 6 select the TPraos header formats and are covered by the
+	// TPraos tests; version 1 has no header format.
+	if _, err := run(h.CBOR, one(10), true, 1); dispatch.Code(err) != v1.HarnessErrorCode_HARNESS_ERROR_CODE_UNSUPPORTED {
+		t.Fatalf("protocol version before Shelley: err = %v, want UNSUPPORTED", err)
 	}
 }
 

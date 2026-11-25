@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -52,11 +53,16 @@ func drepDistributionInput(req *v1.StakeDRepDistributionRequest) (dxoracle.DRepS
 		}
 		in.Utxos = append(in.Utxos, dxoracle.Utxo{Tag: tag, Key: s.GetCredential().GetHash(), Amount: s.GetAmount()})
 	}
+	seenAccounts := map[string]struct{}{}
 	for _, a := range req.GetAccounts() {
 		tag, err := credentialTag(a.GetCredential())
 		if err != nil {
 			return in, fmt.Errorf("accounts: %w", err)
 		}
+		if _, dup := seenAccounts[credKeyRewardsStake(a.GetCredential())]; dup {
+			return in, errors.New("accounts: repeated credential")
+		}
+		seenAccounts[credKeyRewardsStake(a.GetCredential())] = struct{}{}
 		del, err := delegation(a.GetDrep())
 		if err != nil {
 			return in, fmt.Errorf("accounts: %w", err)
@@ -65,11 +71,16 @@ func drepDistributionInput(req *v1.StakeDRepDistributionRequest) (dxoracle.DRepS
 			Tag: tag, Key: a.GetCredential().GetHash(), Reward: a.GetBalance(), Active: true, Delegation: del,
 		})
 	}
+	seenDreps := map[string]struct{}{}
 	for _, d := range req.GetDreps() {
 		tag, err := credentialTag(d.GetCredential())
 		if err != nil {
 			return in, fmt.Errorf("dreps: %w", err)
 		}
+		if _, dup := seenDreps[credKeyRewardsStake(d.GetCredential())]; dup {
+			return in, errors.New("dreps: repeated credential")
+		}
+		seenDreps[credKeyRewardsStake(d.GetCredential())] = struct{}{}
 		in.Dreps = append(in.Dreps, dxoracle.DRep{Tag: tag, Key: d.GetCredential().GetHash(), ExpiryEpoch: d.GetExpiry(), Active: true})
 	}
 	for _, p := range req.GetProposals() {
@@ -168,4 +179,7 @@ func dingoRejection(rule string, err error) *v1.Rejection {
 
 func registerStake(r *dispatch.Registry) {
 	dispatch.Register(r, drepDistribution)
+	dispatch.Register(r, poolDistribution)
+	dispatch.Register(r, instantStake)
+	dispatch.Register(r, stakeSnapshot)
 }

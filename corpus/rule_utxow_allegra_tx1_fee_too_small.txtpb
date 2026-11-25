@@ -1,0 +1,75 @@
+# utxow tx 1 of the allegra mainnet block: min_fee_b raised far above the tx fee
+rule_utxow:  {
+  context:  {
+    era:  ERA_ALLEGRA
+    protocol_version:  {
+      major:  3
+    }
+    slot:  23072113
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  10000000
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    d:  {
+      numerator:  "0"
+      denominator:  "1"
+    }
+    protocol_version:  {
+      major:  3
+    }
+    min_utxo_value:  1000000
+    min_pool_cost:  170000000
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "\xd5>\xa8\xc6R\xa5\x8a\x8d\x0bOb\xb9*͵\xddq\xa7\xb4\x9ch\xcd:hk\xec\"\xe6\xe0\x88\x00]"
+        index:  1
+      }
+      txout:  "\x82X\x1da-\x1fn\xb1\x96\xeb\x8c5*\xd8Q,9\xb2\xef\x98\x0f\xd9\xff\x11\xf6\x1f\x13\xb3'\xcb?\x06\x1a\x1f\xe2\xf5\xa5"
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x83\xa4\x00\x81\x82X \xd5>\xa8\xc6R\xa5\x8a\x8d\x0bOb\xb9*͵\xddq\xa7\xb4\x9ch\xcd:hk\xec\"\xe6\xe0\x88\x00]\x01\x01\x82\x82XL\x82\xd8\x18XB\x83X\x1c\xf6\xaf\xb6\xb5\xff\xa58˥N\xdb\x15\x13\xa4\xaa\x03\x1d(\x0f\x94H\x86\x12s\xb1\xa1\xbdo\xa1\x01X\x1eX\x1c+\x0b\x01\x1b\xa3h=\x15\xad^\xef*J\x1e\x16\xbcc\xfa-\xf2FS3N\xa9\x86\xae\x10\x00\x1aS\xd3\x1dk\x1a\x10\xa13\xc0\x82X9\x01-\x1fn\xb1\x96\xeb\x8c5*\xd8Q,9\xb2\xef\x98\x0f\xd9\xff\x11\xf6\x1f\x13\xb3'\xcb?\x06\xab\xa80J\xa2\xf0\xdb\xce<{\x12\x01e\x9b\x88r\xfd\xcf»\xbc\x91D\x85?K\xda\xce\x1a\x0f>\xfe\xdb\x02\x1a\x00\x02\xc3\n\x03\x1a\x01`\rr\xa1\x00\x81\x82X <i?\r\xa4\xe7{\x94\xbd\x08\x90\xd8,\xcdb\x06fb\xab~Z`\x048T0\x1b\xe9\x14\xb2+=X@\x00\xefHGH\x9c\xef\xcd\x1cw\xe7\x0f}0\xd2\xef\x98\xcbе\x17u\x15\xad\xd3Q0\x8bA\x11ƚ\xdec\xf5\xe9\x85e\x10\x8c?\xfa\x82\xbe\xbc:3\x1b\xdcE\x83\x11.\x8dg8\xdc\xf9\xebT0g7\x00\xf6"
+}

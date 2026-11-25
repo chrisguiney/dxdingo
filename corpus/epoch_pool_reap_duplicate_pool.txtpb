@@ -1,0 +1,24 @@
+# a repeated pool id has no meaning in a map: UNSUPPORTED on both
+epoch_pool_reap:  {
+  epoch:  1
+  pools:  {
+    pool_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+    deposit:  5
+    retiring_epoch:  1
+  }
+  pools:  {
+    pool_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
+    }
+    deposit:  6
+    retiring_epoch:  1
+  }
+}

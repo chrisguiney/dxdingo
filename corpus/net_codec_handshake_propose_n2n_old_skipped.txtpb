@@ -1,0 +1,8 @@
+# version 13 is not recognised and is skipped
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StPropose"
+    message: "\x82\x00\xa2\r\x84\x1a-\x96J\t\xf4\x00\xf4\x0e\x84\x1a-\x96J\t\xf4\x00\xf4"
+  }
+}

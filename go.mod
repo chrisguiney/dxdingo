@@ -43,6 +43,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.25.0 // indirect
 	github.com/blinklabs-io/bursa v0.25.0 // indirect
 	github.com/blinklabs-io/go-bip39 v0.2.1 // indirect
+	github.com/blinklabs-io/plutigo v0.12.2
 	github.com/btcsuite/btcd/btcec/v2 v2.5.1 // indirect
 	github.com/btcsuite/btcd/btcutil v1.2.0 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.2.0 // indirect

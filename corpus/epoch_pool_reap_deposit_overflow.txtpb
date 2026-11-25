@@ -1,0 +1,24 @@
+# retiring deposits exceed Word64: UNSUPPORTED on both
+epoch_pool_reap:  {
+  epoch:  1
+  pools:  {
+    pool_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+    deposit:  18446744073709551615
+    retiring_epoch:  1
+  }
+  pools:  {
+    pool_id:  "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
+    }
+    deposit:  1
+    retiring_epoch:  1
+  }
+}

@@ -1,0 +1,6 @@
+# done needs the blocking state
+net_agency: {
+  protocol: MINI_PROTOCOL_TX_SUBMISSION2
+  state: "StTxIdsNonBlocking"
+  message_type: "MsgDone"
+}

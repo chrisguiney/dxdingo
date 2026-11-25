@@ -1,0 +1,278 @@
+# ledger drep registration: accepted; the delta is compared field by field
+rule_ledger:  {
+  context:  {
+    era:  ERA_CONWAY
+    protocol_version:  {
+      major:  11
+    }
+    slot:  259201000
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    protocol_version:  {
+      major:  11
+    }
+    min_pool_cost:  170000000
+    coins_per_utxo_byte:  4310
+    price_mem:  {
+      numerator:  "577"
+      denominator:  "10000"
+    }
+    price_steps:  {
+      numerator:  "721"
+      denominator:  "10000000"
+    }
+    max_tx_ex_mem:  14000000
+    max_tx_ex_steps:  10000000000
+    max_block_ex_mem:  62000000
+    max_block_ex_steps:  20000000000
+    max_value_size:  5000
+    collateral_percentage:  150
+    max_collateral_inputs:  3
+    pool_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      committee_normal:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      committee_no_confidence:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      hard_fork_initiation:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      pp_security_group:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+    }
+    drep_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      committee_normal:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      committee_no_confidence:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      update_to_constitution:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      hard_fork_initiation:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_network_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_economic_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_technical_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_gov_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      treasury_withdrawal:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+    }
+    committee_min_size:  7
+    committee_max_term_length:  146
+    gov_action_lifetime:  6
+    gov_action_deposit:  100000000000
+    drep_deposit:  500000000
+    drep_activity:  20
+    min_fee_ref_script_cost_per_byte:  {
+      numerator:  "15"
+      denominator:  "1"
+    }
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "11111111111111111111111111111111"
+      }
+      txout:  "\x82X\x1da\rjW~\x94A\xad\x8e\xd9f91\x90nMC\xec\xe8\xf8,q+\x1d\x025\xaf\xfb\x06\x1b\x00\x00\x00E\xd9d\xb8\x00"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      deposit:  2000000
+      balance:  5000000
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2"
+      }
+      deposit:  2000000
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xb8\x95 ͕o{\nۺ\x16\xdf\r&\xbd\x01ZByU㿏\xaa\xe0i\x11\x8d"
+      }
+      deposit:  2000000
+      balance:  5000000
+      drep:  {
+        always_abstain:  true
+      }
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\x8a\x95\xc8\xedX\x83\x06ꈆ\x0bT\xeb\x0ce\xe7}\xfa\xb9\x99x\x9c\xc5\xe6\xca\x00\x87\x99"
+      }
+      deposit:  2000000
+    }
+    pools:  {
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+      stage:  POOL_STAGE_CURRENT
+      vrf_key_hash:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      pledge:  100
+      cost:  170000000
+      margin:  {
+        numerator:  "1"
+        denominator:  "20"
+      }
+      reward_account:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      owners:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      deposit:  500000000
+    }
+    dreps:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1\xd1"
+      }
+      deposit:  500000000
+      expiry:  650
+    }
+    dreps:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\x8a\x95\xc8\xedX\x83\x06ꈆ\x0bT\xeb\x0ce\xe7}\xfa\xb9\x99x\x9c\xc5\xe6\xca\x00\x87\x99"
+      }
+      deposit:  500000000
+      expiry:  650
+    }
+    committee:  {
+      members:  {
+        cold:  {
+          kind:  CREDENTIAL_KIND_KEY
+          hash:  "\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1\xc1"
+        }
+        expiry:  700
+      }
+      members:  {
+        cold:  {
+          kind:  CREDENTIAL_KIND_KEY
+          hash:  "\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2\xc2"
+        }
+        hot:  {
+          kind:  CREDENTIAL_KIND_KEY
+          hash:  "\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2\xe2"
+        }
+        expiry:  700
+      }
+      members:  {
+        cold:  {
+          kind:  CREDENTIAL_KIND_KEY
+          hash:  "\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3\xc3"
+        }
+        expiry:  700
+        resigned:  true
+      }
+      threshold:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+    }
+    proposals:  {
+      id:  {
+        tx_id:  "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa"
+      }
+      action_type:  GOV_ACTION_TYPE_INFO
+      action:  "\x81\x06"
+      proposed_epoch:  598
+      expires_epoch:  604
+      deposit:  100000000000
+      return_account:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+    }
+    enact_state:  {
+      constitution:  {
+        anchor_url:  "https://example.com/c"
+        anchor_hash:  "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+      }
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x84\xa4\x00\x81\x82X 11111111111111111111111111111111\x00\x01\x81\x82X\x1dawwwwwwwwwwwwwwwwwwwwwwwwwwww\x1b\x00\x00\x00E\xbb\x94E\xc0\x02\x1a\x00\x03\r@\x04\x81\x84\x10\x82\x00X\x1c\x00\x8bG\x84M\x92\x81/\xc3\r\x1f\nɶ\xfb\xf3\x87x̺\x9d\xb81*\xd9\x07\x90y\x1a\x1d\xcde\x00\xf6\xa1\x00\x82\x82X \x8a\x88\xe3\xddt\t\xf1\x95\xfdR\xdb-<\xba]r\xcag\t\xbf\x1d\x94\x12\x1b\xf3t\x88\x01\xb4\x0fo\\X@<\x96\x9c\xbb\xa7W\x1b\xda[J\xcc\x14\xc5>H\xab\x08\x0b\xa6\xe4\xd7d\x11\xf71o\x9b\xc9\n|D滤z`\xea\x85WjR\n\xb0\xf1\xca\xc1ܯ\x94{\xf3#\xad\xc9#\xfd\xf8\x92Sm4\x80\xdc\x0f\x82X \x819w\x0e\xa8}\x17_V\xa3Tf\xc3L~\xccˍ\x8a\x91\xb4\xee7\xa2]\xf6\x0f[\x8fɳ\x94X@\xd9ay \x90\xdf\x0b\x91\x99\x80\xf9\xe1D\x03\xb9-NKb<\x85e\xe7\x82\xf8z\xe6dh6\x8da\x11H!k\xcc\xff\xc8'\xfa\xcaǥ\xb5\x1db2\r\xd5G\xb7\x91 \xd7(猁j\xad1\xb7\t\xf5\xf6"
+}

@@ -1,0 +1,646 @@
+# six DReps, thirty accounts with every delegation kind, six proposals
+stake_drep_distribution: {
+  epoch: 40
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10"
+    }
+    amount: 1000000
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11"
+    }
+    amount: 1000017
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12"
+    }
+    amount: 1000034
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13"
+    }
+    amount: 1000051
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14"
+    }
+    amount: 1000068
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15"
+    }
+    amount: 2000000
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16"
+    }
+    amount: 2000017
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17"
+    }
+    amount: 2000034
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18"
+    }
+    amount: 2000051
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19"
+    }
+    amount: 2000068
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a"
+    }
+    amount: 3000000
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b"
+    }
+    amount: 3000017
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c"
+    }
+    amount: 3000034
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d"
+    }
+    amount: 3000051
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e"
+    }
+    amount: 3000068
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f"
+    }
+    amount: 4000000
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "                            "
+    }
+    amount: 4000017
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    }
+    amount: 4000034
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    }
+    amount: 4000051
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "############################"
+    }
+    amount: 4000068
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    }
+    amount: 5000000
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    }
+    amount: 5000017
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+    }
+    amount: 5000034
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "''''''''''''''''''''''''''''"
+    }
+    amount: 5000051
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "(((((((((((((((((((((((((((("
+    }
+    amount: 5000068
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "))))))))))))))))))))))))))))"
+    }
+    amount: 6000000
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "****************************"
+    }
+    amount: 6000017
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "++++++++++++++++++++++++++++"
+    }
+    amount: 6000034
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: ",,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+    }
+    amount: 6000051
+  }
+  instant_stake: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "----------------------------"
+    }
+    amount: 6000068
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10"
+    }
+    drep: {
+      always_abstain: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11"
+    }
+    balance: 1000
+    drep: {
+      always_no_confidence: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12\x12"
+    }
+    balance: 2000
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13"
+    }
+    balance: 3000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14"
+    }
+    balance: 4000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15"
+    }
+    drep: {
+      always_no_confidence: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16\x16"
+    }
+    balance: 1000
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17"
+    }
+    balance: 2000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18"
+    }
+    balance: 3000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19"
+    }
+    balance: 4000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a"
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b\x1b"
+    }
+    balance: 1000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c"
+    }
+    balance: 2000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d"
+    }
+    balance: 3000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e"
+    }
+    balance: 4000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f"
+    }
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "                            "
+    }
+    balance: 1000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    }
+    balance: 2000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    }
+    balance: 3000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "############################"
+    }
+    balance: 4000
+    drep: {
+      always_abstain: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    }
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    }
+    balance: 1000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+    }
+    balance: 2000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "''''''''''''''''''''''''''''"
+    }
+    balance: 3000
+    drep: {
+      always_abstain: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "(((((((((((((((((((((((((((("
+    }
+    balance: 4000
+    drep: {
+      always_no_confidence: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "))))))))))))))))))))))))))))"
+    }
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "****************************"
+    }
+    balance: 1000
+    drep: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0"
+      }
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "++++++++++++++++++++++++++++"
+    }
+    balance: 2000
+    drep: {
+      always_abstain: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: ",,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+    }
+    balance: 3000
+    drep: {
+      always_no_confidence: true
+    }
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_SCRIPT
+      hash: "----------------------------"
+    }
+    balance: 4000
+  }
+  dreps: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0"
+    }
+    expiry: 50
+  }
+  dreps: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+    }
+    expiry: 50
+  }
+  dreps: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2"
+    }
+    expiry: 50
+  }
+  dreps: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3\xb3"
+    }
+    expiry: 50
+  }
+  dreps: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4\xb4"
+    }
+    expiry: 50
+  }
+  dreps: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5"
+    }
+    expiry: 50
+  }
+  proposals: {
+    proposed_epoch: 1
+    expires_epoch: 38
+    deposit: 500000000
+    return_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10"
+    }
+  }
+  proposals: {
+    proposed_epoch: 1
+    expires_epoch: 39
+    deposit: 1000000000
+    return_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15\x15"
+    }
+  }
+  proposals: {
+    proposed_epoch: 1
+    expires_epoch: 40
+    deposit: 1500000000
+    return_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a"
+    }
+  }
+  proposals: {
+    proposed_epoch: 1
+    expires_epoch: 41
+    deposit: 2000000000
+    return_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f"
+    }
+  }
+  proposals: {
+    proposed_epoch: 1
+    expires_epoch: 42
+    deposit: 2500000000
+    return_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    }
+  }
+  proposals: {
+    proposed_epoch: 1
+    expires_epoch: 43
+    deposit: 3000000000
+    return_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "))))))))))))))))))))))))))))"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+# refusal with the supported versions
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StConfirm"
+    message: "\x82\x02\x82\x00\x82\x0e\x0f"
+  }
+}

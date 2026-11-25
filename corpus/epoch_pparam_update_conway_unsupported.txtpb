@@ -1,0 +1,44 @@
+# the classic update system ends before Conway
+epoch_pparam_update:  {
+  context:  {
+    era:  ERA_CONWAY
+    epoch:  11
+  }
+  globals:  {
+    epoch_length:  100
+    quorum:  1
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  65536
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  150
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "1"
+      denominator:  "5"
+    }
+    d:  {
+      numerator:  "1"
+      denominator:  "2"
+    }
+    extra_entropy:  {}
+    protocol_version:  {
+      major:  2
+    }
+    min_utxo_value:  1000000
+    min_pool_cost:  340000000
+  }
+}

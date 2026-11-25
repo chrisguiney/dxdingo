@@ -1,0 +1,8 @@
+# no entries and no transfers: pots unchanged, applied
+epoch_mir:  {
+  protocol_version:  {
+    major:  7
+  }
+  reserves:  10
+  treasury:  20
+}

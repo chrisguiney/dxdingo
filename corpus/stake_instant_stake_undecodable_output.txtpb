@@ -1,0 +1,10 @@
+# an output that is not CBOR: a DeserialiseFailure rejection from both nodes
+stake_instant_stake: {
+  utxo: {
+    txin: {
+      tx_id: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+      index: 1
+    }
+    txout: "\xff"
+  }
+}

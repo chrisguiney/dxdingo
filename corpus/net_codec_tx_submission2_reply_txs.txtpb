@@ -1,0 +1,8 @@
+# one transaction body
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StTxs"
+    message: "\x82\x03\x9f\x82\x06\xd8\x18N\x84\xa3\x00\xd9\x01\x02\x80\x01\x80\x02\x00\xa0\xf5\xf6\xff"
+  }
+}

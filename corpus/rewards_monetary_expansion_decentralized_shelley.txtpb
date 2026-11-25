@@ -1,0 +1,41 @@
+# d = 1/4 below 4/5: expected blocks 16200, eta 1/2
+rewards_monetary_expansion: {
+  protocol_version: {
+    major: 5
+  }
+  pparams: {
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+    rho: {
+      numerator: "3"
+      denominator: "1000"
+    }
+    tau: {
+      numerator: "1"
+      denominator: "5"
+    }
+    d: {
+      numerator: "1"
+      denominator: "4"
+    }
+  }
+  globals: {
+    epoch_length: 432000
+    slot_length: {
+      numerator: "1"
+      denominator: "1"
+    }
+    security_param: 2160
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+    max_lovelace_supply: 45000000000000000
+  }
+  reserves: 1000000000000
+  fees: 2000000
+  blocks_total: 8100
+}

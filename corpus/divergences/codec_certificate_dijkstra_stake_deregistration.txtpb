@@ -1,0 +1,5 @@
+# tag 1 certificate under Dijkstra: gouroboros decodes it, the reference rejects the expunged UnRegTxCert (TestDivergenceDijkstraExpungedCertificates)
+codec_certificate: {
+  era: ERA_DIJKSTRA
+  cbor: "\x82\x01\x82\x00X\x1c\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11"
+}

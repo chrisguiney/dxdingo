@@ -1,0 +1,8 @@
+# peers are a server message
+net_codec_peer_sharing: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x82\x01\x80"
+  }
+}

@@ -1,0 +1,131 @@
+# tx 3 of the conway mainnet block withdraws from one account: the withdrawn account is not registered
+rule_certs:  {
+  context:  {
+    era:  ERA_CONWAY
+    protocol_version:  {
+      major:  10
+    }
+    slot:  100000000
+    epoch:  600
+    network_id:  1
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    protocol_version:  {
+      major:  10
+    }
+    min_pool_cost:  170000000
+    coins_per_utxo_byte:  4310
+    price_mem:  {
+      numerator:  "577"
+      denominator:  "10000"
+    }
+    price_steps:  {
+      numerator:  "721"
+      denominator:  "10000000"
+    }
+    max_tx_ex_mem:  14000000
+    max_tx_ex_steps:  10000000000
+    max_block_ex_mem:  62000000
+    max_block_ex_steps:  20000000000
+    max_value_size:  5000
+    collateral_percentage:  150
+    max_collateral_inputs:  3
+    pool_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      committee_normal:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      committee_no_confidence:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      hard_fork_initiation:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+      pp_security_group:  {
+        numerator:  "51"
+        denominator:  "100"
+      }
+    }
+    drep_voting_thresholds:  {
+      motion_no_confidence:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      committee_normal:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      committee_no_confidence:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      update_to_constitution:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      hard_fork_initiation:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_network_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_economic_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_technical_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      pp_gov_group:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+      treasury_withdrawal:  {
+        numerator:  "2"
+        denominator:  "3"
+      }
+    }
+    committee_min_size:  7
+    committee_max_term_length:  146
+    gov_action_lifetime:  6
+    gov_action_deposit:  100000000000
+    drep_deposit:  500000000
+    drep_activity:  20
+    min_fee_ref_script_cost_per_byte:  {
+      numerator:  "15"
+      denominator:  "1"
+    }
+  }
+  state:  {}
+  tx:  "\x84\xa5\x00\x81\x82X )\xd9\xfaȀ\n\x06\xfc\xab\xc9-\xc4f\x1f\xebw\x9ai\xf3W3ǂ\x9b\xee\xef\xe8\x89n\x16\xb6\xce\x02\x01\x81\x82X9\x01sJa\xfd6\xa6\xbe\xbc\xc0\x89}\xdc돫\xcf\x0c\xb7\x92\xbb\x13풰,.:t\xe7|\xe9\xf5\xa4z\xdaM\xfd\x8b\x8cQ\x820\x0c\xa4)\x8e\xb2\xb7\x84T~\x0e[\xd7ȿ\x1a\x1e\xd5S\xfc\x02\x1a\x00\x02\xac5\x03\x1a\t\x86\xf2/\x05\xa1X\x1d\xe1\xe7|\xe9\xf5\xa4z\xdaM\xfd\x8b\x8cQ\x820\x0c\xa4)\x8e\xb2\xb7\x84T~\x0e[\xd7ȿ\x1a\x1b\xe9D\xb1\xa1\x00\x82\x82X \x17yE\xe8\"\x15\x06ĎP\x00`_vY@\xd4?\x05ld\x81\xaaO?\x10j\xd9\xd4}\"3X@\xd9\xc0\x92-S\xd5%\x83\xb4\xff\xf5\xc1a\xfd\xbc\xa6\x0b\x1ab\x82|\x00\x11\x98u\xd0\xd9{ I\xc4~\xaf\x90\x9c\xfanξ_x\xde\xed\xb7\xa2=\xd4oGç\xdaƾg\"y[hc==m\x06\x82X \xe3\xb6_\xf9\xd2\xf9\xcej\x00\xe6\x8c\x00\x98\xfa\xc1\xe3\x85\xd9XW\x0f\x00\xaf\xccǟ\x8e\xf3\xe8\xda\xe9+X@3!\x07\xf4\x84\xcd\x06-n\xf1]\x98\xfe\x8c\xfd\xca\xf3\x13\xea\xe4ҩ\x00Ko\xce\xc8}\xe5\x1d\x81-M^\x94\xd0Q]\x19\x86\xb2\x1f\x1fFnzA\x94\xbb\xf5\xaa\xb9C_ \r\\\xfb\xcdm\x8d\x95M\x0c\xf5\xf6"
+}

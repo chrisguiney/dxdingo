@@ -1,0 +1,13 @@
+# no pools: an empty reply
+rewards_non_myopic:  {
+  pparams:  {
+    n_opt:  2
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+  }
+  total_stake:  1000
+  reward_pot:  1000000000
+  member_stake:  50
+}

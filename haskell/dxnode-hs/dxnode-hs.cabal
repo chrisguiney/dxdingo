@@ -28,6 +28,9 @@ library
     Dxdingo.Praos
     Dxdingo.Rewards
     Dxdingo.Rule
+    Dxdingo.Rule.Certs
+    Dxdingo.Rule.Ledger
+    Dxdingo.Rule.Ledger.Base
     Dxdingo.Stake
     Dxdingo.Time
     Dxdingo.Wire
@@ -40,6 +43,7 @@ library
     , cardano-crypto-praos
     , cardano-crypto-wrapper
     , cardano-data
+    , cardano-diffusion:{api, protocols}
     , cardano-ledger-allegra
     , cardano-ledger-alonzo
     , cardano-ledger-api
@@ -58,9 +62,11 @@ library
     , cborg
     , containers
     , data-default
+    , mempack
     , mtl
     , network-mux
     , ouroboros-consensus:{ouroboros-consensus, cardano, protocol} ^>=4.2
+    , ouroboros-network:{api, framework, protocols} ^>=1.2
     , ouroboros-network:{api, protocols} ^>=1.2
     , plutus-core
     , plutus-ledger-api
@@ -72,7 +78,9 @@ library
     , sop-extras
     , time
     , transformers
-    , typed-protocols
+    , typed-protocols:{typed-protocols, stateful}
+    , io-classes
+    , network
     , vector-map
     , dxnode-hs:proto
     , microlens
@@ -147,6 +155,10 @@ test-suite dxnode-hs-test
     Test.Wire
     Test.Codec
     Test.Rule
+    Test.RuleCerts
+    Test.RuleCertsData
+    Test.RuleLedger
+    Test.RuleLedgerData
     Test.Fee
     Test.Plutus
     Test.Rewards
@@ -164,23 +176,36 @@ test-suite dxnode-hs-test
     , bytestring
     , cardano-crypto-class
     , cardano-crypto-wrapper
+    , cardano-diffusion:{api, protocols}
+    , cardano-ledger-allegra
     , cardano-ledger-alonzo
+    , cardano-ledger-babbage
     , cardano-ledger-binary
     , cardano-ledger-byron
     , cardano-ledger-conway
     , cardano-ledger-core
     , cardano-ledger-dijkstra
     , cardano-ledger-mary
+    , cardano-ledger-shelley
     , cardano-protocol
     , cardano-slotting
     , cardano-strict-containers
+    , cborg
     , containers
     , data-default
+    , dxnode-hs
+    , mempack
+    , ouroboros-consensus:cardano
+    , ouroboros-consensus:{ouroboros-consensus, cardano}
     , ouroboros-consensus:{ouroboros-consensus, cardano} ^>=4.2
     , ouroboros-network:api ^>=1.2
+    , ouroboros-network:{api, framework, protocols}
     , time
+    , mtl
     , dxnode-hs
     , ouroboros-consensus:cardano
+    , typed-protocols:{typed-protocols, stateful}
+    , vector-map
     , dxnode-hs:proto
     , microlens
     , proto-lens

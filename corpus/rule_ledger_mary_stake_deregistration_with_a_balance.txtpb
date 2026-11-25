@@ -1,0 +1,122 @@
+# ledger mary stake deregistration with a balance: rejected with DELEG/StakeKeyNonZeroAccountBalanceDELEG
+rule_ledger:  {
+  context:  {
+    era:  ERA_MARY
+    protocol_version:  {
+      major:  4
+    }
+    slot:  259201000
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    d:  {
+      numerator:  "0"
+      denominator:  "1"
+    }
+    protocol_version:  {
+      major:  4
+    }
+    min_utxo_value:  1000000
+    min_pool_cost:  170000000
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "11111111111111111111111111111111"
+      }
+      txout:  "\x82X\x1da\rjW~\x94A\xad\x8e\xd9f91\x90nMC\xec\xe8\xf8,q+\x1d\x025\xaf\xfb\x06\x1b\x00\x00\x00E\xd9d\xb8\x00"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      deposit:  2000000
+      balance:  5000000
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2"
+      }
+      deposit:  2000000
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xb8\x95 ͕o{\nۺ\x16\xdf\r&\xbd\x01ZByU㿏\xaa\xe0i\x11\x8d"
+      }
+      deposit:  2000000
+      balance:  5000000
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\x8a\x95\xc8\xedX\x83\x06ꈆ\x0bT\xeb\x0ce\xe7}\xfa\xb9\x99x\x9c\xc5\xe6\xca\x00\x87\x99"
+      }
+      deposit:  2000000
+    }
+    pools:  {
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+      stage:  POOL_STAGE_CURRENT
+      vrf_key_hash:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      pledge:  100
+      cost:  170000000
+      margin:  {
+        numerator:  "1"
+        denominator:  "20"
+      }
+      reward_account:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      owners:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      deposit:  500000000
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x83\xa5\x00\x81\x82X 11111111111111111111111111111111\x00\x01\x81\x82X\x1dawwwwwwwwwwwwwwwwwwwwwwwwwwww\x1b\x00\x00\x00Eـ/@\x02\x1a\x00\x03\r@\x03\x1b\x00\x00\x01\x00\x00\x00\x00\x00\x04\x81\x82\x01\x82\x00X\x1c\xb8\x95 ͕o{\nۺ\x16\xdf\r&\xbd\x01ZByU㿏\xaa\xe0i\x11\x8d\xa1\x00\x82\x82X \x8a\x88\xe3\xddt\t\xf1\x95\xfdR\xdb-<\xba]r\xcag\t\xbf\x1d\x94\x12\x1b\xf3t\x88\x01\xb4\x0fo\\X@OG\xa1B\xd0\x18\x1d\xdbՃ\xf0\x89\xaf03J\x9az\xcb\x06}b\xdad\xb3؋3\x81D\\\xcdj\xe9 ΁\x8d\x07\x82\xb9\x1a\xb1\x7f*\xe2_\xe9b=\xca{\x08w\xcb\xca\xc89\x8a\x1aR.\x88\x03\x82X ʓ\xac\x17\x05\x18pq\xd6{\x83\xc7\xff\x0e\xfe\x81\x08\xe8\xecE0W]w&\x87\x933\xdbھ|X@\x8b\xf6k?q\x82i\x00)\xfdVf\xef\xac\xedTَ\xa3\x1f+Yy\x82Xe\x1f\xad\x9d\xb9W\x8en\xbbKB#\xbc\x91\xab\xed\x0e\xa8\x9cV\xd1\xee\x87Խ\xff8\xcbf\xa4\xd9g\x9a\x9e\x04C\xc6\xef\r\xf6"
+}

@@ -18,7 +18,10 @@ import Cardano.Ledger.Binary (DecoderError, decCBOR, decodeFull', decodeFullAnno
 import Cardano.Ledger.Conway (ConwayEra)
 import Cardano.Ledger.Core (Tx, TxLevel (..), emptyPParams, eraProtVerLow)
 import Cardano.Ledger.Hashes (ScriptHash (..), unsafeMakeSafeHash)
-import Cardano.Ledger.Plutus.CostModels (mkCostModel)
+import Cardano.Ledger.Alonzo.Core (ppCostModelsL, ppMaxTxExUnitsL)
+import Cardano.Ledger.Core (ppProtocolVersionL)
+import Cardano.Ledger.Plutus.CostModels (mkCostModel, mkCostModels)
+import Cardano.Ledger.Plutus.ExUnits (ExUnits (..))
 import Cardano.Ledger.Plutus.Language (Language (..))
 import Cardano.Ledger.State (UTxO (..))
 import Cardano.Ledger.TxIn (TxId (..), TxIn (..))
@@ -97,6 +100,31 @@ tests =
           c' = c & #plutusScriptContext . #context . #era .~ ERA_BABBAGE
        in handle c' ^. #error . #code == HARNESS_ERROR_CODE_UNSUPPORTED
     )
+  , ( "eval: every redeemer has a result, two failing and one with units"
+    , let rs = evalResults "plutus_eval_ex_units_conway_two_failing_one_ok"
+       in length rs == 3 && map (^. #purpose . #index) rs == [0, 1, 2] && length (filter (^. #ok) rs) == 1 && all (\r -> r ^. #ok || r ^. #failure == "ValidationFailure") rs
+    )
+  , ("eval: all redeemers failing", map (^. #failure) (evalResults "plutus_eval_ex_units_conway_all_failing") == replicate 3 "ValidationFailure")
+  , ("eval: all redeemers succeeding", let rs = evalResults "plutus_eval_ex_units_conway_three_languages" in length rs == 3 && all (\r -> r ^. #ok && r ^. #exMem > 0 && r ^. #exSteps > 0) rs)
+  , ( "collect: three languages, each with its declared units"
+    , let ss = collected "plutus_collect_scripts_conway_three_languages"
+       in map (^. #purpose . #index) ss == [0, 1, 2]
+            && map (^. #exMem) ss == [1000, 1001, 1002]
+            && map (^. #exSteps) ss == [2000, 2001, 2002]
+            && all (\c -> c ^. #purpose . #tag == SCRIPT_PURPOSE_TAG_MINT && BS.length (c ^. #scriptHash) == 28 && c ^. #scriptHash == c ^. #purpose . #mintPolicyId) ss
+            && all (BS.null . (^. #datum)) ss
+            && all (\c -> BS.null (c ^. #redeemer) == (c ^. #plutusVersion == PLUTUS_VERSION_V3) && not (BS.null (c ^. #context))) ss
+    )
+  , ( "collect: a spending script has a datum, a redeemer and a context"
+    , case collected "plutus_collect_scripts_alonzo_v1_spend" of
+        [c] -> c ^. #plutusVersion == PLUTUS_VERSION_V1 && c ^. #purpose . #tag == SCRIPT_PURPOSE_TAG_SPEND && not (BS.null (c ^. #datum)) && not (BS.null (c ^. #redeemer)) && not (BS.null (c ^. #context))
+        _ -> False
+    )
+  , ("collect: a script with no redeemer is NoRedeemer", collectFailures "plutus_collect_scripts_conway_no_redeemer" == ["NoRedeemer"])
+  , ("collect: a language with no cost model is NoCostModel", collectFailures "plutus_collect_scripts_conway_missing_cost_model" == ["NoCostModel"])
+  , -- The reference stops applying scripts after the first failure, so two
+    -- languages without models give one error.
+    ("collect: two languages without cost models are one NoCostModel", collectFailures "plutus_collect_scripts_conway_two_missing_cost_models" == ["NoCostModel"])
   , -- Divergence confirmations call the reference directly, bypassing
     -- dxnode-hs. plutus.cost-model: plutigo refuses CEK step costs below 1
     -- and applies V1 parameters past the 166th (dxnode-go
@@ -111,12 +139,19 @@ tests =
     -- whose script is absent; gouroboros' evaluator skips it (dxnode-go
     -- TestDivergenceMissingScriptIsSkipped).
     ("divergence: evalTxExUnits reports MissingScript for the withdrawal redeemer", missingScriptReported)
+  , -- plutus.eval-ex-units: with no PlutusV2 cost model, evalTxExUnits fails
+    -- only the V2 redeemer; dingo's cost-model rule rejects the whole
+    -- transaction (dxnode-go TestDivergenceCostModelRuleIsPerTransaction).
+    ("divergence: evalTxExUnits fails only the redeemer of the language with no cost model", missingModelFailsOneRedeemer)
   ]
   where
     costOf :: PlutusVersion -> [Int64] -> Reply
     costOf v ps = call (#plutusCostModel .~ (defMessage & #plutusVersion .~ v & #params .~ ps))
     contextArgs n = replyTo n ^. #plutusScriptContext . #args
     rejection n = map (^. #name) (replyTo n ^. #plutusTxInfo . #rejection . #failures)
+    evalResults n = replyTo n ^. #plutusEvalExUnits . #results
+    collected n = replyTo n ^. #plutusCollectScripts . #scripts
+    collectFailures n = map (^. #name) (replyTo n ^. #plutusCollectScripts . #rejection . #failures)
     evalFailures n = [r ^. #failure | r <- replyTo n ^. #plutusEvalExUnits . #results, not (r ^. #ok)]
     txIdIn bytes = BS.pack [0xde, 0xab, 0x9e, 0xf3, 0xce, 0x74, 0x15, 0xe4, 0x92, 0xdd, 0x6f, 0x1e, 0xb5, 0xff, 0x29, 0x20] `BS.isInfixOf` bytes
 
@@ -151,3 +186,36 @@ votingInV2Rejected =
     toPlutusScriptPurpose (Proxy @'PlutusV2) (ProtVer (natVersion @9) 0) (mkVotingPurpose @ConwayEra (AsIxItem 0 voter))
   where
     voter = DRepVoter (ScriptHashObj (ScriptHash (fromJust (hashFromBytes (BS.replicate 28 0x22)))))
+
+-- | 'evalTxExUnits' on the divergence case's transaction, UTxO and cost
+-- models, decoded with the ledger's own decoders and built with 'mkCostModel',
+-- bypassing dxnode-hs. The V2 model is the one missing.
+missingModelFailsOneRedeemer :: Bool
+missingModelFailsOneRedeemer =
+  case (txE, utxoE, models) of
+    (Right tx, Right utxo, Right cms) ->
+      let params =
+            emptyPParams @ConwayEra
+              & ppProtocolVersionL .~ ProtVer (natVersion @9) 0
+              & ppCostModelsL .~ mkCostModels cms
+              & ppMaxTxExUnitsL .~ ExUnits 14000000 10000000000
+          report = evalTxExUnits params tx (UTxO utxo) epochInfo systemStart
+          noModel = [() | Left (NoCostModelInLedgerState _) <- Map.elems report]
+          withUnits = [() | Right _ <- Map.elems report]
+       in length noModel == 1 && length withUnits == 2
+    _ -> False
+  where
+    req = corpus "divergences/plutus_eval_ex_units_conway_mixed_missing_cost_model" ^. #plutusEvalExUnits
+    pp = req ^. #pparams
+    txE = decodeFullAnnotator (eraProtVerLow @ConwayEra) "Tx" decCBOR (BSL.fromStrict (req ^. #tx)) :: Either DecoderError (Tx TopTx ConwayEra)
+    utxoE = fmap Map.fromList (traverse entry (req ^. #utxo))
+    entry e = do
+      h <- maybe (Left "hash") Right (hashFromBytes (e ^. #txin . #txId))
+      ix <- maybe (Left "ix") Right (txIxFromIntegral (e ^. #txin . #index))
+      o <- either (Left . show) Right (decodeFull' (eraProtVerLow @ConwayEra) (e ^. #txout))
+      pure (TxIn (TxId (unsafeMakeSafeHash h)) ix, o)
+    models = fmap Map.fromList (traverse model [(PlutusV1, pp ^. #costModelPlutusV1), (PlutusV2, pp ^. #costModelPlutusV2), (PlutusV3, pp ^. #costModelPlutusV3)] >>= pure . concat)
+    model (_, []) = Right []
+    model (l, ps) = either (Left . show) (\c -> Right [(l, c)]) (mkCostModel l ps)
+    epochInfo = fixedEpochInfo (EpochSize 432000) (mkSlotLength 1)
+    systemStart = SystemStart (posixSecondsToUTCTime 0)

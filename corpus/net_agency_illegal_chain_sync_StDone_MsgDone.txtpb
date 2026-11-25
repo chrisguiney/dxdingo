@@ -1,0 +1,6 @@
+# nobody has agency in StDone
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StDone"
+  message_type: "MsgDone"
+}

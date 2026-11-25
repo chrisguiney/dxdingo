@@ -1,0 +1,8 @@
+# intersection at the origin with a genesis tip
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StIntersect"
+    message: "\x83\x05\x80\x82\x80\x00"
+  }
+}

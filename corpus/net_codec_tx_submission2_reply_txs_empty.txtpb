@@ -1,0 +1,8 @@
+# no transactions
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StTxs"
+    message: "\x82\x03\x9f\xff"
+  }
+}

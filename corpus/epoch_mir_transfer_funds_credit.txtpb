@@ -1,0 +1,21 @@
+# treasury-to-reserves transfer makes a reserves credit fit
+epoch_mir:  {
+  protocol_version:  {
+    major:  4
+  }
+  reserves:  50
+  treasury:  500
+  mir:  {
+    source:  MIR_SOURCE_RESERVES
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    amount:  100
+  }
+  treasury_to_reserves:  60
+  registered:  {
+    kind:  CREDENTIAL_KIND_KEY
+    hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  }
+}

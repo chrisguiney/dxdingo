@@ -9,25 +9,59 @@ option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1"
 
 // praos: header validity and nonce evolution.
 
-// Header envelope size checks (Shelley.Protocol.EnvelopeChecks): the encoded
-// header against max_block_header_size, then the body size the header
-// declares against max_block_body_size. header is the era's block header CBOR.
+// The chain tip a header extends: its block number, slot and header hash.
+message EnvelopeTip {
+  uint64 block_no = 1;
+  uint64 slot = 2;
+  bytes hash = 3;
+}
+
+// Header envelope checks. With a parent (or origin) set, the position checks
+// of HeaderValidation.validateEnvelope run first, in its order: block number,
+// slot, previous hash. Then the size checks of Shelley.Protocol.EnvelopeChecks:
+// the encoded header against max_block_header_size, then the body size the
+// header declares against max_block_body_size. header is the era's block
+// header CBOR; every era from Shelley to Conway is accepted.
 message PraosHeaderEnvelopeRequest {
   reserved 2, 5, 6, 7, 8;
   Era era = 1;
   ProtocolParameters pparams = 3;
   bytes header = 4;
+  // The tip the header extends. Unset with origin false: no position check.
+  optional EnvelopeTip parent = 9;
+  // The header extends the empty chain: it must carry block number 0 and the
+  // genesis hash as previous hash. Ignored when parent is set.
+  bool origin = 10;
 }
 
 message PraosHeaderEnvelopeResponse {
   Rejection rejection = 1;
 }
 
+// TPraos overlay environment (cardano-protocol-tpraos Rules/Overlay.hs
+// OverlayEnv), for headers of Shelley to Alonzo.
+message TpraosOverlayEnv {
+  Rational d = 1;
+  Rational active_slot_coeff = 2;
+  // The header's epoch is [slot - slot mod epoch_length, ... + epoch_length).
+  uint64 epoch_length = 3;
+  repeated GenesisDelegation genesis_delegations = 4;
+}
+
+// Praos (Babbage, Conway): the pool's registered VRF key hash, then the
+// proof over the Praos VRF input. TPraos (Shelley to Alonzo): the OVERLAY
+// rule's VRF checks, both the nonce and the leader proof; leader_value is the
+// 64-byte leader VRF output and nonce_value the nonce the nonce VRF output
+// contributes. Without overlay no slot is an overlay slot, so pool_vrf_key_hash
+// is the VRF key hash registered for the issuer. With overlay, an overlay slot
+// is checked against the genesis delegation of its slot instead.
 message PraosVrfCheckRequest {
   Era era = 1;
   bytes header = 2;
   Nonce epoch_nonce = 3;
   bytes pool_vrf_key_hash = 4;
+  // TPraos only; unset means d = 0 and active_slot_coeff = 1.
+  TpraosOverlayEnv overlay = 5;
 }
 
 message PraosVrfCheckResponse {
@@ -71,6 +105,9 @@ message PraosOpCertCheckRequest {
   bool pool_registered = 4;
   uint64 slots_per_kes_period = 5;
   uint64 max_kes_evolutions = 6;
+  // TPraos only: the issuer is a genesis delegate, whose counter starts from
+  // zero like a registered pool's.
+  bool issuer_is_genesis_delegate = 7;
 }
 
 message PraosOpCertCheckResponse {
@@ -81,6 +118,8 @@ message PraosOpCertCheckResponse {
 message PraosVrfKeyRegisteredRequest {
   bytes header = 1;
   repeated PoolStake pool_distribution = 2;
+  // The header's era; unset is Conway. Shelley to Alonzo headers are TPraos.
+  Era era = 3;
 }
 
 message PraosVrfKeyRegisteredResponse {

@@ -1,0 +1,8 @@
+# DebugLedgerConfig is the bare tag 4
+net_codec_local_state_query: {
+  codec: {
+    version: 32791
+    state: "StAcquired"
+    message: "\x82\x03\x81\x04"
+  }
+}

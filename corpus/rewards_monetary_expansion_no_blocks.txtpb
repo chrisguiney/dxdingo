@@ -1,0 +1,40 @@
+# no blocks at d = 0: eta 0, only fees in the pot
+rewards_monetary_expansion: {
+  protocol_version: {
+    major: 8
+  }
+  pparams: {
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+    rho: {
+      numerator: "3"
+      denominator: "1000"
+    }
+    tau: {
+      numerator: "1"
+      denominator: "5"
+    }
+    d: {
+      numerator: "0"
+      denominator: "1"
+    }
+  }
+  globals: {
+    epoch_length: 432000
+    slot_length: {
+      numerator: "1"
+      denominator: "1"
+    }
+    security_param: 2160
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+    max_lovelace_supply: 45000000000000000
+  }
+  reserves: 1000000000000
+  fees: 2000000
+}

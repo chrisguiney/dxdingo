@@ -1,0 +1,5 @@
+# sum exactly Word64 max still representable
+epoch_donations:  {
+  treasury:  18446744073709551608
+  donations:  7
+}

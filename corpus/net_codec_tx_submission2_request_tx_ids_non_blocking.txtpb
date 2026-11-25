@@ -1,0 +1,8 @@
+# non-blocking request with no acknowledgement
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x84\x00\xf4\x00\n"
+  }
+}

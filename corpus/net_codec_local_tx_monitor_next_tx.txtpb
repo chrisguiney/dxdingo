@@ -1,0 +1,8 @@
+# client asks for the next transaction
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StAcquired"
+    message: "\x81\x05"
+  }
+}

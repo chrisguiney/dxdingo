@@ -1,0 +1,8 @@
+# server echoes the cookie
+net_codec_keep_alive: {
+  codec: {
+    version: 14
+    state: "StServer"
+    message: "\x82\x01\x19\x01\x00"
+  }
+}

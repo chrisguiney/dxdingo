@@ -1,0 +1,8 @@
+# capacity, size and count
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StBusyGetSizes"
+    message: "\x82\n\x83\x1a\x00\x01\x00\x00\x19\x04\xb0\x03"
+  }
+}

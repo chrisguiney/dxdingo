@@ -1,0 +1,5 @@
+# an integer is no output
+codec_tx_output: {
+  era: ERA_DIJKSTRA
+  cbor: "\x01"
+}

@@ -1,0 +1,8 @@
+# done is only legal in the blocking state
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StTxIdsNonBlocking"
+    message: "\x81\x04"
+  }
+}

@@ -1,4 +1,4 @@
-# utxo tx 1 of the conway mainnet block: slot equals the ttl: the interval is half open
+# utxo tx 1 of the conway mainnet block: slot is past the ttl (equal to it from Allegra on, one more in Shelley whose ttl is inclusive)
 rule_utxo:  {
   context:  {
     era:  ERA_CONWAY

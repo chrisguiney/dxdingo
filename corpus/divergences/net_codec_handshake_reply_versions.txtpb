@@ -1,0 +1,8 @@
+# tag 0 in StConfirm is the reference's MsgReplyVersions (simultaneous open)
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StConfirm"
+    message: "\x82\x00\xa1\x0e\x84\x1a-\x96J\t\xf4\x00\xf4"
+  }
+}

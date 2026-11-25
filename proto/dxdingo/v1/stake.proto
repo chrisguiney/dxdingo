@@ -12,7 +12,7 @@ option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1"
 message StakeInstantStakeRequest {
   ProtocolVersion protocol_version = 1;
   repeated UtxoEntry utxo = 2;
-  // Read for registration pointers.
+  // Not read: stake of pointer addresses is not part of the response.
   repeated Account accounts = 3;
 }
 

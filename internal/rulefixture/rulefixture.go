@@ -22,6 +22,7 @@ import (
 	"github.com/blinklabs-io/gouroboros/ledger/babbage"
 	"github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/blinklabs-io/gouroboros/ledger/mary"
+	"github.com/blinklabs-io/gouroboros/ledger/shelley"
 
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
 )
@@ -36,7 +37,10 @@ func u32(x uint32) *uint32 { return &x }
 
 // Env returns a mainnet-shaped context, globals and parameters for the era.
 func Env(era v1.Era) (*v1.LedgerContext, *v1.Globals, *v1.ProtocolParameters) {
-	pv := map[v1.Era]uint32{v1.Era_ERA_ALONZO: 6, v1.Era_ERA_BABBAGE: 8, v1.Era_ERA_CONWAY: 10}[era]
+	pv := map[v1.Era]uint32{
+		v1.Era_ERA_SHELLEY: 2, v1.Era_ERA_ALLEGRA: 3, v1.Era_ERA_MARY: 4,
+		v1.Era_ERA_ALONZO: 6, v1.Era_ERA_BABBAGE: 8, v1.Era_ERA_CONWAY: 10,
+	}[era]
 	ctx := &v1.LedgerContext{Era: era, ProtocolVersion: &v1.ProtocolVersion{Major: pv}, Slot: 100_000_000, Epoch: 600, NetworkId: 1}
 	g := &v1.Globals{
 		NetworkMagic: 764824073, EpochLength: 432000, SlotLength: rat("1", "1"), SecurityParam: 2160,
@@ -54,6 +58,14 @@ func Env(era v1.Era) (*v1.LedgerContext, *v1.Globals, *v1.ProtocolParameters) {
 		MaxValueSize: u32(5000), CollateralPercentage: u32(150), MaxCollateralInputs: u32(3),
 	}
 	switch era {
+	case v1.Era_ERA_SHELLEY, v1.Era_ERA_ALLEGRA, v1.Era_ERA_MARY:
+		// No Plutus parameters before Alonzo; the transaction rules of these
+		// eras read the minimum UTxO value instead of a per-byte price.
+		pp.PriceMem, pp.PriceSteps = nil, nil
+		pp.MaxTxExMem, pp.MaxTxExSteps, pp.MaxBlockExMem, pp.MaxBlockExSteps = nil, nil, nil, nil
+		pp.MaxValueSize, pp.CollateralPercentage, pp.MaxCollateralInputs = nil, nil, nil
+		pp.D = rat("0", "1")
+		pp.MinUtxoValue = u64(1_000_000)
 	case v1.Era_ERA_ALONZO:
 		pp.D = rat("0", "1")
 		pp.CoinsPerUtxoWord = u64(34482)
@@ -85,6 +97,12 @@ func Env(era v1.Era) (*v1.LedgerContext, *v1.Globals, *v1.ProtocolParameters) {
 func BlockTxs(era v1.Era) ([][]byte, error) {
 	name, typ := "", uint(0)
 	switch era {
+	case v1.Era_ERA_SHELLEY:
+		name, typ = "shelley_block.hex", ledger.BlockTypeShelley
+	case v1.Era_ERA_ALLEGRA:
+		name, typ = "allegra_block.hex", ledger.BlockTypeAllegra
+	case v1.Era_ERA_MARY:
+		name, typ = "mary_block.hex", ledger.BlockTypeMary
 	case v1.Era_ERA_ALONZO:
 		name, typ = "alonzo_block.hex", ledger.BlockTypeAlonzo
 	case v1.Era_ERA_BABBAGE:
@@ -128,9 +146,29 @@ func Plain(era v1.Era, txCbor []byte) bool {
 		len(w.Bootstrap()) == 0 && tx.AssetMint() == nil && tx.ScriptDataHash() == nil
 }
 
+// Scripted reports whether the transaction can be given a synthesised state
+// although it carries scripts, redeemers, datums, minting, collateral or
+// reference inputs: it has no certificates, withdrawals or bootstrap witnesses
+// and is not Plain. The synthesised inputs are key-locked, so the scripts are
+// not needed and a Plutus transaction is rejected for the redeemers and
+// datums it carries; the two nodes must agree on the failure set.
+func Scripted(era v1.Era, txCbor []byte) bool {
+	tx, err := ledger.NewTransactionFromCbor(TxType(era), txCbor)
+	if err != nil || Plain(era, txCbor) {
+		return false
+	}
+	return len(tx.Certificates()) == 0 && len(tx.Withdrawals()) == 0 && len(tx.Witnesses().Bootstrap()) == 0
+}
+
 // TxType maps an era to its gouroboros transaction type.
 func TxType(era v1.Era) uint {
 	switch era {
+	case v1.Era_ERA_SHELLEY:
+		return ledger.TxTypeShelley
+	case v1.Era_ERA_ALLEGRA:
+		return ledger.TxTypeAllegra
+	case v1.Era_ERA_MARY:
+		return ledger.TxTypeMary
 	case v1.Era_ERA_ALONZO:
 		return ledger.TxTypeAlonzo
 	case v1.Era_ERA_BABBAGE:
@@ -169,6 +207,28 @@ func State(era v1.Era, networkID uint8, txCbor []byte) (*v1.LedgerState, error) 
 					}
 					merged[p][k].Add(merged[p][k], a.Asset(p, n))
 				}
+			}
+		}
+	}
+	// What the transaction mints is produced without being consumed from the
+	// inputs; a burn is consumed from them.
+	if mint := tx.AssetMint(); mint != nil {
+		for _, p := range mint.Policies() {
+			for _, n := range mint.Assets(p) {
+				k := cbor.NewByteString(n)
+				if merged[p] == nil {
+					merged[p] = map[cbor.ByteString]*big.Int{}
+				}
+				if merged[p][k] == nil {
+					merged[p][k] = new(big.Int)
+				}
+				merged[p][k].Sub(merged[p][k], mint.Asset(p, n))
+				if merged[p][k].Sign() == 0 {
+					delete(merged[p], k)
+				}
+			}
+			if len(merged[p]) == 0 {
+				delete(merged, p)
 			}
 		}
 	}
@@ -237,6 +297,12 @@ func SlotFor(era v1.Era, txCbor []byte) (uint64, error) {
 
 func encodeOutput(era v1.Era, addr common.Address, coin uint64, ma *common.MultiAsset[common.MultiAssetTypeOutput]) ([]byte, error) {
 	val := mary.MaryTransactionOutputValue{Amount: coin, Assets: ma}
+	switch era {
+	case v1.Era_ERA_SHELLEY, v1.Era_ERA_ALLEGRA:
+		return cbor.Encode(&shelley.ShelleyTransactionOutput{OutputAddress: addr, OutputAmount: coin})
+	case v1.Era_ERA_MARY:
+		return cbor.Encode(&mary.MaryTransactionOutput{OutputAddress: addr, OutputAmount: val})
+	}
 	if era == v1.Era_ERA_ALONZO {
 		return cbor.Encode(&alonzo.AlonzoTransactionOutput{OutputAddress: addr, OutputAmount: val})
 	}

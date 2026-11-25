@@ -6,3 +6,5 @@
 /go.work.sum
 /local.mk
 /.worktrees/
+/cmd/dxnode-go/dxnode-go
+/cmd/dxfuzz/dxfuzz

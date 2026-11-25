@@ -1,0 +1,20 @@
+# treasury pot too small for its total
+epoch_mir:  {
+  protocol_version:  {
+    major:  5
+  }
+  reserves:  1000
+  treasury:  10
+  mir:  {
+    source:  MIR_SOURCE_TREASURY
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    amount:  11
+  }
+  registered:  {
+    kind:  CREDENTIAL_KIND_KEY
+    hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  }
+}

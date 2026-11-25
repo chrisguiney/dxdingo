@@ -1,0 +1,8 @@
+# the array announces two items and has one
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StIntersect"
+    message: "\x82\x06"
+  }
+}

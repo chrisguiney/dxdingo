@@ -1,0 +1,9 @@
+# the query in flight does not decode
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StQuerying"
+    message: "\x82\x04\x81\n"
+  }
+  query: "\xff"
+}

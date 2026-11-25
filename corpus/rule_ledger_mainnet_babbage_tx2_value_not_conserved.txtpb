@@ -1,0 +1,86 @@
+# ledger tx 2 of the babbage mainnet block: first input holds a different amount than outputs plus fee
+rule_ledger:  {
+  context:  {
+    era:  ERA_BABBAGE
+    protocol_version:  {
+      major:  8
+    }
+    slot:  76215759
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    protocol_version:  {
+      major:  8
+    }
+    min_pool_cost:  170000000
+    coins_per_utxo_byte:  4310
+    price_mem:  {
+      numerator:  "577"
+      denominator:  "10000"
+    }
+    price_steps:  {
+      numerator:  "721"
+      denominator:  "10000000"
+    }
+    max_tx_ex_mem:  14000000
+    max_tx_ex_steps:  10000000000
+    max_block_ex_mem:  62000000
+    max_block_ex_steps:  20000000000
+    max_value_size:  5000
+    collateral_percentage:  150
+    max_collateral_inputs:  3
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "e\xbc\xed\xd1C\xb5d)\x19̫0\x83\xe5M\x1f\xa6Kt\xcfG}\x075\xd5\xc2\x12\x80\x7fM9\x19"
+        index:  1
+      }
+      txout:  "\xa2\x00X\x1da\x0br\xbb\xed\xfd\xc3F/\x12\xd5M\x90\xb7n}?\x8c\x92\xda:\xf5rC\x97\xb4\xfd\x13\xf0\x01\x1a\x05\x13\x0ce"
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x84\xa4\x00\x81\x82X e\xbc\xed\xd1C\xb5d)\x19̫0\x83\xe5M\x1f\xa6Kt\xcfG}\x075\xd5\xc2\x12\x80\x7fM9\x19\x01\x01\x82\x82X\x1da1\xect\xa9\xf8h\x84\xe7\xa1o\x8f\xc3\x08@\xf7\xf4\t\xc0\x8b\x91\xe9=+\xe3\xa47tB\x1a\x00LK@\x82X9\x01ό\n\x03~\xce\xe4e{\xc9S\x05\x84\x12\xac\xed\xd9xϾ\x96\xb0\xb0~\x94\x8el]\x15\x04\xfa&\"\xd7\xfbB\x81\xd23\xb0\x04\x00s!71*c\xf7\x01\xc7o\x16\xfaM\xf5\x1a\x04\xc44w\x02\x1a\x00\x02\x8c\xad\x03\x1a\x04\x8a\xf5С\x00\x81\x82X \xca\x16R\xe2>m\x15V%\x8c\xb0V\x92\xe0S\x97ߍ\x8d\xf7ʰ\xe8\xb5\xf1\xf3&\xd4t؂jX@\x85\x8b\x14\xdd\xcbJ\x88\xbeO\xf9\x87\xf9\x86\x98\xd3D\x1c+\x07\x1dg]Z{Yo\xb1qH\xb0\xe0\x96N\x7fI}+\xc0\x9b\x01\x1f\x15>\xc5-\x04տ\x87E\x92\x8e\x05۷\xa3Ps\x1dOV\x06\xc5\x02\xf5\xf6"
+}

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/blinklabs-io/dingo/dxoracle"
+	"github.com/blinklabs-io/dingo/ledger/governance"
 	"github.com/blinklabs-io/gouroboros/cbor"
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/blinklabs-io/gouroboros/ledger/conway"
@@ -86,6 +89,17 @@ func unitRat(name string, r *v1.Rational) (cbor.Rat, error) {
 // (taken from pv, which a request carries beside its pparams).
 func govPParams(pp *v1.ProtocolParameters, pv *v1.ProtocolVersion) (*conway.ConwayProtocolParameters, error) {
 	out := &conway.ConwayProtocolParameters{}
+	// An unset group is zero, as in the reference's empty parameters; dingo
+	// dereferences every threshold.
+	zero := cbor.Rat{Rat: new(big.Rat)}
+	out.PoolVotingThresholds = conway.PoolVotingThresholds{
+		MotionNoConfidence: zero, CommitteeNormal: zero, CommitteeNoConfidence: zero, HardForkInitiation: zero, PpSecurityGroup: zero,
+	}
+	out.DRepVotingThresholds = conway.DRepVotingThresholds{
+		MotionNoConfidence: zero, CommitteeNormal: zero, CommitteeNoConfidence: zero, UpdateToConstitution: zero,
+		HardForkInitiation: zero, PpNetworkGroup: zero, PpEconomicGroup: zero, PpTechnicalGroup: zero,
+		PpGovGroup: zero, TreasuryWithdrawal: zero,
+	}
 	out.ProtocolVersion.Major = uint(pv.GetMajor())
 	out.ProtocolVersion.Minor = uint(pv.GetMinor())
 	out.MinCommitteeSize = uint(pp.GetCommitteeMinSize())
@@ -138,17 +152,12 @@ func govPParams(pp *v1.ProtocolParameters, pv *v1.ProtocolVersion) (*conway.Conw
 	return out, nil
 }
 
-// govCommittee holds a decoded committee: the quorum, and the hot credential
-// key of each member that can vote (seated, unexpired, unresigned, with an
-// authorized hot key). Dingo's committee voting state is exactly that list.
+// govCommittee holds a decoded committee: the quorum and the seated members.
+// The voting view of the members is dingo's own loader's, run by votingState.
 type govCommittee struct {
-	quorum *big.Rat
-	hot    []committeeHot
-}
-
-type committeeHot struct {
-	tag  uint8
-	hash []byte
+	quorum  *big.Rat
+	epoch   uint64
+	members []dxoracle.CommitteeMember
 }
 
 func decodeCommittee(c *v1.Committee, epoch uint64) (*govCommittee, error) {
@@ -162,24 +171,33 @@ func decodeCommittee(c *v1.Committee, epoch uint64) (*govCommittee, error) {
 	if err := unitInterval("committee.threshold", q); err != nil {
 		return nil, err
 	}
-	out := &govCommittee{quorum: q}
+	out := &govCommittee{quorum: q, epoch: epoch}
 	for _, m := range c.GetMembers() {
-		if _, _, err := govCredential("committee cold", m.GetCold()); err != nil {
-			return nil, err
-		}
-		if m.GetHot() == nil {
-			continue
-		}
-		tag, hash, err := govCredential("committee hot", m.GetHot())
+		tag, hash, err := govCredential("committee cold", m.GetCold())
 		if err != nil {
 			return nil, err
 		}
-		if m.GetResigned() || m.GetExpiry() < epoch {
-			continue
+		member := dxoracle.CommitteeMember{Tag: tag, Key: hash, Expiry: m.GetExpiry(), Resigned: m.GetResigned()}
+		if m.GetHot() != nil {
+			htag, hhash, err := govCredential("committee hot", m.GetHot())
+			if err != nil {
+				return nil, err
+			}
+			member.Hot = &dxoracle.Credential{Tag: htag, Key: hhash}
 		}
-		out.hot = append(out.hot, committeeHot{tag, hash})
+		out.members = append(out.members, member)
 	}
 	return out, nil
+}
+
+// votingState is the committee's voting view as dingo's production loader
+// reads it from a scratch database seeded with the members.
+func (c *govCommittee) votingState(ctx context.Context) (*governance.CommitteeVotingState, error) {
+	oracle, err := scratchOracle()
+	if err != nil {
+		return nil, err
+	}
+	return oracle.CommitteeVotingState(ctx, dxoracle.CommitteeVotingInput{Members: c.members, Epoch: c.epoch})
 }
 
 // actionParent is the previous action id embedded in a GovAction, nil when

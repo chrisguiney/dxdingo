@@ -12,6 +12,18 @@ option go_package = "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1;dxdingov1"
 message ByronDelegation {
   bytes issuer_vkey = 1;
   bytes delegate_vkey = 2;
+  // A response carries the key hashes (Blake2b-224) the delegation map is
+  // keyed by, and leaves the verification keys empty.
+  bytes issuer_key_hash = 3;
+  bytes delegate_key_hash = 4;
+}
+
+// ByronSigner is one entry of the PBFT signature window: the genesis key hash
+// of the signer and the slot of the block it signed.
+message ByronSigner {
+  // Blake2b-224 of the genesis key.
+  bytes key = 1;
+  uint64 slot = 2;
 }
 
 message ByronChainState {
@@ -19,8 +31,13 @@ message ByronChainState {
   bytes prev_hash = 1;
   optional uint64 prev_slot = 2;
   repeated ByronDelegation delegations = 3;
-  // Ordered, oldest first.
-  repeated bytes recent_signers = 4;
+  // Superseded by signers: PBftState needs the slot of each signer.
+  repeated bytes recent_signers = 4 [deprecated = true];
+  // The PBFT signature window, ordered oldest first.
+  repeated ByronSigner signers = 5;
+  // The update interface state. When unset, byron_chain_update starts from
+  // the request's pparams as the adopted parameters with nothing registered.
+  ByronUpdateState update = 6;
 }
 
 message ByronTxValidateRequest {
@@ -55,6 +72,8 @@ message ByronChainUpdateRequest {
   ByronProtocolParameters pparams = 3;
   ByronChainState chain_state = 4;
   repeated UtxoEntry utxo = 5;
+  // The block as the reference's ABlockOrBoundary encodes it: a two-element
+  // array of 0 and an epoch boundary block, or 1 and a main block.
   bytes block = 6;
 }
 
@@ -67,19 +86,49 @@ message ByronChainUpdateResponse {
 
 message ByronUpdateProposal {
   bytes proposal_id = 1;
-  // Proposal CBOR.
+  // Proposal CBOR. A response leaves it empty: the reference state keeps only
+  // the parts of a proposal the rules read, not its encoding.
   bytes proposal = 2;
+  // Slot at which the proposal was registered.
+  uint64 registered_slot = 3;
+  // Slot at which the proposal was confirmed by votes, if it was.
+  optional uint64 confirmed_slot = 4;
+  // The proposal sits in the registered protocol update proposals (its version
+  // or parameters change something).
+  bool protocol = 5;
+  // The proposal sits in the registered software update proposals.
+  bool software = 6;
 }
 
 message ByronUpdateVote {
   bytes proposal_id = 1;
+  // Unused in a state: votes there are recorded by genesis key hash.
   bytes voter_vkey = 2;
   bool accept = 3;
+  // Blake2b-224 of the genesis key whose delegate voted.
+  bytes voter_key_hash = 4;
 }
 
 message ByronEndorsement {
   ProtocolVersion protocol_version = 1;
+  // Unused in a state: endorsements are recorded by genesis key hash.
   bytes delegate_vkey = 2;
+  // Blake2b-224 of the endorsing genesis key.
+  bytes key_hash = 3;
+}
+
+// ByronCandidate is a protocol update endorsed by enough genesis keys to be
+// adopted once stable.
+message ByronCandidate {
+  uint64 slot = 1;
+  ProtocolVersion protocol_version = 2;
+  ByronProtocolParameters pparams = 3;
+}
+
+message ByronAppVersion {
+  string name = 1;
+  uint32 version = 2;
+  uint64 slot = 3;
 }
 
 message ByronUpdateState {
@@ -88,6 +137,9 @@ message ByronUpdateState {
   repeated ByronUpdateProposal proposals = 3;
   repeated ByronUpdateVote votes = 4;
   repeated ByronEndorsement endorsements = 5;
+  // Newest first.
+  repeated ByronCandidate candidates = 6;
+  repeated ByronAppVersion app_versions = 7;
 }
 
 message ByronUpdateProposalRequest {
@@ -96,6 +148,14 @@ message ByronUpdateProposalRequest {
   // Block update payload CBOR.
   bytes update_payload = 3;
   bytes issuer_vkey = 4;
+  uint32 protocol_magic = 5;
+  uint64 security_param = 6;
+  // Active delegations: genesis key and the delegate that signs for it.
+  repeated ByronDelegation delegations = 7;
+  // Protocol version the block header declares, endorsed by the issuer.
+  ProtocolVersion block_version = 8;
+  // Number of genesis keys, the base of the adoption threshold.
+  uint32 num_genesis_keys = 9;
 }
 
 message ByronUpdateProposalResponse {

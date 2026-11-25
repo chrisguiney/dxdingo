@@ -1,0 +1,8 @@
+# RequestNext is a client message, not decodable in StMustReply
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StMustReply"
+    message: "\x81\x00"
+  }
+}

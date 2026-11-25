@@ -1,0 +1,8 @@
+# AwaitReply is only legal in StCanAwait
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StMustReply"
+    message: "\x81\x01"
+  }
+}

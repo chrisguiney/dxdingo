@@ -1,0 +1,5 @@
+# sum above Word64: Coin is unbounded, the response is not
+epoch_donations:  {
+  treasury:  18446744073709551615
+  donations:  1
+}

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/blinklabs-io/gouroboros/cbor"
+	byronconsensus "github.com/blinklabs-io/gouroboros/consensus/byron"
 	gledger "github.com/blinklabs-io/gouroboros/ledger"
 	"github.com/blinklabs-io/gouroboros/ledger/byron"
 
@@ -27,6 +28,8 @@ func TestGenerateByronCorpus(t *testing.T) {
 	entries = append(entries, byronMinFeeCases()...)
 	entries = append(entries, byronTxCases(t)...)
 	entries = append(entries, byronHeaderCases(t)...)
+	entries = append(entries, byronChainCases(t)...)
+	entries = append(entries, byronUpdateCases(t)...)
 	writeCorpus(t, "", entries)
 	writeCorpus(t, "divergences", byronDivergences(t))
 }
@@ -55,14 +58,14 @@ func byronDivergences(t *testing.T) []entry {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return []entry{{
+	return append(byronChainDivergences(t), []entry{{
 		"byron_header_validate_wrong_magic",
 		"mainnet magic against a preprod header: gouroboros compares the header's magic first (a non-PBFT error), the reference's PBFT check fails the signature",
 		&v1.Call{Request: &v1.Call_ByronHeaderValidate{ByronHeaderValidate: &v1.ByronHeaderValidateRequest{
 			ProtocolMagic: mainnetMagic, SecurityParam: 2160, Pparams: byronParams(65536),
 			ChainState: &v1.ByronChainState{Delegations: protoDlg}, Header: blk.Header().Cbor(),
 		}}},
-	}}
+	}}...)
 }
 
 // moduleFile reads a file from a module in go.work, so the corpus can use the
@@ -327,7 +330,48 @@ func byronHeaderCases(t *testing.T) []entry {
 			without = append(without, d)
 		}
 	}
+	issuer, err := byronconsensus.PBFTIssuerFromHeader(main[3])
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := issuer.GenesisKeyHash[:]
+	slotID := main[3].ConsensusData.SlotId
+	headerSlot := slotID.Epoch*21600 + slotID.Slot
+	filler := func(i int) []byte {
+		k := make([]byte, 28)
+		k[0], k[1] = byte(1+i%7), 0xee
+		return k
+	}
+	// window builds n signers in slots 1..n; the header's genesis key signs
+	// where isG says.
+	window := func(n int, isG func(i int) bool) []*v1.ByronSigner {
+		out := make([]*v1.ByronSigner, n)
+		for i := range out {
+			key := filler(i)
+			if isG(i) {
+				key = g
+			}
+			out[i] = &v1.ByronSigner{Key: key, Slot: uint64(i + 1)}
+		}
+		return out
+	}
+	reqW := func(name, why string, signers []*v1.ByronSigner) entry {
+		return entry{name, why, &v1.Call{Request: &v1.Call_ByronHeaderValidate{ByronHeaderValidate: &v1.ByronHeaderValidateRequest{
+			ProtocolMagic: preprodMagic, SecurityParam: 2160, Pparams: byronParams(65536),
+			ChainState: &v1.ByronChainState{Delegations: protoDlg, Signers: signers}, Header: h,
+		}}}}
+	}
+	// k = 2160 and the threshold 0.22 allow floor(0.22 * 2160) = 475 signatures
+	// per genesis key in the window.
 	return []entry{
+		reqW("byron_header_validate_window_below_threshold", "474 earlier signatures by the header's genesis key: 475 with this one is at the limit", window(474, func(int) bool { return true })),
+		reqW("byron_header_validate_window_threshold_exceeded", "475 earlier signatures by the header's genesis key: this one is the 476th", window(475, func(int) bool { return true })),
+		reqW("byron_header_validate_window_slides_past_old_signature", "a full window whose oldest entry is the issuer's 475th: it leaves as this block enters", window(2160, func(i int) bool { return i < 475 })),
+		reqW("byron_header_validate_window_oldest_is_another", "a full window with 475 signatures by the issuer, the oldest being another's: 476 after this block", window(2160, func(i int) bool { return i >= 1 && i < 476 })),
+		reqW("byron_header_validate_window_slot_before_last", "the last signer signed one slot after this header", []*v1.ByronSigner{{Key: filler(0), Slot: headerSlot + 1}}),
+		reqW("byron_header_validate_window_slot_equal_last", "the last signer signed in this header's slot: the reference compares non-strictly", []*v1.ByronSigner{{Key: filler(0), Slot: headerSlot}}),
+		reqW("byron_header_validate_window_slots_decrease", "signers out of slot order: not a window the reference can hold, UNSUPPORTED on both", []*v1.ByronSigner{{Key: filler(0), Slot: 5}, {Key: filler(1), Slot: 4}}),
+		reqW("byron_header_validate_window_larger_than_k", "2161 signers for k = 2160: UNSUPPORTED on both", window(2161, func(int) bool { return false })),
 		req("byron_header_validate_preprod_first", "first preprod main block header", preprodMagic, 2160, protoDlg, headers[0]),
 		req("byron_header_validate_preprod_3", "preprod main block 3: the case the unit tests use", preprodMagic, 2160, protoDlg, h),
 		req("byron_header_validate_preprod_22", "mid-chain preprod header", preprodMagic, 2160, protoDlg, headers[22]),

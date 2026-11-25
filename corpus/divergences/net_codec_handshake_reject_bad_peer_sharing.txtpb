@@ -1,0 +1,8 @@
+# peer sharing 2 is neither disabled nor enabled
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StPropose"
+    message: "\x82\x00\xa1\x0e\x84\x1a-\x96J\t\xf4\x02\xf4"
+  }
+}

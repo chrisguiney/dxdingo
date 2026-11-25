@@ -1,0 +1,8 @@
+# a query needs an acquired state
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StIdle"
+    message: "\x82\x03\x82\x00\x82\x06\x81\x01"
+  }
+}

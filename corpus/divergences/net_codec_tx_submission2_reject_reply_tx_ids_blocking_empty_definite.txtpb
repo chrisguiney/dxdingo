@@ -1,0 +1,8 @@
+# a blocking reply must not be empty (definite list)
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StTxIdsBlocking"
+    message: "\x82\x01\x80"
+  }
+}

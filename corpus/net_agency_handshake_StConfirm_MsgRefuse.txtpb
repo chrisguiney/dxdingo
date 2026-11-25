@@ -1,0 +1,6 @@
+# refused
+net_agency: {
+  protocol: MINI_PROTOCOL_HANDSHAKE
+  state: "StConfirm"
+  message_type: "MsgRefuse"
+}

@@ -1,0 +1,8 @@
+# StInit expects MsgInit
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StInit"
+    message: "\x84\x00\xf5\x00\x01"
+  }
+}

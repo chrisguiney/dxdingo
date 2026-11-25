@@ -1,0 +1,8 @@
+# tag 6 is not a BlockFetch message
+net_codec_block_fetch: {
+  codec: {
+    version: 14
+    state: "BFIdle"
+    message: "\x81\x06"
+  }
+}

@@ -1,0 +1,8 @@
+# node-to-client version 15 is outside the domain
+net_codec_chain_sync: {
+  codec: {
+    version: 32783
+    state: "StIdle"
+    message: "\x81\x00"
+  }
+}

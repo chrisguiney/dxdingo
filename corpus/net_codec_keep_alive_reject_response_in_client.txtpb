@@ -1,0 +1,8 @@
+# a server message in the client's state
+net_codec_keep_alive: {
+  codec: {
+    version: 14
+    state: "StClient"
+    message: "\x82\x01\x01"
+  }
+}

@@ -1,0 +1,8 @@
+# the reference decodes these lists only when indefinite
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StTxIdsNonBlocking"
+    message: "\x82\x01\x81\x82\x82\x06X =\xa9\xa3\xb3\x8d\xce\x0e\x87\xcaJ\x88\xf32\x8c\xaaǩpϚ\xc4\x04$\xcd\xe2\xb6uv\x8d\x11\xf1\x1b\x18d"
+  }
+}

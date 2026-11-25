@@ -1,0 +1,8 @@
+# one IPv6 peer, four big-endian words
+net_codec_peer_sharing: {
+  codec: {
+    version: 14
+    state: "StBusy"
+    message: "\x82\x01\x81\x86\x01\x1a \x01\r\xb8\x00\x00\x01\x19\x0b\xb9"
+  }
+}

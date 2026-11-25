@@ -1,0 +1,122 @@
+# ledger allegra stake deregistration refunds the deposit: accepted; the delta is compared field by field
+rule_ledger:  {
+  context:  {
+    era:  ERA_ALLEGRA
+    protocol_version:  {
+      major:  3
+    }
+    slot:  259201000
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    d:  {
+      numerator:  "0"
+      denominator:  "1"
+    }
+    protocol_version:  {
+      major:  3
+    }
+    min_utxo_value:  1000000
+    min_pool_cost:  170000000
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "11111111111111111111111111111111"
+      }
+      txout:  "\x82X\x1da\rjW~\x94A\xad\x8e\xd9f91\x90nMC\xec\xe8\xf8,q+\x1d\x025\xaf\xfb\x06\x1b\x00\x00\x00E\xd9d\xb8\x00"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      deposit:  2000000
+      balance:  5000000
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2"
+      }
+      deposit:  2000000
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xb8\x95 ͕o{\nۺ\x16\xdf\r&\xbd\x01ZByU㿏\xaa\xe0i\x11\x8d"
+      }
+      deposit:  2000000
+      balance:  5000000
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\x8a\x95\xc8\xedX\x83\x06ꈆ\x0bT\xeb\x0ce\xe7}\xfa\xb9\x99x\x9c\xc5\xe6\xca\x00\x87\x99"
+      }
+      deposit:  2000000
+    }
+    pools:  {
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+      stage:  POOL_STAGE_CURRENT
+      vrf_key_hash:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      pledge:  100
+      cost:  170000000
+      margin:  {
+        numerator:  "1"
+        denominator:  "20"
+      }
+      reward_account:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      owners:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      deposit:  500000000
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x83\xa5\x00\x81\x82X 11111111111111111111111111111111\x00\x01\x81\x82X\x1dawwwwwwwwwwwwwwwwwwwwwwwwwwww\x1b\x00\x00\x00Eـ/@\x02\x1a\x00\x03\r@\x03\x1b\x00\x00\x01\x00\x00\x00\x00\x00\x04\x81\x82\x01\x82\x00X\x1c\x8a\x95\xc8\xedX\x83\x06ꈆ\x0bT\xeb\x0ce\xe7}\xfa\xb9\x99x\x9c\xc5\xe6\xca\x00\x87\x99\xa1\x00\x82\x82X \x8a\x88\xe3\xddt\t\xf1\x95\xfdR\xdb-<\xba]r\xcag\t\xbf\x1d\x94\x12\x1b\xf3t\x88\x01\xb4\x0fo\\X@\x88\xb8La\xee\x17#\xd6\xd5x\xd98M\x1f=\xae\xb9\x88ˊ6!\xe2\xa8\t\xf0\xd5\xf9\xcc\xe1\x9fh.L'\x99\x04pv\xad\x10\xbd\xedj\x89\xe8\xff\xc6\\w\x94h3\x1b\x12\xe7\xc5\xe2\xf3@\x13F\xa8\r\x82X \xedI(\xc6(\xd1\xc2\xc6\xea\xe9\x038\x90Y\x95a)Y':\\c\xf966\xc1F\x14\xac\x877\xd1X@m\x11\x9f\x8f\x9bzfT\xe2ʘ:\xf4\x00\xa9>[\x01k\x06\xa5=6\xa8y&\x19\x9a\xfdC\x96\xc0\xf6u\x05\xf0$\x868\xa4~G\xb1\x06\x87ESC\x15\x87\x84\x8d\xbd\xc9۴\x0f\xc1\xda,P\x7f\r\x0e\xf6"
+}

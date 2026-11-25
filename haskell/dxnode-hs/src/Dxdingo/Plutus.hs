@@ -22,6 +22,7 @@ module Dxdingo.Plutus
   , scriptPurpose
   , scriptContext
   , evalExUnits
+  , collectScripts
   ) where
 
 import Cardano.Crypto.Hash (hashFromBytes, hashToBytes)
@@ -29,9 +30,9 @@ import Cardano.Ledger.Address (accountAddressCredentialL)
 import Cardano.Ledger.Alonzo (AlonzoEra)
 import Cardano.Ledger.Alonzo.Core
 import Cardano.Ledger.Alonzo.Plutus.Context
-import Cardano.Ledger.Alonzo.Plutus.Evaluate (TransactionScriptFailure, evalTxExUnits)
+import Cardano.Ledger.Alonzo.Plutus.Evaluate (TransactionScriptFailure, collectPlutusScriptsWithContext, evalTxExUnits)
 import Cardano.Ledger.Alonzo.Scripts (AsPurpose (..))
-import Cardano.Ledger.Alonzo.UTxO (AlonzoEraUTxO, AlonzoScriptsNeeded (..))
+import Cardano.Ledger.Alonzo.UTxO (AlonzoEraUTxO, AlonzoScriptsNeeded (..), resolveNeededPlutusScriptsWithPurpose)
 import Cardano.Ledger.Babbage (BabbageEra)
 import Cardano.Ledger.BaseTypes (ProtVer (..), mkVersion, txIxFromIntegral, txIxToInt)
 import Cardano.Ledger.Binary (Annotator, DecCBOR, decodeFull', decodeFullAnnotator, decCBOR, serialize')
@@ -43,7 +44,8 @@ import Cardano.Ledger.Hashes (unsafeMakeSafeHash)
 import Cardano.Ledger.Mary.Value (PolicyID (..))
 import Cardano.Ledger.Plutus.CostModels (CostModel, getCostModelParams, mkCostModel, mkCostModels)
 import Cardano.Ledger.Plutus.ExUnits (ExUnits (..))
-import Cardano.Ledger.Plutus.Language (Language (..), LegacyPlutusArgs (..), PlutusArgs (..))
+import Cardano.Ledger.Plutus.Evaluate (PlutusWithContext (..), pwcScriptHash)
+import Cardano.Ledger.Plutus.Language (Language (..), LegacyPlutusArgs (..), PlutusArgs (..), SLanguage (..), plutusSLanguage)
 import Cardano.Ledger.Plutus (Data)
 import Cardano.Ledger.BaseTypes (Network (..))
 import Cardano.Ledger.State (EraUTxO (..), UTxO (..))
@@ -56,6 +58,7 @@ import Control.Monad.Except (runExcept)
 import Data.Bifunctor (first)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
+import Data.Foldable (toList)
 import Data.List (sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
@@ -457,6 +460,74 @@ ixPurpose p
   where
     tagged t ix = defMessage & #tag .~ t & #index .~ ix
 
+-- plutus_collect_scripts ----------------------------------------------------------
+
+-- | The language, and the arguments a script of it is applied to, of a
+-- collected script. Conway has no PlutusV4 script, so that language has none.
+argsOf :: PlutusWithContext -> Maybe (P.PlutusVersion, [PD.Data])
+argsOf PlutusWithContext {pwcScript = script, pwcArgs = args} = case plutusSLanguage script of
+  SPlutusV1 -> Just (P.PLUTUS_VERSION_V1, argsData args)
+  SPlutusV2 -> Just (P.PLUTUS_VERSION_V2, argsData args)
+  SPlutusV3 -> Just (P.PLUTUS_VERSION_V3, argsData args)
+  SPlutusV4 -> Nothing
+
+-- | A collected script as the response has it: a legacy script is applied to
+-- the redeemer and the context, with the datum first when it has one; a V3
+-- script to the context alone.
+collectedProto :: forall era. PlutusEra era => PlutusPurpose AsIxItem era -> PlutusWithContext -> Maybe CollectedScript
+collectedProto purpose pwc@PlutusWithContext {pwcExUnits = ExUnits mem steps} = do
+  (version, args) <- argsOf pwc
+  let enc = BSL.toStrict . serialise
+      ScriptHash scriptHash = pwcScriptHash pwc
+      base =
+        defMessage
+          & #purpose .~ purposeProto purpose
+          & #scriptHash .~ hashToBytes scriptHash
+          & #plutusVersion .~ version
+          & #exMem .~ fromIntegral mem
+          & #exSteps .~ fromIntegral steps
+  case args of
+    [c] -> Just (base & #context .~ enc c)
+    [r, c] -> Just (base & #redeemer .~ enc r & #context .~ enc c)
+    [d, r, c] -> Just (base & #datum .~ enc d & #redeemer .~ enc r & #context .~ enc c)
+    _ -> Nothing
+
+collectFailure :: Show e => e -> P.Failure
+collectFailure err =
+  defMessage & #rule .~ "CollectError" & #name .~ constructorName err & #detail .~ T.pack (show err)
+
+-- | 'collectPlutusScriptsWithContext' on a 'PParams' carrying only what it
+-- reads: the protocol version and the cost models. The result lists the
+-- scripts in reverse of the order 'resolveNeededPlutusScriptsWithPurpose' has
+-- the purposes in, which is how the purpose of each is recovered.
+collectScripts :: PlutusCollectScriptsRequest -> Result PlutusCollectScriptsResponse
+collectScripts req = do
+  let ctx = req ^. #context
+      pp = req ^. #pparams
+  pv <- protVer (ctx ^. #protocolVersion)
+  cms <- costModels pp
+  (epochInfo, systemStart) <- eraHistory (req ^. #eraHistory)
+  withEra (ctx ^. #era) $ \(_ :: Proxy era) -> do
+    env <- decodeEnv @era (req ^. #tx) (req ^. #utxo)
+    let params :: PParams era
+        params =
+          emptyPParams
+            & ppProtocolVersionL .~ pv
+            & ppCostModelsL .~ mkCostModels cms
+        utxo = envUtxo env
+        tx = envTx env
+        (_, needed) =
+          resolveNeededPlutusScriptsWithPurpose
+            pv
+            (getScriptsProvided utxo tx)
+            (getScriptsNeeded utxo (tx ^. bodyTxL))
+            mempty
+    case collectPlutusScriptsWithContext epochInfo systemStart params tx utxo of
+      Left errs -> pure (defMessage & #rejection . #failures .~ map collectFailure (toList errs))
+      Right pwcs -> case sequence (zipWith collectedProto (reverse (map fst needed)) pwcs) of
+        Just scripts -> pure (defMessage & #scripts .~ sortOn (\c -> (fromEnum (c ^. #purpose . #tag), c ^. #purpose . #index)) scripts)
+        Nothing -> unsupported "a collected script has no PlutusV1, V2 or V3 arguments"
+
 dispatch :: Call'Request -> Maybe Answer
 dispatch = \case
   Call'PlutusCostModel q -> Just (respond #plutusCostModel (costModel q))
@@ -464,7 +535,8 @@ dispatch = \case
   Call'PlutusScriptPurpose q -> Just (respond #plutusScriptPurpose (scriptPurpose q))
   Call'PlutusScriptContext q -> Just (respond #plutusScriptContext (scriptContext q))
   Call'PlutusEvalExUnits q -> Just (respond #plutusEvalExUnits (evalExUnits q))
+  Call'PlutusCollectScripts q -> Just (respond #plutusCollectScripts (collectScripts q))
   _ -> Nothing
 
 implemented :: [Text]
-implemented = ["plutus_cost_model", "plutus_tx_info", "plutus_script_purpose", "plutus_script_context", "plutus_eval_ex_units"]
+implemented = ["plutus_cost_model", "plutus_tx_info", "plutus_script_purpose", "plutus_script_context", "plutus_eval_ex_units", "plutus_collect_scripts"]

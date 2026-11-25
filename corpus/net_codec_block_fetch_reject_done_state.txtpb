@@ -1,0 +1,8 @@
+# BFDone has no agency
+net_codec_block_fetch: {
+  codec: {
+    version: 14
+    state: "BFDone"
+    message: "\x81\x01"
+  }
+}

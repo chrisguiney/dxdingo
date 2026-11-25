@@ -1,0 +1,6 @@
+# protocol ends
+net_agency: {
+  protocol: MINI_PROTOCOL_PEER_SHARING
+  state: "StIdle"
+  message_type: "MsgDone"
+}

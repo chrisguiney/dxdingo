@@ -1,0 +1,6 @@
+# a mary MemPack output (assets): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)
+codec_ledger_state: {
+  era: ERA_MARY
+  format: LEDGER_STATE_FORMAT_MEMPACK_TXOUT
+  cbor: "\x00\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x01\xfa\x89\x00\x01*\x05\x00\x00\x00\x00\x00\x00\x00\x0c\x00(\x00\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"aa"
+}

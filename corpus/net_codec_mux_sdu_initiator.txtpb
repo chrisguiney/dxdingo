@@ -1,0 +1,4 @@
+# initiator SDU for ChainSync
+net_codec_mux_sdu: {
+  header: "\x01\x02\x03\x04\x00\x02\x02\x01"
+}

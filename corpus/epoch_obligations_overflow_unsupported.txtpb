@@ -1,0 +1,17 @@
+# a deposit total beyond Word64 is not representable
+epoch_obligations: {
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    deposit: 18446744073709551615
+  }
+  accounts: {
+    credential: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    }
+    deposit: 1
+  }
+}

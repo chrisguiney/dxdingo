@@ -34,6 +34,8 @@ message Rational {
 message ProtocolVersion {
   uint32 major = 1;
   uint32 minor = 2;
+  // Byron only: the alternative version (pvAlt).
+  uint32 alt = 3;
 }
 
 message TxIn {

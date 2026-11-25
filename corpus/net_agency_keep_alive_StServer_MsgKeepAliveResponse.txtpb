@@ -1,0 +1,6 @@
+# client agency again
+net_agency: {
+  protocol: MINI_PROTOCOL_KEEP_ALIVE
+  state: "StServer"
+  message_type: "MsgKeepAliveResponse"
+}

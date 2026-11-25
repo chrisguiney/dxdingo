@@ -1,0 +1,6 @@
+# batch ends
+net_agency: {
+  protocol: MINI_PROTOCOL_BLOCK_FETCH
+  state: "BFStreaming"
+  message_type: "MsgBatchDone"
+}

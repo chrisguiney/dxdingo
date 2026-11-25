@@ -1,0 +1,8 @@
+# GetChainBlockNo is the bare tag 2
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StAcquired"
+    message: "\x82\x03\x81\x02"
+  }
+}

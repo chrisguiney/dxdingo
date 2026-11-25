@@ -1,0 +1,6 @@
+# accepted
+net_agency: {
+  protocol: MINI_PROTOCOL_LOCAL_TX_SUBMISSION
+  state: "StBusy"
+  message_type: "MsgAcceptTx"
+}

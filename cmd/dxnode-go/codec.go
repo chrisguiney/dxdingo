@@ -14,6 +14,7 @@ import (
 	"github.com/blinklabs-io/gouroboros/ledger/babbage"
 	"github.com/blinklabs-io/gouroboros/ledger/common"
 	"github.com/blinklabs-io/gouroboros/ledger/conway"
+	"github.com/blinklabs-io/gouroboros/ledger/dijkstra"
 	"github.com/blinklabs-io/gouroboros/ledger/mary"
 	"github.com/blinklabs-io/gouroboros/ledger/shelley"
 
@@ -35,6 +36,8 @@ func registerCodec(r *dispatch.Registry) {
 	dispatch.Register(r, codecBlockBody)
 	dispatch.Register(r, codecBlockHeader)
 	dispatch.Register(r, codecByronBlock)
+	dispatch.Register(r, codecHfcBlock)
+	dispatch.Register(r, codecLedgerState)
 	dispatch.Register(r, codecPParamsUpdate)
 }
 
@@ -52,17 +55,17 @@ type codecEra struct {
 }
 
 var codecEras = map[v1.Era]codecEra{
-	v1.Era_ERA_SHELLEY: {ledger.TxTypeShelley, ledger.BlockTypeShelley, 2, 2},
-	v1.Era_ERA_ALLEGRA: {ledger.TxTypeAllegra, ledger.BlockTypeAllegra, 3, 3},
-	v1.Era_ERA_MARY:    {ledger.TxTypeMary, ledger.BlockTypeMary, 4, 4},
-	v1.Era_ERA_ALONZO:  {ledger.TxTypeAlonzo, ledger.BlockTypeAlonzo, 5, 6},
-	v1.Era_ERA_BABBAGE: {ledger.TxTypeBabbage, ledger.BlockTypeBabbage, 7, 8},
-	v1.Era_ERA_CONWAY:  {ledger.TxTypeConway, ledger.BlockTypeConway, 9, 11},
+	v1.Era_ERA_SHELLEY:  {ledger.TxTypeShelley, ledger.BlockTypeShelley, 2, 2},
+	v1.Era_ERA_ALLEGRA:  {ledger.TxTypeAllegra, ledger.BlockTypeAllegra, 3, 3},
+	v1.Era_ERA_MARY:     {ledger.TxTypeMary, ledger.BlockTypeMary, 4, 4},
+	v1.Era_ERA_ALONZO:   {ledger.TxTypeAlonzo, ledger.BlockTypeAlonzo, 5, 6},
+	v1.Era_ERA_BABBAGE:  {ledger.TxTypeBabbage, ledger.BlockTypeBabbage, 7, 8},
+	v1.Era_ERA_CONWAY:   {ledger.TxTypeConway, ledger.BlockTypeConway, 9, 11},
+	v1.Era_ERA_DIJKSTRA: {ledger.TxTypeDijkstra, ledger.BlockTypeDijkstra, 12, 12},
 }
 
 // codecEraArg resolves the era and checks the protocol version lies in the
-// era's range. An unset version means the era's own. Byron and Dijkstra are
-// UNSUPPORTED.
+// era's range. An unset version means the era's own. Byron is served by codecByronTx and codecByronTxOutput only.
 func codecEraArg(era v1.Era, pv *v1.ProtocolVersion) (codecEra, error) {
 	e, ok := codecEras[era]
 	if !ok {
@@ -75,6 +78,9 @@ func codecEraArg(era v1.Era, pv *v1.ProtocolVersion) (codecEra, error) {
 }
 
 func codecTx(_ context.Context, req *v1.CodecTxRequest) (*v1.CodecTxResponse, error) {
+	if req.GetEra() == v1.Era_ERA_BYRON {
+		return codecByronTx(req)
+	}
 	e, err := codecEraArg(req.GetEra(), req.GetProtocolVersion())
 	if err != nil {
 		return nil, err
@@ -112,6 +118,9 @@ func decodeTxOutput(era v1.Era, b []byte) (common.TransactionOutput, error) {
 // codecTxOutput reports the address, coin, assets (sorted by policy and
 // name), datum hash, inline datum and the script reference's hash.
 func codecTxOutput(_ context.Context, req *v1.CodecTxOutputRequest) (*v1.CodecTxOutputResponse, error) {
+	if req.GetEra() == v1.Era_ERA_BYRON {
+		return codecByronTxOutput(req)
+	}
 	if _, err := codecEraArg(req.GetEra(), req.GetProtocolVersion()); err != nil {
 		return nil, err
 	}
@@ -180,7 +189,7 @@ func codecCertificate(_ context.Context, req *v1.CodecCertificateRequest) (*v1.C
 	if _, err := cbor.DecodeExact(req.GetCbor(), &w); err != nil {
 		return &v1.CodecCertificateResponse{Rejection: decodeFailure(err)}, nil
 	}
-	if req.GetEra() != v1.Era_ERA_CONWAY {
+	if req.GetEra() != v1.Era_ERA_CONWAY && req.GetEra() != v1.Era_ERA_DIJKSTRA {
 		if err := common.ValidatePreConwayCertificateTypes([]common.CertificateWrapper{w}); err != nil {
 			return &v1.CodecCertificateResponse{Rejection: decodeFailure(err)}, nil
 		}
@@ -189,7 +198,7 @@ func codecCertificate(_ context.Context, req *v1.CodecCertificateRequest) (*v1.C
 }
 
 func codecGovernance(_ context.Context, req *v1.CodecGovernanceRequest) (*v1.CodecGovernanceResponse, error) {
-	if req.GetEra() != v1.Era_ERA_CONWAY {
+	if req.GetEra() != v1.Era_ERA_CONWAY && req.GetEra() != v1.Era_ERA_DIJKSTRA {
 		return nil, dispatch.Unsupported(fmt.Errorf("governance items exist from Conway, not %v", req.GetEra()))
 	}
 	if _, err := codecEraArg(req.GetEra(), req.GetProtocolVersion()); err != nil {
@@ -197,17 +206,24 @@ func codecGovernance(_ context.Context, req *v1.CodecGovernanceRequest) (*v1.Cod
 	}
 	switch req.GetKind() {
 	case v1.GovernanceItemKind_GOVERNANCE_ITEM_KIND_PROPOSAL:
-		var p conway.ConwayProposalProcedure
-		if _, err := cbor.DecodeExact(req.GetCbor(), &p); err != nil {
+		var p interface {
+			GovAction() common.GovAction
+		}
+		if req.GetEra() == v1.Era_ERA_DIJKSTRA {
+			p = &dijkstra.DijkstraProposalProcedure{}
+		} else {
+			p = &conway.ConwayProposalProcedure{}
+		}
+		if _, err := cbor.DecodeExact(req.GetCbor(), p); err != nil {
 			return &v1.CodecGovernanceResponse{Rejection: decodeFailure(err)}, nil
 		}
-		enc, err := cbor.Encode(&p)
+		enc, err := cbor.Encode(p)
 		if err != nil {
 			return &v1.CodecGovernanceResponse{Rejection: dingoRejection("codec", err)}, nil
 		}
 		t := v1.GovActionType_GOV_ACTION_TYPE_UNSPECIFIED
-		switch p.PPGovAction.Action.(type) {
-		case *conway.ConwayParameterChangeGovAction:
+		switch p.GovAction().(type) {
+		case *conway.ConwayParameterChangeGovAction, *dijkstra.DijkstraParameterChangeGovAction:
 			t = v1.GovActionType_GOV_ACTION_TYPE_PARAMETER_CHANGE
 		case *common.HardForkInitiationGovAction:
 			t = v1.GovActionType_GOV_ACTION_TYPE_HARD_FORK_INITIATION
@@ -313,6 +329,8 @@ func codecBlockHeader(_ context.Context, req *v1.CodecBlockHeaderRequest) (*v1.C
 	case *babbage.BabbageBlockHeader:
 		fillPraosHeader(resp, h)
 	case *conway.ConwayBlockHeader:
+		fillPraosHeader(resp, &h.BabbageBlockHeader)
+	case *dijkstra.DijkstraBlockHeader:
 		fillPraosHeader(resp, &h.BabbageBlockHeader)
 	}
 	return resp, nil
@@ -494,30 +512,21 @@ func codecPParamsUpdate(_ context.Context, req *v1.CodecPParamsUpdateRequest) (*
 	case v1.Era_ERA_CONWAY:
 		var u conway.ConwayProtocolParameterUpdate
 		if _, err = cbor.DecodeExact(req.GetCbor(), &u); err == nil {
-			o.base(u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost)
-			o.protocolVersion(u.ProtocolVersion)
-			p.CoinsPerUtxoByte = u.AdaPerUtxoByte
-			o.plutus(u.CostModels, u.ExecutionCosts, u.MaxTxExUnits, u.MaxBlockExUnits, u.MaxValueSize, u.CollateralPercentage, u.MaxCollateralInputs)
-			if t := u.PoolVotingThresholds; t != nil {
-				p.PoolVotingThresholds = &v1.PoolVotingThresholds{
-					MotionNoConfidence: ratOf(&t.MotionNoConfidence), CommitteeNormal: ratOf(&t.CommitteeNormal),
-					CommitteeNoConfidence: ratOf(&t.CommitteeNoConfidence), HardForkInitiation: ratOf(&t.HardForkInitiation),
-					PpSecurityGroup: ratOf(&t.PpSecurityGroup),
-				}
-			}
-			if t := u.DRepVotingThresholds; t != nil {
-				p.DrepVotingThresholds = &v1.DRepVotingThresholds{
-					MotionNoConfidence: ratOf(&t.MotionNoConfidence), CommitteeNormal: ratOf(&t.CommitteeNormal),
-					CommitteeNoConfidence: ratOf(&t.CommitteeNoConfidence), UpdateToConstitution: ratOf(&t.UpdateToConstitution),
-					HardForkInitiation: ratOf(&t.HardForkInitiation), PpNetworkGroup: ratOf(&t.PpNetworkGroup),
-					PpEconomicGroup: ratOf(&t.PpEconomicGroup), PpTechnicalGroup: ratOf(&t.PpTechnicalGroup),
-					PpGovGroup: ratOf(&t.PpGovGroup), TreasuryWithdrawal: ratOf(&t.TreasuryWithdrawal),
-				}
-			}
-			p.CommitteeMinSize = u32(u.MinCommitteeSize)
-			p.CommitteeMaxTermLength, p.GovActionLifetime, p.GovActionDeposit = u.CommitteeTermLimit, u.GovActionValidityPeriod, u.GovActionDeposit
-			p.DrepDeposit, p.DrepActivity = u.DRepDeposit, u.DRepInactivityPeriod
-			p.MinFeeRefScriptCostPerByte = ratOf(u.MinFeeRefScriptCostPerByte)
+			fillConwayUpdate(o, conwayUpdateView{
+				u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost,
+				u.ProtocolVersion, u.AdaPerUtxoByte, u.CostModels, u.ExecutionCosts, u.MaxTxExUnits, u.MaxBlockExUnits, u.MaxValueSize, u.CollateralPercentage, u.MaxCollateralInputs,
+				u.PoolVotingThresholds, u.DRepVotingThresholds, u.MinCommitteeSize, u.CommitteeTermLimit, u.GovActionValidityPeriod, u.GovActionDeposit, u.DRepDeposit, u.DRepInactivityPeriod, u.MinFeeRefScriptCostPerByte,
+			})
+			enc = u.Cbor()
+		}
+	case v1.Era_ERA_DIJKSTRA:
+		var u dijkstra.DijkstraProtocolParameterUpdate
+		if _, err = cbor.DecodeExact(req.GetCbor(), &u); err == nil {
+			fillConwayUpdate(o, conwayUpdateView{
+				u.MinFeeA, u.MinFeeB, u.MaxBlockBodySize, u.MaxTxSize, u.MaxBlockHeaderSize, u.KeyDeposit, u.PoolDeposit, u.MaxEpoch, u.NOpt, u.A0, u.Rho, u.Tau, u.MinPoolCost,
+				u.ProtocolVersion, u.AdaPerUtxoByte, u.CostModels, u.ExecutionCosts, u.MaxTxExUnits, u.MaxBlockExUnits, u.MaxValueSize, u.CollateralPercentage, u.MaxCollateralInputs,
+				u.PoolVotingThresholds, u.DRepVotingThresholds, u.MinCommitteeSize, u.CommitteeTermLimit, u.GovActionValidityPeriod, u.GovActionDeposit, u.DRepDeposit, u.DRepInactivityPeriod, u.MinFeeRefScriptCostPerByte,
+			})
 			enc = u.Cbor()
 		}
 	}
@@ -525,4 +534,51 @@ func codecPParamsUpdate(_ context.Context, req *v1.CodecPParamsUpdateRequest) (*
 		return &v1.CodecPParamsUpdateResponse{Rejection: decodeFailure(err)}, nil
 	}
 	return &v1.CodecPParamsUpdateResponse{Cbor: enc, Update: p}, nil
+}
+
+// conwayUpdateView is the parameters a Conway-shaped update can set that the
+// response reports, in the order the update types declare them.
+type conwayUpdateView struct {
+	minFeeA, minFeeB, maxBlockBodySize, maxTxSize, maxBlockHeaderSize, keyDeposit, poolDeposit, maxEpoch, nOpt *uint
+	a0, rho, tau                                                                                               *cbor.Rat
+	minPoolCost                                                                                                *uint64
+	protocolVersion                                                                                            *common.ProtocolParametersProtocolVersion
+	adaPerUtxoByte                                                                                             *uint64
+	costModels                                                                                                 map[uint][]int64
+	executionCosts                                                                                             *common.ExUnitPrice
+	maxTxExUnits, maxBlockExUnits                                                                              *common.ExUnits
+	maxValueSize, collateralPercentage, maxCollateralInputs                                                    *uint
+	poolVotingThresholds                                                                                       *conway.PoolVotingThresholds
+	drepVotingThresholds                                                                                       *conway.DRepVotingThresholds
+	minCommitteeSize                                                                                           *uint
+	committeeTermLimit, govActionValidityPeriod, govActionDeposit, drepDeposit, drepInactivityPeriod           *uint64
+	minFeeRefScriptCostPerByte                                                                                 *cbor.Rat
+}
+
+func fillConwayUpdate(o pparamsOut, u conwayUpdateView) {
+	p := o.p
+	o.base(u.minFeeA, u.minFeeB, u.maxBlockBodySize, u.maxTxSize, u.maxBlockHeaderSize, u.keyDeposit, u.poolDeposit, u.maxEpoch, u.nOpt, u.a0, u.rho, u.tau, u.minPoolCost)
+	o.protocolVersion(u.protocolVersion)
+	p.CoinsPerUtxoByte = u.adaPerUtxoByte
+	o.plutus(u.costModels, u.executionCosts, u.maxTxExUnits, u.maxBlockExUnits, u.maxValueSize, u.collateralPercentage, u.maxCollateralInputs)
+	if t := u.poolVotingThresholds; t != nil {
+		p.PoolVotingThresholds = &v1.PoolVotingThresholds{
+			MotionNoConfidence: ratOf(&t.MotionNoConfidence), CommitteeNormal: ratOf(&t.CommitteeNormal),
+			CommitteeNoConfidence: ratOf(&t.CommitteeNoConfidence), HardForkInitiation: ratOf(&t.HardForkInitiation),
+			PpSecurityGroup: ratOf(&t.PpSecurityGroup),
+		}
+	}
+	if t := u.drepVotingThresholds; t != nil {
+		p.DrepVotingThresholds = &v1.DRepVotingThresholds{
+			MotionNoConfidence: ratOf(&t.MotionNoConfidence), CommitteeNormal: ratOf(&t.CommitteeNormal),
+			CommitteeNoConfidence: ratOf(&t.CommitteeNoConfidence), UpdateToConstitution: ratOf(&t.UpdateToConstitution),
+			HardForkInitiation: ratOf(&t.HardForkInitiation), PpNetworkGroup: ratOf(&t.PpNetworkGroup),
+			PpEconomicGroup: ratOf(&t.PpEconomicGroup), PpTechnicalGroup: ratOf(&t.PpTechnicalGroup),
+			PpGovGroup: ratOf(&t.PpGovGroup), TreasuryWithdrawal: ratOf(&t.TreasuryWithdrawal),
+		}
+	}
+	p.CommitteeMinSize = u32(u.minCommitteeSize)
+	p.CommitteeMaxTermLength, p.GovActionLifetime, p.GovActionDeposit = u.committeeTermLimit, u.govActionValidityPeriod, u.govActionDeposit
+	p.DrepDeposit, p.DrepActivity = u.drepDeposit, u.drepInactivityPeriod
+	p.MinFeeRefScriptCostPerByte = ratOf(u.minFeeRefScriptCostPerByte)
 }

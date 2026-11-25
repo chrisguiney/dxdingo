@@ -1,0 +1,5 @@
+# map output with a datum hash: the reference re-encodes the legacy array [address, coin, datum_hash] (TestDivergenceCodecOutputKeepsWireBytes)
+codec_tx_output: {
+  era: ERA_DIJKSTRA
+  cbor: "\xa3\x00X\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x01\x1a\x00\x16\xe3`\x02\x82\x00X 33333333333333333333333333333333"
+}

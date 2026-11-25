@@ -1,0 +1,8 @@
+# reject carrying the reference's Byron ApplyTxErr
+net_codec_local_tx_submission: {
+  codec: {
+    version: 32787
+    state: "StBusy"
+    message: "\x82\x02\x81\x82\x00\x82\x00\x82\x00\x83\x00aa\x82\x00\x00"
+  }
+}

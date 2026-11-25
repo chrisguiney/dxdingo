@@ -109,15 +109,6 @@ func TestRuleUtxoSkipsWitnessChecks(t *testing.T) {
 	}
 }
 
-func TestRuleUnsupportedEra(t *testing.T) {
-	t.Parallel()
-	r := ruleRequest(t)
-	r.Context.Era = v1.Era_ERA_SHELLEY
-	if _, err := ruleUtxow(context.Background(), r); err == nil {
-		t.Fatal("Shelley accepted")
-	}
-}
-
 func TestRuleBadTxIsBadRequest(t *testing.T) {
 	t.Parallel()
 	r := ruleRequest(t)

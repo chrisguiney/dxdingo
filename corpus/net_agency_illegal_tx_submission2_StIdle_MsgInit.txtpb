@@ -1,0 +1,6 @@
+# init is only legal once
+net_agency: {
+  protocol: MINI_PROTOCOL_TX_SUBMISSION2
+  state: "StIdle"
+  message_type: "MsgInit"
+}

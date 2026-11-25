@@ -1,0 +1,8 @@
+# server accepts
+net_codec_local_tx_submission: {
+  codec: {
+    version: 32787
+    state: "StBusy"
+    message: "\x81\x01"
+  }
+}

@@ -1,0 +1,8 @@
+# transaction count and a map of measures
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32791
+    state: "StBusyGetMeasures"
+    message: "\x83\x0c\x03\xa1qtransaction_bytes\x82\x19\x04\xb0\x1a\x00\x01\x00\x00"
+  }
+}

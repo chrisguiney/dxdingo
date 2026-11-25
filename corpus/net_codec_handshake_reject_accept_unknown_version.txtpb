@@ -1,0 +1,8 @@
+# an accepted version must be one the codec knows
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StConfirm"
+    message: "\x83\x01\x18c\x84\x1a-\x96J\t\xf4\x00\xf4"
+  }
+}

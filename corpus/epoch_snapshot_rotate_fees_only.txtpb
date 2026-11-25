@@ -1,0 +1,4 @@
+# the fee pot is kept apart from the stake snapshots
+epoch_snapshot_rotate:  {
+  fees:  1000000
+}

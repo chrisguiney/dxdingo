@@ -1,0 +1,6 @@
+# a client message in the server's state
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StCanAwait"
+  message_type: "MsgRequestNext"
+}

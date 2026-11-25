@@ -1,0 +1,6 @@
+# server asks the client to wait
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StCanAwait"
+  message_type: "MsgAwaitReply"
+}

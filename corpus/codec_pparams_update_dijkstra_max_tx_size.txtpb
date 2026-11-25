@@ -1,0 +1,5 @@
+# a one-key update
+codec_pparams_update: {
+  era: ERA_DIJKSTRA
+  cbor: "\xa1\x03\x19@\x00"
+}

@@ -1,0 +1,4 @@
+# bytes after the eighth are ignored
+net_codec_mux_sdu: {
+  header: "\x00\x00\x00\x01\x00\x03\x00\x04\x01\x02\x03\x04"
+}

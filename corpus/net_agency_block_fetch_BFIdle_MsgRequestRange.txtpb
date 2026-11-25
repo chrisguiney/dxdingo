@@ -1,0 +1,6 @@
+# server must start streaming
+net_agency: {
+  protocol: MINI_PROTOCOL_BLOCK_FETCH
+  state: "BFIdle"
+  message_type: "MsgRequestRange"
+}

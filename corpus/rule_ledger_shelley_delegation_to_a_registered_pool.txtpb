@@ -1,0 +1,122 @@
+# ledger shelley delegation to a registered pool: accepted; the delta is compared field by field
+rule_ledger:  {
+  context:  {
+    era:  ERA_SHELLEY
+    protocol_version:  {
+      major:  2
+    }
+    slot:  259201000
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    d:  {
+      numerator:  "0"
+      denominator:  "1"
+    }
+    protocol_version:  {
+      major:  2
+    }
+    min_utxo_value:  1000000
+    min_pool_cost:  170000000
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "11111111111111111111111111111111"
+      }
+      txout:  "\x82X\x1da\rjW~\x94A\xad\x8e\xd9f91\x90nMC\xec\xe8\xf8,q+\x1d\x025\xaf\xfb\x06\x1b\x00\x00\x00E\xd9d\xb8\x00"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      deposit:  2000000
+      balance:  5000000
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2"
+      }
+      deposit:  2000000
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xb8\x95 ͕o{\nۺ\x16\xdf\r&\xbd\x01ZByU㿏\xaa\xe0i\x11\x8d"
+      }
+      deposit:  2000000
+      balance:  5000000
+    }
+    accounts:  {
+      credential:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\x8a\x95\xc8\xedX\x83\x06ꈆ\x0bT\xeb\x0ce\xe7}\xfa\xb9\x99x\x9c\xc5\xe6\xca\x00\x87\x99"
+      }
+      deposit:  2000000
+    }
+    pools:  {
+      pool_id:  "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+      stage:  POOL_STAGE_CURRENT
+      vrf_key_hash:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      pledge:  100
+      cost:  170000000
+      margin:  {
+        numerator:  "1"
+        denominator:  "20"
+      }
+      reward_account:  {
+        kind:  CREDENTIAL_KIND_KEY
+        hash:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      owners:  "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      deposit:  500000000
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x83\xa5\x00\x81\x82X 11111111111111111111111111111111\x00\x01\x81\x82X\x1dawwwwwwwwwwwwwwwwwwwwwwwwwwww\x1b\x00\x00\x00E\xd9a\xaa\xc0\x02\x1a\x00\x03\r@\x03\x1b\x00\x00\x01\x00\x00\x00\x00\x00\x04\x81\x83\x02\x82\x00X\x1c\xb8\x95 ͕o{\nۺ\x16\xdf\r&\xbd\x01ZByU㿏\xaa\xe0i\x11\x8dX\x1cQQQQQQQQQQQQQQQQQQQQQQQQQQQQ\xa1\x00\x82\x82X \x8a\x88\xe3\xddt\t\xf1\x95\xfdR\xdb-<\xba]r\xcag\t\xbf\x1d\x94\x12\x1b\xf3t\x88\x01\xb4\x0fo\\X@\x0c\xcc\xe0\xcf\xe3\xe6\xd60\x8d\x97\xbb\r\"\x1av\t\x8f\xb5j\xdfl\x0c\xab\xde\x7f{刌1\r7\xb2\xedY\x88\xe0\x05\xbd\xaf\xf7\xcf6i\xee9\xbc\xcd5\xdf.;\xe6)\xe0\x80\xdc\xf0\xc7\xcb\x0eHf\x08\x82X ʓ\xac\x17\x05\x18pq\xd6{\x83\xc7\xff\x0e\xfe\x81\x08\xe8\xecE0W]w&\x87\x933\xdbھ|X@\xe4n7\x12I\x93\xca\xc4\xf1\x93\xe9ᐴ\xb9d\xca輄\xf5w%\xea{\xd9\xfe\xb6\xe6\x98\xcc\t\xb7CW\x88+\xaf\xe4v\xf1\x01>\x8a\xe6\x83\x06)\x03\xbaV,\xe8v\x8d\x13Ix\xb8\x1en\xd83\x06\xf6"
+}

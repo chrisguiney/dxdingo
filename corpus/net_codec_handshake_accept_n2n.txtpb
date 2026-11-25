@@ -1,0 +1,8 @@
+# server accepts version 16
+net_codec_handshake: {
+  codec: {
+    version: 16
+    state: "StConfirm"
+    message: "\x83\x01\x10\x85\x1a-\x96J\t\xf5\x01\xf4\xf4"
+  }
+}

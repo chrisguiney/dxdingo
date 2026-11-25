@@ -1,0 +1,8 @@
+# one IPv4 peer
+net_codec_peer_sharing: {
+  codec: {
+    version: 14
+    state: "StBusy"
+    message: "\x82\x01\x81\x83\x00\x1a\x07\x02\x00\xc0\x19\x0b\xb9"
+  }
+}

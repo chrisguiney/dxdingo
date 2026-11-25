@@ -1,0 +1,8 @@
+# the Word16 maximum for both counts
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x84\x00\xf4\x19\xff\xff\x19\xff\xff"
+  }
+}

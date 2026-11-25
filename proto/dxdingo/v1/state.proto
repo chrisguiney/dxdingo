@@ -115,6 +115,18 @@ message ByronProtocolParameters {
   Rational update_adoption_threshold = 6;
   uint64 update_proposal_ttl = 7;
   Rational update_vote_threshold = 8;
+  // Fields 9 on complete the reference's ProtocolParameters. The adoption
+  // threshold above is srMinThd; absent Rationals are zero. Each threshold is
+  // a LovelacePortion: a multiple of 1e-15 in [0, 1].
+  uint32 script_version = 9;
+  uint64 slot_duration = 10;
+  uint64 max_proposal_size = 11;
+  Rational mpc_threshold = 12;
+  Rational heavy_delegation_threshold = 13;
+  Rational update_proposal_threshold = 14;
+  Rational softfork_init_threshold = 15;
+  Rational softfork_decrement = 16;
+  uint64 unlock_stake_epoch = 17;
 }
 
 message Pots {
@@ -235,6 +247,8 @@ message PParamProposal {
   uint64 target_epoch = 2;
   // ProtocolParamUpdate CBOR.
   bytes update = 3;
+  // Slot of the block that carried the proposal. Zero where unused.
+  uint64 added_slot = 4;
 }
 
 // LedgerState is the ledger as tables. Requests fill only the tables the
@@ -278,6 +292,9 @@ message LedgerDelta {
   EnactState enact_state_after = 19;
   // Set when protocol parameters changed; full new parameters.
   ProtocolParameters pparams_after = 20;
+  // Pre-Conway update proposals added or replaced, by genesis key and target
+  // epoch. added_slot is zero: the reference does not keep it.
+  repeated PParamProposal pparam_proposals_changed = 21;
 }
 
 enum SnapshotKind {

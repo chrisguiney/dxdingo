@@ -1,0 +1,8 @@
+# reacquire the volatile tip
+net_codec_local_state_query: {
+  codec: {
+    version: 32791
+    state: "StAcquired"
+    message: "\x81\t"
+  }
+}

@@ -1,0 +1,440 @@
+# the same pools for a one-ADA delegator
+rewards_non_myopic:  {
+  pparams:  {
+    n_opt:  5
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+  }
+  total_stake:  34000000000000000
+  reward_pot:  7000000000000
+  pools:  {
+    pool_id:  "                            "
+    pledge:  1000000000000
+    cost:  340000000
+    margin:  {
+      numerator:  "0"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    pledge:  1400000000000
+    cost:  370000000
+    margin:  {
+      numerator:  "1"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    pledge:  1800000000000
+    cost:  400000000
+    margin:  {
+      numerator:  "2"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "############################"
+    pledge:  2200000000000
+    cost:  430000000
+    margin:  {
+      numerator:  "3"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    pledge:  2600000000000
+    cost:  460000000
+    margin:  {
+      numerator:  "4"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    pledge:  3000000000000
+    cost:  490000000
+    margin:  {
+      numerator:  "5"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+    pledge:  3400000000000
+    cost:  520000000
+    margin:  {
+      numerator:  "0"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "''''''''''''''''''''''''''''"
+    pledge:  3800000000000
+    cost:  550000000
+    margin:  {
+      numerator:  "1"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "(((((((((((((((((((((((((((("
+    pledge:  4200000000000
+    cost:  580000000
+    margin:  {
+      numerator:  "2"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "))))))))))))))))))))))))))))"
+    pledge:  4600000000000
+    cost:  610000000
+    margin:  {
+      numerator:  "3"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "****************************"
+    pledge:  5000000000000
+    cost:  640000000
+    margin:  {
+      numerator:  "4"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "++++++++++++++++++++++++++++"
+    pledge:  5400000000000
+    cost:  670000000
+    margin:  {
+      numerator:  "5"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+    pledge:  5800000000000
+    cost:  700000000
+    margin:  {
+      numerator:  "0"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "----------------------------"
+    pledge:  6200000000000
+    cost:  730000000
+    margin:  {
+      numerator:  "1"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "............................"
+    pledge:  6600000000000
+    cost:  760000000
+    margin:  {
+      numerator:  "2"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pools:  {
+    pool_id:  "////////////////////////////"
+    pledge:  7000000000000
+    cost:  790000000
+    margin:  {
+      numerator:  "3"
+      denominator:  "100"
+    }
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee"
+    }
+  }
+  pool_distribution:  {
+    pool_id:  "                            "
+    stake:  60000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    stake:  69000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    stake:  78000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "############################"
+    stake:  87000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    stake:  96000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    stake:  105000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+    stake:  114000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "''''''''''''''''''''''''''''"
+    stake:  123000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "(((((((((((((((((((((((((((("
+    stake:  132000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "))))))))))))))))))))))))))))"
+    stake:  141000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "****************************"
+    stake:  150000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "++++++++++++++++++++++++++++"
+    stake:  159000000000000
+  }
+  pool_distribution:  {
+    pool_id:  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+    stake:  168000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "----------------------------"
+    stake:  177000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "............................"
+    stake:  186000000000000
+  }
+  pool_distribution:  {
+    pool_id:  "////////////////////////////"
+    stake:  195000000000000
+  }
+  performance:  {
+    pool_id:  "                            "
+    performance:  {
+      numerator:  "5"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    performance:  {
+      numerator:  "6"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    performance:  {
+      numerator:  "7"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "############################"
+    performance:  {
+      numerator:  "8"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    performance:  {
+      numerator:  "6"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+    performance:  {
+      numerator:  "7"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "''''''''''''''''''''''''''''"
+    performance:  {
+      numerator:  "8"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "(((((((((((((((((((((((((((("
+    performance:  {
+      numerator:  "5"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "****************************"
+    performance:  {
+      numerator:  "7"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "++++++++++++++++++++++++++++"
+    performance:  {
+      numerator:  "8"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+    performance:  {
+      numerator:  "5"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "----------------------------"
+    performance:  {
+      numerator:  "6"
+      denominator:  "7"
+    }
+  }
+  performance:  {
+    pool_id:  "////////////////////////////"
+    performance:  {
+      numerator:  "8"
+      denominator:  "7"
+    }
+  }
+  member_stake:  1000000
+  owner_stake:  {
+    pool_id:  "                            "
+    amount:  1500000000000
+  }
+  owner_stake:  {
+    pool_id:  "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    amount:  1900000000000
+  }
+  owner_stake:  {
+    pool_id:  "\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""
+    amount:  2300000000000
+  }
+  owner_stake:  {
+    pool_id:  "############################"
+    amount:  2700000000000
+  }
+  owner_stake:  {
+    pool_id:  "$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
+    amount:  3100000000000
+  }
+  owner_stake:  {
+    pool_id:  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+    amount:  3500000000000
+  }
+  owner_stake:  {
+    pool_id:  "&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+    amount:  3900000000000
+  }
+  owner_stake:  {
+    pool_id:  "''''''''''''''''''''''''''''"
+    amount:  4300000000000
+  }
+  owner_stake:  {
+    pool_id:  "(((((((((((((((((((((((((((("
+    amount:  4700000000000
+  }
+  owner_stake:  {
+    pool_id:  "))))))))))))))))))))))))))))"
+    amount:  5100000000000
+  }
+  owner_stake:  {
+    pool_id:  "****************************"
+    amount:  5500000000000
+  }
+  owner_stake:  {
+    pool_id:  "++++++++++++++++++++++++++++"
+    amount:  5900000000000
+  }
+  owner_stake:  {
+    pool_id:  ",,,,,,,,,,,,,,,,,,,,,,,,,,,,"
+    amount:  6300000000000
+  }
+  owner_stake:  {
+    pool_id:  "----------------------------"
+    amount:  6700000000000
+  }
+  owner_stake:  {
+    pool_id:  "............................"
+    amount:  7100000000000
+  }
+  owner_stake:  {
+    pool_id:  "////////////////////////////"
+    amount:  7500000000000
+  }
+}

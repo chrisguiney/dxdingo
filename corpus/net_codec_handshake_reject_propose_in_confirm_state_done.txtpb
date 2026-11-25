@@ -1,0 +1,8 @@
+# StDone has no agency
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StDone"
+    message: "\x83\x01\x0e\x84\x1a-\x96J\t\xf4\x00\xf4"
+  }
+}

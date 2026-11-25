@@ -1,0 +1,6 @@
+# as codec_ledger_state_mempack_ada_only, an output of a ledger vector (TestDivergenceMempackTxOutIsMapFormat)
+codec_ledger_state: {
+  era: ERA_CONWAY
+  format: LEDGER_STATE_FORMAT_MEMPACK_TXOUT
+  cbor: "\x00\x1d`qK\x04A2\xf2C\xb1\xbbbQ&hJBrL\xba\xea\xd9\xe9|'\xb4\xfe\xc4hY\x00\x8e\xa7\x87\x00"
+}

@@ -1,0 +1,8 @@
+# server begins a batch
+net_codec_block_fetch: {
+  codec: {
+    version: 14
+    state: "BFBusy"
+    message: "\x81\x02"
+  }
+}

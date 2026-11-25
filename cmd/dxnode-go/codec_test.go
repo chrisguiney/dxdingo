@@ -92,7 +92,6 @@ func TestCodecTx(t *testing.T) {
 		mustReject(t, got.GetRejection(), name)
 	}
 	for name, req := range map[string]*v1.CodecTxRequest{
-		"byron":                {Era: v1.Era_ERA_BYRON, Cbor: unhex(t, minimalConwayTx)},
 		"version outside era":  {Era: v1.Era_ERA_CONWAY, ProtocolVersion: &v1.ProtocolVersion{Major: 5}, Cbor: unhex(t, minimalConwayTx)},
 		"version inside era":   nil,
 		"version above Conway": {Era: v1.Era_ERA_CONWAY, ProtocolVersion: &v1.ProtocolVersion{Major: 12}, Cbor: unhex(t, minimalConwayTx)},

@@ -1,0 +1,86 @@
+# ledger tx 0 of the babbage mainnet block: max_tx_size below the transaction size
+rule_ledger:  {
+  context:  {
+    era:  ERA_BABBAGE
+    protocol_version:  {
+      major:  8
+    }
+    slot:  76207494
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  100
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    protocol_version:  {
+      major:  8
+    }
+    min_pool_cost:  170000000
+    coins_per_utxo_byte:  4310
+    price_mem:  {
+      numerator:  "577"
+      denominator:  "10000"
+    }
+    price_steps:  {
+      numerator:  "721"
+      denominator:  "10000000"
+    }
+    max_tx_ex_mem:  14000000
+    max_tx_ex_steps:  10000000000
+    max_block_ex_mem:  62000000
+    max_block_ex_steps:  20000000000
+    max_value_size:  5000
+    collateral_percentage:  150
+    max_collateral_inputs:  3
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "a\n7JA\xa1Ba\xb0\xb4\xa0\xb6RcA\xaf\xae\xe7(\xe4*\xc8\x1f\x83\xfd3\x01\x82\x9b\xc4-\\"
+        index:  1
+      }
+      txout:  "\xa2\x00X\x1da\xd2L\xab\xa5\xd7\xc0!\x1a'h#\xf37ł\x15\x0eW\x00\n\xa3\x17.\xcbh-kv\x01\x82\x1a\x01\xdel\"\xa4X\x1cp,\xbd\xb0j\x81\xef/\xa4\xf8_\x9e2\x15\x9c\x03\xf5\x02S\x9dv*q\x19O\xc1\x1e\xb3\xbfX\x19AdventurerOfThiolden10543\x01X\x19AdventurerOfThiolden10648\x01X\x19AdventurerOfThiolden10672\x01X\x19AdventurerOfThiolden11846\x01X\x19AdventurerOfThiolden12008\x01X\x19AdventurerOfThiolden12294\x01X\x19AdventurerOfThiolden12322\x01X\x19AdventurerOfThiolden12928\x01X\x19AdventurerOfThiolden13024\x01X\x19AdventurerOfThiolden13412\x01X\x19AdventurerOfThiolden13674\x01X\x19AdventurerOfThiolden14293\x01X\x19AdventurerOfThiolden14825\x01X\x19AdventurerOfThiolden15123\x01X\x19AdventurerOfThiolden15825\x01X\x19AdventurerOfThiolden15915\x01X\x19AdventurerOfThiolden16048\x01X\x19AdventurerOfThiolden16483\x01X\x19AdventurerOfThiolden16585\x01X\x19AdventurerOfThiolden16670\x01X\x19AdventurerOfThiolden16745\x01X\x19AdventurerOfThiolden16814\x01X\x19AdventurerOfThiolden16924\x01X\x19AdventurerOfThiolden17258\x01X\x19AdventurerOfThiolden17395\x01X\x19AdventurerOfThiolden17425\x01X\x19AdventurerOfThiolden17524\x01X\x19AdventurerOfThiolden17757\x01X\x19AdventurerOfThiolden17875\x01X\x19AdventurerOfThiolden18333\x01X\x19AdventurerOfThiolden18642\x01X\x19AdventurerOfThiolden18935\x01X\x19AdventurerOfThiolden19278\x01X\x19AdventurerOfThiolden20066\x01X\x19AdventurerOfThiolden20362\x01X\x19AdventurerOfThiolden20506\x01X\x19AdventurerOfThiolden20982\x01X\x18AdventurerOfThiolden2164\x01X\x19AdventurerOfThiolden22827\x01X\x19AdventurerOfThiolden23106\x01X\x19AdventurerOfThiolden23833\x01X\x19AdventurerOfThiolden24010\x01X\x19AdventurerOfThiolden24140\x01X\x19AdventurerOfThiolden24178\x01X\x19AdventurerOfThiolden24562\x01X\x19AdventurerOfThiolden24673\x01X\x18AdventurerOfThiolden2512\x01X\x18AdventurerOfThiolden3447\x01X\x18AdventurerOfThiolden3675\x01X\x18AdventurerOfThiolden4084\x01X\x18AdventurerOfThiolden4666\x01X\x18AdventurerOfThiolden5866\x01X\x18AdventurerOfThiolden7130\x01X\x18AdventurerOfThiolden7235\x01X\x18AdventurerOfThiolden8004\x01X\x18AdventurerOfThiolden8185\x01X\x18AdventurerOfThiolden8381\x01WAdventurerOfThiolden868\x01\xffX\x1c\x95٩\x8c/y\x99\xa3\xd5\xe0\xf4ו\xcb\x133\x83|\t\xeb\x0f$\x83\\\xd2ΕL\xb2X\x19GrandmasterAdventurer2308\x01X\x19GrandmasterAdventurer2343\x01X\x19GrandmasterAdventurer2412\x01X\x19GrandmasterAdventurer2681\x01X\x19GrandmasterAdventurer2740\x01X\x19GrandmasterAdventurer3131\x01X\x19GrandmasterAdventurer3476\x01X\x19GrandmasterAdventurer4277\x01X\x18GrandmasterAdventurer447\x01X\x19GrandmasterAdventurer5548\x01X\x19GrandmasterAdventurer6050\x01X\x19GrandmasterAdventurer6274\x01X\x19GrandmasterAdventurer6731\x01X\x19GrandmasterAdventurer6810\x01X\x19GrandmasterAdventurer7065\x01X\x18GrandmasterAdventurer721\x01X\x19GrandmasterAdventurer8676\x01X\x19GrandmasterAdventurer8681\x01X\x1c\xf0\xffH\xbb\xb7\xbb\xe9՚@\xf1ΐ\xe9\xe9\xd0\xffP\x02\xecH\xf22\xb4\x9c\xa0\xfb\x9a\xa1Ldragonwallet\x01X\x1c\xf4\x98\x8fT\x97(\xdcv\xb5\x8dvw\x84\x94C\xca\xf6\xe58]\xc6~l%\xf6\xaa\x90\x1e\xa4JPixelTile1\x01KPixelTile42\x02KPixelTile57\x01KPixelTile58\x01"
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x84\xa7\x00\x81\x82X a\n7JA\xa1Ba\xb0\xb4\xa0\xb6RcA\xaf\xae\xe7(\xe4*\xc8\x1f\x83\xfd3\x01\x82\x9b\xc4-\\\x01\x01\x82\x83X9\x11\x90h\xa7\xa3\xf0\x08\x80>\xda\xc8z\xf1a\x98`\xf2\xcd\xcd\xe4\x0c&\x98s%\xac\xe18\xad\x81r\x8e~\xd4\xcf2N\x13#\x13^~m\x93\x1f\x01\xe3\x07\x92\xd9\xcd\xf1q)ˀm\x82\x1a\x00\x15\x0b\x80\xa1X\x1cp,\xbd\xb0j\x81\xef/\xa4\xf8_\x9e2\x15\x9c\x03\xf5\x02S\x9dv*q\x19O\xc1\x1e\xb3\xa1X\x19AdventurerOfThiolden13674\x01X \xf6\xc8}\xa3~\x98\xeeA\x96\xf2A\xa0?QA\x000@\xd3\x03e\x18)M\xf6:h\xc8,\xbd\x91\xad\x82X9\x01\xd2L\xab\xa5\xd7\xc0!\x1a'h#\xf37ł\x15\x0eW\x00\n\xa3\x17.\xcbh-kv\x03UY\xf3hWɚ\xe4\x14q\xb6\x8d\xf4\xb0T\x89\x93\x96\xe4j\xb7\x83~\x04\xabi\xb8\x82\x1a\x01ĳ\xa1\xa4X\x1cp,\xbd\xb0j\x81\xef/\xa4\xf8_\x9e2\x15\x9c\x03\xf5\x02S\x9dv*q\x19O\xc1\x1e\xb3\xb89WAdventurerOfThiolden868\x01X\x18AdventurerOfThiolden2164\x01X\x18AdventurerOfThiolden2512\x01X\x18AdventurerOfThiolden3447\x01X\x18AdventurerOfThiolden3675\x01X\x18AdventurerOfThiolden4084\x01X\x18AdventurerOfThiolden4666\x01X\x18AdventurerOfThiolden5866\x01X\x18AdventurerOfThiolden7130\x01X\x18AdventurerOfThiolden7235\x01X\x18AdventurerOfThiolden8004\x01X\x18AdventurerOfThiolden8185\x01X\x18AdventurerOfThiolden8381\x01X\x19AdventurerOfThiolden10543\x01X\x19AdventurerOfThiolden10648\x01X\x19AdventurerOfThiolden10672\x01X\x19AdventurerOfThiolden11846\x01X\x19AdventurerOfThiolden12008\x01X\x19AdventurerOfThiolden12294\x01X\x19AdventurerOfThiolden12322\x01X\x19AdventurerOfThiolden12928\x01X\x19AdventurerOfThiolden13024\x01X\x19AdventurerOfThiolden13412\x01X\x19AdventurerOfThiolden14293\x01X\x19AdventurerOfThiolden14825\x01X\x19AdventurerOfThiolden15123\x01X\x19AdventurerOfThiolden15825\x01X\x19AdventurerOfThiolden15915\x01X\x19AdventurerOfThiolden16048\x01X\x19AdventurerOfThiolden16483\x01X\x19AdventurerOfThiolden16585\x01X\x19AdventurerOfThiolden16670\x01X\x19AdventurerOfThiolden16745\x01X\x19AdventurerOfThiolden16814\x01X\x19AdventurerOfThiolden16924\x01X\x19AdventurerOfThiolden17258\x01X\x19AdventurerOfThiolden17395\x01X\x19AdventurerOfThiolden17425\x01X\x19AdventurerOfThiolden17524\x01X\x19AdventurerOfThiolden17757\x01X\x19AdventurerOfThiolden17875\x01X\x19AdventurerOfThiolden18333\x01X\x19AdventurerOfThiolden18642\x01X\x19AdventurerOfThiolden18935\x01X\x19AdventurerOfThiolden19278\x01X\x19AdventurerOfThiolden20066\x01X\x19AdventurerOfThiolden20362\x01X\x19AdventurerOfThiolden20506\x01X\x19AdventurerOfThiolden20982\x01X\x19AdventurerOfThiolden22827\x01X\x19AdventurerOfThiolden23106\x01X\x19AdventurerOfThiolden23833\x01X\x19AdventurerOfThiolden24010\x01X\x19AdventurerOfThiolden24140\x01X\x19AdventurerOfThiolden24178\x01X\x19AdventurerOfThiolden24562\x01X\x19AdventurerOfThiolden24673\x01X\x1c\x95٩\x8c/y\x99\xa3\xd5\xe0\xf4ו\xcb\x133\x83|\t\xeb\x0f$\x83\\\xd2ΕL\xb2X\x18GrandmasterAdventurer447\x01X\x18GrandmasterAdventurer721\x01X\x19GrandmasterAdventurer2308\x01X\x19GrandmasterAdventurer2343\x01X\x19GrandmasterAdventurer2412\x01X\x19GrandmasterAdventurer2681\x01X\x19GrandmasterAdventurer2740\x01X\x19GrandmasterAdventurer3131\x01X\x19GrandmasterAdventurer3476\x01X\x19GrandmasterAdventurer4277\x01X\x19GrandmasterAdventurer5548\x01X\x19GrandmasterAdventurer6050\x01X\x19GrandmasterAdventurer6274\x01X\x19GrandmasterAdventurer6731\x01X\x19GrandmasterAdventurer6810\x01X\x19GrandmasterAdventurer7065\x01X\x19GrandmasterAdventurer8676\x01X\x19GrandmasterAdventurer8681\x01X\x1c\xf0\xffH\xbb\xb7\xbb\xe9՚@\xf1ΐ\xe9\xe9\xd0\xffP\x02\xecH\xf22\xb4\x9c\xa0\xfb\x9a\xa1Ldragonwallet\x01X\x1c\xf4\x98\x8fT\x97(\xdcv\xb5\x8dvw\x84\x94C\xca\xf6\xe58]\xc6~l%\xf6\xaa\x90\x1e\xa4JPixelTile1\x01KPixelTile42\x02KPixelTile57\x01KPixelTile58\x01\x02\x1a\x00\x04\xad\x01\x03\x1a\x04\x8aՇ\x07X \xed\xba\x045\x97\xfdd\xb8\xcf$\xdb6\xd4\xfe܁\xeaf8\xfb\x00q\xafa\xc0Ԛ04\xbfݴ\x08\x1a\x04\x8a\xca\xfb\x0e\x81X\x1c\xd2L\xab\xa5\xd7\xc0!\x1a'h#\xf37ł\x15\x0eW\x00\n\xa3\x17.\xcbh-kv\xa1\x00\x81\x82X  \n\x12\xe8(?^\xb9Œ\x15~jC\xb1d\x87\x14ږ\xe3\x99\":.\x07D\x8b);\xe99X@\xa6D\x82\xe2\xe2b\xc6u\xa6.\xd8΃\xe0M!%)g\xceIL\x83V\xba6\xa7\xfb\x87\x83QoL!=\x8c\x9a\x86\xcfgn<YS(\xf6\xces\\\xb8\x92)\xdc4\x04\x80\xe1\xcf>\x17\xaf\x9c\xbc\x0e\xf5\xac\x00x@d8799f581cd24caba5d7c0211a276823f337c582150e57000aa3172ecb682d6b\x01x@769fd8799fd8799fd8799f581c1ce77a40447287c382d03fb2c1761b73d8fe45\x02x@4a7511ffdcd8b9543bffd8799fd8799fd8799f581c91eee2cf280f6097da6f63\x03x@c3e7f1a8c931a0a4d0f2f640357e86daeeffffffffa140d8799f00a1401a0016\x04x@e360ffffd8799fd8799fd8799f581c70e60f3b5ea7153e0acc7a803e4401d44b\x05x@8ed1bae1c7baaad1a62a72ffd8799fd8799fd8799f581c1e78aae7c90cc36d62\x06x@4f7b3bb6d86b52696dc84e490f343eba89005fffffffffa140d8799f00a1401a\x07x@000f1b30ffffd8799fd8799fd8799f581cd24caba5d7c0211a276823f337c582\x08x@150e57000aa3172ecb682d6b76ffd8799fd8799fd8799f581c035559f36857c9\tx@9ae41471b68df4b054899396e46ab7837e04ab69b8ffffffffa140d8799f00a1\nt401a01a3c4f0ffffffff\x18\x1ea4"
+}

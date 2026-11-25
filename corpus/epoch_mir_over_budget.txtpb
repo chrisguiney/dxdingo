@@ -1,0 +1,20 @@
+# reserves cannot cover the total: the whole boundary is a no-op, transfer included
+epoch_mir:  {
+  protocol_version:  {
+    major:  6
+  }
+  reserves:  100
+  mir:  {
+    source:  MIR_SOURCE_RESERVES
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    amount:  150
+  }
+  reserves_to_treasury:  10
+  registered:  {
+    kind:  CREDENTIAL_KIND_KEY
+    hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  }
+}

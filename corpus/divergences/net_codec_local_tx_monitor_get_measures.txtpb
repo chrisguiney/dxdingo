@@ -1,0 +1,8 @@
+# MsgGetMeasures is tag 11
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32791
+    state: "StAcquired"
+    message: "\x81\x0b"
+  }
+}

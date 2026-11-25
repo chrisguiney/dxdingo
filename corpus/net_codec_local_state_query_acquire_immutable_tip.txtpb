@@ -1,0 +1,8 @@
+# acquiring the immutable tip needs version 16
+net_codec_local_state_query: {
+  codec: {
+    version: 32784
+    state: "StIdle"
+    message: "\x81\n"
+  }
+}

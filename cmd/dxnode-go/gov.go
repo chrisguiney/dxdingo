@@ -25,6 +25,9 @@ func registerGov(r *dispatch.Registry) {
 	dispatch.Register(r, govCommitteeQuorum)
 	dispatch.Register(r, govProposalTree)
 	dispatch.Register(r, govDRepExpiry)
+	dispatch.Register(r, govRatify)
+	dispatch.Register(r, govEnact)
+	dispatch.Register(r, govProposalExpiry)
 }
 
 func ratOrNil(r *big.Rat) *v1.Rational {
@@ -37,7 +40,7 @@ func ratOrNil(r *big.Rat) *v1.Rational {
 // govThresholds maps to dingo's threshold entry points. The committee entry
 // is unset when the committee does not vote on the action or cannot approve
 // it.
-func govThresholds(_ context.Context, req *v1.GovThresholdsRequest) (*v1.GovThresholdsResponse, error) {
+func govThresholds(ctx context.Context, req *v1.GovThresholdsRequest) (*v1.GovThresholdsResponse, error) {
 	action, err := decodeGovAction(req.GetAction())
 	if err != nil {
 		return nil, err
@@ -65,7 +68,11 @@ func govThresholds(_ context.Context, req *v1.GovThresholdsRequest) (*v1.GovThre
 	}
 	active := 0
 	if committee != nil {
-		active = len(committee.hot)
+		state, err := committee.votingState(ctx)
+		if err != nil {
+			return nil, err
+		}
+		active = state.ActiveMemberCount
 	}
 	cc := governance.CommitteeRequirement(
 		actionType, major, !present, false, active, pp.MinCommitteeSize, quorum,
@@ -259,23 +266,8 @@ func govDRepRatio(_ context.Context, req *v1.GovDRepRatioRequest) (*v1.GovDRepRa
 	return &v1.GovDRepRatioResponse{Ratio: convert.RatProto(tally.DRepYesRatio())}, nil
 }
 
-// votingState is dingo's committee voting view of c.
-func (c *govCommittee) votingState() *governance.CommitteeVotingState {
-	state := &governance.CommitteeVotingState{
-		CommitteePresent:      true,
-		ActiveMemberCount:     len(c.hot),
-		HotCredentialPresence: map[string]struct{}{},
-	}
-	for _, h := range c.hot {
-		key := models.CommitteeCredential{CredentialTag: h.tag, Credential: h.hash}.Key()
-		state.MemberHotCredentials = append(state.MemberHotCredentials, key)
-		state.HotCredentialPresence[key] = struct{}{}
-	}
-	return state
-}
-
 // govCommitteeRatio maps to governance.TallyCCVotes and CCYesRatio.
-func govCommitteeRatio(_ context.Context, req *v1.GovCommitteeRatioRequest) (*v1.GovCommitteeRatioResponse, error) {
+func govCommitteeRatio(ctx context.Context, req *v1.GovCommitteeRatioRequest) (*v1.GovCommitteeRatioResponse, error) {
 	committee, err := decodeCommittee(req.GetCommittee(), req.GetEpoch())
 	if err != nil {
 		return nil, err
@@ -287,7 +279,9 @@ func govCommitteeRatio(_ context.Context, req *v1.GovCommitteeRatioRequest) (*v1
 	tally := &governance.ProposalTally{}
 	state := &governance.CommitteeVotingState{}
 	if committee != nil {
-		state = committee.votingState()
+		if state, err = committee.votingState(ctx); err != nil {
+			return nil, err
+		}
 	}
 	if err := governance.TallyCCVotes(state, votes, tally); err != nil {
 		return &v1.GovCommitteeRatioResponse{Rejection: dingoRejection("RATIFY", err)}, nil
@@ -297,7 +291,7 @@ func govCommitteeRatio(_ context.Context, req *v1.GovCommitteeRatioRequest) (*v1
 
 // govCommitteeQuorum maps to governance.CommitteeRequirement for an action
 // that needs committee approval.
-func govCommitteeQuorum(_ context.Context, req *v1.GovCommitteeQuorumRequest) (*v1.GovCommitteeQuorumResponse, error) {
+func govCommitteeQuorum(ctx context.Context, req *v1.GovCommitteeQuorumRequest) (*v1.GovCommitteeQuorumResponse, error) {
 	pp, err := govPParams(req.GetPparams(), req.GetProtocolVersion())
 	if err != nil {
 		return nil, err
@@ -309,7 +303,11 @@ func govCommitteeQuorum(_ context.Context, req *v1.GovCommitteeQuorumRequest) (*
 	var quorum *big.Rat
 	active := 0
 	if committee != nil {
-		quorum, active = committee.quorum, len(committee.hot)
+		state, err := committee.votingState(ctx)
+		if err != nil {
+			return nil, err
+		}
+		quorum, active = committee.quorum, state.ActiveMemberCount
 	}
 	cc := governance.CommitteeRequirement(
 		lcommon.GovActionTypeTreasuryWithdrawal, pp.ProtocolVersion.Major, committee == nil, false, active, pp.MinCommitteeSize, quorum,

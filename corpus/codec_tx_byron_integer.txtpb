@@ -1,0 +1,5 @@
+# an integer is no transaction
+codec_tx: {
+  era: ERA_BYRON
+  cbor: "\x01"
+}

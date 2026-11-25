@@ -1,0 +1,8 @@
+# server returns a Babbage transaction
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StBusyNextTx"
+    message: "\x82\x06\x82\x05\xd8\x18K\x84\xa3\x00\x80\x01\x80\x02\x00\xa0\xf5\xf6"
+  }
+}

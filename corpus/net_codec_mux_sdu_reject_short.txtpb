@@ -1,0 +1,4 @@
+# seven bytes
+net_codec_mux_sdu: {
+  header: "\x00\x00\x00\x01\x00\x02\x00"
+}

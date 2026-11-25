@@ -1,0 +1,5 @@
+# real mainnet output [address, [coin, {}]]: the reference rejects the empty multi-asset in Dijkstra, gouroboros keeps it (TestDivergenceCodecOutputKeepsWireBytes)
+codec_tx_output: {
+  era: ERA_DIJKSTRA
+  cbor: "\x82X9\x01\xa8\x99\xbcDwie\xfc\x83\xd8\xd2ŭ\xa9_\"Ў\xf6\xde\x17\xbf\x12\xb5X\xab\x9fV\xb2\x97ݓ+\xa1\t\xc0\x92\x87\xb4\xdf0\xef=\xd2\xc3\xf6H\x0b7\xae\xee\xc1\xfa \xd3?\x82\x1a\x1a\x1e\x85(\xa0"
+}

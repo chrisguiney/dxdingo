@@ -1,0 +1,8 @@
+# local tx monitor is node-to-client only
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x81\x01"
+  }
+}

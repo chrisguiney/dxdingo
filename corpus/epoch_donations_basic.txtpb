@@ -1,0 +1,5 @@
+# treasury plus donations
+epoch_donations:  {
+  treasury:  1000000
+  donations:  234000
+}

@@ -1,0 +1,6 @@
+# server answers
+net_agency: {
+  protocol: MINI_PROTOCOL_KEEP_ALIVE
+  state: "StClient"
+  message_type: "MsgKeepAlive"
+}

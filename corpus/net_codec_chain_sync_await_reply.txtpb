@@ -1,0 +1,8 @@
+# server message in StCanAwait
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StCanAwait"
+    message: "\x81\x01"
+  }
+}

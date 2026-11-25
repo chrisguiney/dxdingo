@@ -1,0 +1,6 @@
+# accept is a server message
+net_agency: {
+  protocol: MINI_PROTOCOL_HANDSHAKE
+  state: "StPropose"
+  message_type: "MsgAcceptVersion"
+}

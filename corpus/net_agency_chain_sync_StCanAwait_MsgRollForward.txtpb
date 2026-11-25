@@ -1,0 +1,6 @@
+# server answers at once
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StCanAwait"
+  message_type: "MsgRollForward"
+}

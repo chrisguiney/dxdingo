@@ -1,0 +1,8 @@
+# RequestNext with an item
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x82\x00\x01"
+  }
+}

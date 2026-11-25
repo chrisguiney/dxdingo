@@ -8,14 +8,16 @@ import Cardano.Ledger.BaseTypes (Nonce (..), (⭒))
 import qualified Data.ByteString as BS
 import Data.Bits (xor)
 import Data.Char (digitToInt)
+import Data.List (sort)
+import Data.Text (Text)
 import Data.Word (Word32, Word64)
 import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import Lens.Micro ((&), (.~), (^.))
-import Proto.Dxdingo.V1.Envelope (HarnessErrorCode (..))
-import Proto.Dxdingo.V1.Praos (OverlaySlotKind (..))
+import Proto.Dxdingo.V1.Envelope (HarnessErrorCode (..), Reply)
+import Proto.Dxdingo.V1.Praos (EnvelopeTip, OverlaySlotKind (..))
 import qualified Proto.Dxdingo.V1.State as S
-import Proto.Dxdingo.V1.Types (Era (..))
+import Proto.Dxdingo.V1.Types (Era (..), Rejection)
 import Test.Util
 
 tests :: [Check]
@@ -95,6 +97,9 @@ tests =
   , ("nonce candidate: conway before the cutoff", cand ERA_CONWAY 1 == (head epr, head epr))
   , ("nonce candidate: slot outside the epoch is UNSUPPORTED", errCode (call (#praosNonceCandidate .~ candReq ERA_CONWAY [(1100, BS.replicate 64 1)])) == HARNESS_ERROR_CODE_UNSUPPORTED)
   ]
+    ++ concatMap tpraosChecks tpraosHeaders
+    ++ overlayChecks
+    ++ positionChecks
   where
     a = BS.replicate 32 0xaa
     b = BS.replicate 32 0xbb
@@ -136,14 +141,12 @@ tests =
     failName rej = case rej ^. #failures of
       [f] -> f ^. #name
       _ -> ""
-    errCode r = r ^. #error . #code
     vrf nonce keyHash =
       call (#praosVrfCheck .~ (defMessage & #era .~ ERA_CONWAY & #header .~ conwayA & #epochNonce . #hash .~ nonce & #poolVrfKeyHash .~ keyHash))
     vrfRes = vrf (unhex eta0Hex) (unhex vrfKeyHashHex)
     vrfOk = failName (vrfRes ^. #praosVrfCheck . #rejection) == ""
     kes hdr spkp maxEvo =
       call (#praosKesCheck .~ (defMessage & #era .~ ERA_BABBAGE & #header .~ hdr & #slotsPerKesPeriod .~ spkp & #maxKesEvolutions .~ maxEvo))
-    flipAt i bs = BS.take i bs <> BS.singleton (BS.index bs i `xor` 1) <> BS.drop (i + 1) bs
     opName last' reg =
       let r = call (#praosOpcertCheck .~ (defMessage & #protocolVersion .~ (defMessage & #major .~ 10) & #header .~ conwayA
                 & #maybe'lastCounter .~ (last' :: Maybe Word64) & #poolRegistered .~ reg & #slotsPerKesPeriod .~ 129600 & #maxKesEvolutions .~ 62))
@@ -176,8 +179,150 @@ tests =
     cand e n =
       let r = call (#praosNonceCandidate .~ candReq e (take n (zip slots outs))) ^. #praosNonceCandidate
        in (r ^. #evolving . #hash, r ^. #candidate . #hash)
-    unhex :: String -> BS.ByteString
-    unhex = BS.pack . go
+
+-- | A TPraos mainnet header and the facts the checks derive from it.
+data TP
+  = TP String Era Word32 BS.ByteString BS.ByteString BS.ByteString BS.ByteString BS.ByteString BS.ByteString BS.ByteString Word64 Word64 Word32 Word32 Word64 Word64 Int Int Int
+
+-- | The TPraos mainnet headers of the gouroboros test data: era, protocol
+-- major version, header, epoch nonce, pool id, VRF key hash, previous hash,
+-- leader value, nonce value, KES evolution at 129600 slots per period, counter,
+-- body size, header size, block number, slot, and the byte offsets of the nonce
+-- proof, the leader proof and the cold signature.
+tpraosHeaders :: [TP]
+tpraosHeaders =
+  [ TP "shelley" ERA_SHELLEY 2 (unhex "828f1a004d4a6f1a00f6892c5820bc4766a289bb5d8ec86647a0aeed5dc3521f43db7a72abef3eed1debbfa9412f5820ddba672a2abc65da47537df8f190ba376512bc0283e731e3934b52f1a0abc1a558206abad5392188997c5e14b9f6e581129ec141cec17d1d2f0cfc1e9192d464716e825840df9856406b92387c9b138ef24a58d8c48a37bf5be8721eaec4702ca98df48edd2678f0a8c722982d354582b5da65d849f72077c880778982f71de60536c3ed4a5850edc5d9f0ea6965edf729548ff7cba2cea82425ceb4e42d1074a726cc9812eb5fcabb4aefa7f049bcc5209edbbe18763a080eb1a0bdfd8fb933a1763813dd3314c229847a880116bee73c97e24130f1058258400009fa6d8e070a89d1ce903f49868682ff8dec52a0756ef60cb99226b36ab781fa8e0fa296b286b964d9cac56517071501716b752dc11636a5f9b8c29193012d58505a32d1a3ce3a8a89f17c73aedbab2c299a52f90fd78adf78fe6b5ac8cfded66ebd6d2fb238a770b6d0f022954f59855138c8ec47dc1021b8b69dabf26592076ffd612d04bfbc8fbcfdaade7d7eda670f19089958204847b0787633b18df8724c920c7cc35172531f2756fe4d6ab17489e019c2c4f358201ee99223a40caf33ca63758235af29c1d53066a423249f5690c8f9e664924dcf00186158404e4b58717c4f894e34c41d5b3d68de6676f78d9a5d719a077e282974cb136bcc6287d3fbf76e175a76edce3eb934afcf7005f5a7cc9204adf14fa9d01c123a0902005901c09b1bb23288fa4ba5f8ad23d00d0d945e89958057c17df6557a37a331867a6ef252a7893bfcf7006e32a614a1ff9787e7af3575cfdeb5054214ded324fa850b090f292bd54599e88bd4efe12b49d520eb7a8e57270dbd532dc567fdb8e5cfc386e1e28c1812734dfcde9dede86845d8e66966089f47b410225886e125942b445f912d70e517d175e9ee6f4de13f0aadf3a16e01911875df1710b49ea063d17228297c9eabf6cf663e7f5f5e58f6e86bfe7117381070c86b42981bcc7d405a49108fdd760f61815e4957ad256136706e94587ccac9ded8f9459b9433d0b6d06df5e3a821a715ee5fd912bb63d26aa1365ddf0dbff435ab42252cb2e9549f41bda074201f824cd48b6dbc8c9d79961b9c7f0cab85caa2bedef282c585ee0cad01b771a48f6740e0115acc27b4a8bb998b0f05de1cfef0b2507cd2f4d65120389fb88513e03c8a1709628faf3e48bb3956de316198ee06d45ce84b218632dd53f3ab0087681c90287c14c37ad76b17bbbeb68bb4924363987355859d6b6098418b2117b01bab13a786555d4e996dff6e1510f2e11070aa9223a229f69f5fd503de22b09052cb6e4f371f8a8858258df1cc5ebde829a8befce981f4fbaae621f8917e") (unhex "829749cb2701843214ae3aee67ae12ec9bdb3502e060ac0b75275d0f52af349c") (unhex "021e8d5d8acd1eecb2c0946a87e09daa4bde370be90413b80eb996d9") (unhex "1832401dbd892da8f6282d8fe52604abc7381aef56a3e4e763f97c036e222ce0") (unhex "bc4766a289bb5d8ec86647a0aeed5dc3521f43db7a72abef3eed1debbfa9412f") (unhex "0009fa6d8e070a89d1ce903f49868682ff8dec52a0756ef60cb99226b36ab781fa8e0fa296b286b964d9cac56517071501716b752dc11636a5f9b8c29193012d") (unhex "9e740e91a348d79d6f5fc88e6c4929ea9d19d38e118cda16f90b90ef79fcdb86") 27 0 2201 1005 5065327 16156972 183 332 488
+  , TP "allegra" ERA_ALLEGRA 3 (unhex "828f1a005280141a015fff9d58206c75ffd5efb79a234d49e9e279be21f7f9b73a5b9db6cd5271f5db00bb8cc1085820e35049a00c155dc46c09d1c2838cda7b8b2bc68f5134fd4be528fc388363d43658200ca8bfb99d223616e305f5839cff11a9c6dc637d2d9a3cda6531be1a842259a7825840bf1d6983a8e3fd881f8ae17fa168957e9fdc1d0d26acc13b2afdf3ff4f212f16f4be0bbf3a6ab4c1ffaff62e8ff4ac76ae3cccb845a73b4460617aa9bc4e4c555850aae23d05e6e52e9241ce52db8f1274a4cbbff19f1d9f854cc072701bb8c640f6fa25ef8132e2e721380051a7ee0cdb91fe9b9cbd30f28f278964462150c328984a88f4a2d3775518b9d106d91484580882584000048a1dfc14dfb36fe05a78fd7d4b15f91ca0c05b79977170ee616147e8d113e42fca6b97816ccb93af5339255d3beb04d2b7767d80e31306018e06bbe406cd58507c6e72d25832f5a30052f1a48fc188624d8b501a2b4178169b59999edfb14b9e50fed1ed8b76ef90d489a9ad4ba6afca79e0c8717e336fc0c3e5e29ddecbed3cb067d74868abc24763be13d1d7d9a70f1914e6582017c0799bb8e4aeb6e106f30b7032af347e1b1cfef38f45edcee333e18256c47c5820d259e09394ecabd3e7de126b4da365afcd556185807ab41db1189781b617490f0118ae584081a2a058d9d036e3e243e0a1b9f989796de96258f6308ecfef8708770f7ac2e746fee8583d962f1a7f2a161ada1daf627340ceb88d32d957990992afbc7d270804005901c0deb4e2adbe562bb76dda9d085fbff084a3da7a48164fc394ce6caae005aee7d80e51767ef329a809abb780c815afadaaf60cb4cc451654a641fe57f03266f40af55307c888af9dd02669af94647d371de1ed688c4e7c84d8f6065dd9dfdcae4d8599ead8bb39d70ce536e760464e07924e5d53dfba388ebe5370cdcb94ac19dedb31f9d48dd8bcda6b4717db02f52ab7cd2a4e92dde744f81dadd35b6c6bd66eb7185b49edb6fb394c74af90ccd5d815249a5546b511e77301051328f4bc39dc0d0c48002f042a9959fee8fcba68c45116eb3fccfd1b0c736069208ed8ff787dc6ae2f665866a8e55d08792591d789ced9860eb52d5642c5ec269551baf0042892edf489e5231904e510db7a5d639b5732999360a61485d800fd0315cf9b3467b8a98dc99e13f9bd587a487e278d2012e5e5a11477fedb80b93f9e62f2816db0fd625f8786dc2e44b9669496b6be1dd46f5b3dadbca2f236ae5fe0aac0528891d27f56ec7837e71a6e9c2d4d66fe2b9758a7734e0ca66bf02059302a9e0620e92431c06ea9642c6b4abdbbd02d84d5e0f69d2fa1b3574796f3df12ffdca65764b1216b0dcc47ac840296ac2c923ec4ba2febafc2ed4c5b183695c0b4b8b59619") (unhex "8d60fab791ae353486f176318d52501dc8f2d1843bfd69492b52ae724d2cb33d") (unhex "b83ec9c4136a2d3cd15cbe691afa7f2437bce3d1240ac6f2c5d0e159") (unhex "e305b2c8902605ebce6b16fc135b1807eaa4114bd815c76519eb527cfb36cfc3") (unhex "6c75ffd5efb79a234d49e9e279be21f7f9b73a5b9db6cd5271f5db00bb8cc108") (unhex "00048a1dfc14dfb36fe05a78fd7d4b15f91ca0c05b79977170ee616147e8d113e42fca6b97816ccb93af5339255d3beb04d2b7767d80e31306018e06bbe406cd") (unhex "4fbfa75375eb235609fc2f67eb10a902a0412966c4135eca8970f0a05ed46d6f") 3 1 5350 1005 5406740 23068573 183 332 488
+  , TP "mary" ERA_MARY 4 (unhex "828f1a005f27931a0261147e582084d910a9b03102f4d5d1cfa175595e0671fa16f9018ff1679750efc3d056e9595820f62edd10f9c922efcc58d7a7e939fc0493c006fff17d1d5789d314d7a43530725820ac6051aab9b68f68871774b599e697a400a98336a23075db99262f1d5e28d17a825840381bc4e03e170f96f0a0d5ff40a5c4544fed7f44d5da0970e5efe7ac6686e74faf7c655349ceab6b2306d5af201d7943e7dd026ca8e8c4d32bd7953566d29f8f585069cf8f936bb4eb58d67a70e9bdfd45cf8f9d85e0dc836347046217a43ea6c79ee10856ad39163490e30033ed57c847024365c85713319c7d1d18e21234d6271615930d4963f42fd280caa450e6d83d0b8258400006ce96fc4c0171d0478eca955a4fba452f93b2c09ffb85fbe78d5f2a40f017bdddd2dec6f11620aa54736226ff7731719ffdab4f0657ef777115559d375df25850c78ceafa9c9cbad538c13219807f2b9867672bbcc665268813025e6cbad72da40288bc4a7e96e29fa441827f801c6f804b121d6f3a99f7b660c2fe44f0ee1d402228ace7a5cfc5362d4de38b52498a0b1910125820867488a75d35cf4c06efb6d214697ad56b0237f956c75cc7e5f1ab89f5acef17582010f60a7519103220ab76085ca89609e229c60a39f200341675ac97c887287d640519010b584030e52646ec81ad60fc8cd7cf1813604dce4d7d9995621a2f5f7ffb82b1f1d2a8c21b18f0e732ac5da76790d2ac5a4da592da4d77708aec67868013e15673ab0b05005901c07ac5ad01d682b2abfcf6d2be5993a0b9d286e9723a853ebd7a64c973a70ed4c48f4bd644f4387ea9685be096df83e17bdb7b64f5f53019aef6b68d1164315b096e2809cdc43c7a3e83e68e49133209a4b035238940cd41a4211cd70ee8a1d289ed0037eeefca1926d48e6fdbe8ad069247b59c27f949656dfa3a7e155d6b704bdc1774fdb215f0680e109f51f2c302432fe8fa431c1e19b3cdcd5765a198d95cb80968b627ef000e5c7bfd836c1ac625fe318390241a2d78e7bf5c516284a5cf3569d3df6581b145d0391f7be2fa1a5f0ec6428f69b9919a46112ce26bc8db1098f1388c7708d3633bf7215fbbab9c1ea6186fc6a8a9016f567e2076a29310d4954230f0f00116b122867db4cdf59cf28b894d2b19dc547815c41b93359588ddb59f493ee86058bfdfa4c4dcbec705c6f8cdfb190ccd4a84381af7e2ad8995533bea20849aedcce82a7d1bb17919a883a9dfcd3bb0a02ebcbb9515d9ef1732097d9dbd0461df19b23640638b14d10142031af9f77e74839ad4f437d2aa8290f8b4b2e510a78c16722f50a2c71a2b9a4d0fc82ad0361d0aa1068f1f2cb8374abc17205e188d3876e6bb496ea123e8bbcf1e4287cb506db3d55013073c9425d4b7") (unhex "b9c6e9073b124c26f89556d2d7fbb99d8047787517c0ed5e4f0d323b480444b5") (unhex "a3ac6ca0694fc5825f831c8d0d97f202c4f298741ae60874730fafb8") (unhex "31247e9eeeebb67a90d1761bd8bc54b0ba8ec4f6bef6f5daa0f37908ed4826b9") (unhex "84d910a9b03102f4d5d1cfa175595e0671fa16f9018ff1679750efc3d056e959") (unhex "0006ce96fc4c0171d0478eca955a4fba452f93b2c09ffb85fbe78d5f2a40f017bdddd2dec6f11620aa54736226ff7731719ffdab4f0657ef777115559d375df2") (unhex "29d8e26b266e0e335d2b9cea85c6a7d7318ca433443044f2411a8acc54597fdb") 40 5 4114 1006 6236051 39916670 183 332 489
+  , TP "alonzo" ERA_ALONZO 5 (unhex "828f1a0076e44f1a044f775f5820f289b983294053fa79e182cc464608c8b0839501aa7f60ead08992446b74ff5a582054a08fb24331f75a0ef1ed4918bdea3f6cc7a943f620f2dfd6fddde7a7b3386e58206d1b4ca9f3e109ac01bba976867c85e50e521df6e44610a7ef63167184adf43b82584041623ec7ed8f02d3fc41494333a1a2e2d920d4ab1052cb43fec4da1c2b0feb95e3eaa96f114ffeb5e0b0ed45dadf5000db0f8b6c56e006a6d9f672f5612ab5345850d0a37a9510d9aaaa2d98dafac2baf544f4d7dfef4982167c7375c9a0279e740a2536f9296d69b848e60578950b52d4062f14c5b79367c4add4cb8ff40d285d01bfe7635bf551a43e545097178d7ac10b825840000065f35d36a8af91cf946b6343b895e7ba1e2ab16fcf5626662ff87ba2bb59f815299db1c4365d03d1b004a0379c154d16e2ddf062b127b0c9a01679674a505850cf97a889d4a9e49e6c0336f1afd076b2ad3a2f24a094a62da33d11eeb4a13e7e549afcef1357dddf9fea024cc68bd93857397aee46df40d203c4082ce34a50582852923308652bd69430f3e0ba7a060a191c5458205054611d3aa3d83caa5409b9ff6283659672298423e4d86938993aa5891b4ac158204d87ad159b4d15510164ee138e6949f96ec33b3b8fb19194f19eca852c2764a90119022358404989cb6f6908f43c0d2939ddfb8b8cb0514b4ade1a741c86acdb8774b53252b7626d780dc08d586f5fc6ff06649e41b835a07d7b8761518584e3f80ed2bec80907025901c009e03bea22014744a96f5d9eac6b1aa40d2a04cc86ac534a3d8c8b3c5c46e8a6dab35fbb580d0e9b7b5b5ec217ad44457a5c392f6f1d2fb660a7664a6d6caf06d25aa9661adc4b0a7115495448176ec8d3c63c19e0949a20407a7b7787107e40e3ccefe0704f09a5871466b197d5aca1866f20502820a2bebe7e36826dbe067e3dd934c1077f14d2f7f602b53a265fd54b73556cc50db813ba710b5a81ece98098c850dc1321ecf64464d6b14d90465a70149b1a03249ac0ec555684da175eee5a12549cec498ff4eb15cc475e8a6429ab35ba88e9d03e4c64a341e7401347ed1d052d04f39577a92afe6768d3093cb2ca76d391deaac18d3253998a636aef7c0b4c7ae46f774e3e17643ce24f4c1c0605c7b5d434a1475e1508efd5f3e0cf649553fe6956b89107e255c23f7fa01d48c2e6641fe28c916dd407d44b7d308622a51c397974c4f46fedea8b259aefdd5d045c3c8a1bd999eb5feae51ad66a62dd357f3915f0706d12b85607f4603cfd196ffba7e3b52950f93e3ca368bb4283e59599bb9a442d1576e0be6f542f81ec9eebb0a5bcb94200d30ce336cf96df9fafdbc32d66c996f7fcb876d7cbbe2ca754ca1669559f917a42de85d600574a073c") (unhex "d932efa15a43b37c7d3389bed5711b1ff4d1038ce9a864cb66d8ed0fe9129852") (unhex "3c81cdc939611c4c4a54aef4a47aa8bb615def8401261726ddcede6b") (unhex "5e1740f5bf5db418c1d975d7b6035c9062757c3b9d35db5ab897ea769d11af2f") (unhex "f289b983294053fa79e182cc464608c8b0839501aa7f60ead08992446b74ff5a") (unhex "000065f35d36a8af91cf946b6343b895e7ba1e2ab16fcf5626662ff87ba2bb59f815299db1c4365d03d1b004a0379c154d16e2ddf062b127b0c9a01679674a50") (unhex "aad2f7b68690f894a6aa84dc89ba2fbd9c3ead00f89d21c263fd114278c4ed38") 10 1 7252 1006 7791695 72316767 183 332 489
+  ]
+
+unhex :: String -> BS.ByteString
+unhex = BS.pack . go
+  where
+    go (x : y : rest) = fromIntegral (digitToInt x * 16 + digitToInt y) : go rest
+    go _ = []
+
+flipAt :: Int -> BS.ByteString -> BS.ByteString
+flipAt i bs = BS.take i bs <> BS.singleton (BS.index bs i `xor` 1) <> BS.drop (i + 1) bs
+
+failNames :: Maybe Rejection -> [Text]
+failNames Nothing = []
+failNames (Just r) = sort [(f ^. #rule) <> "/" <> (f ^. #name) | f <- r ^. #failures]
+
+noRej :: Rejection -> Maybe Rejection
+noRej r = if null (r ^. #failures) then Nothing else Just r
+
+-- | TPraos checks, hand-derived from Rules/OCert.hs and Rules/Overlay.hs. The
+-- certificate is part of the KES-signed header body, so a tampered cold
+-- signature fails both signature checks; OCERT records every failure; the
+-- counter rule has no upper bound.
+tpraosChecks :: TP -> [Check]
+tpraosChecks (TP name era major hdr eta0 pool keyHash _prev leader nonceV evo counter bodySize hdrSize _no _slot nonceIdx leaderIdx coldIdx) =
+  [ (name <> " envelope: at both bounds", envRej hdrSize bodySize == [])
+  , (name <> " envelope: header one over", envRej (hdrSize - 1) bodySize == ["Envelope/HeaderSizeTooLarge"])
+  , (name <> " envelope: body one over", envRej hdrSize (bodySize - 1) == ["Envelope/BlockSizeTooLarge"])
+  , (name <> " kes: evolution", kesRes hdr 129600 62 ^. #praosKesCheck . #kesPeriod == evo && kesNames hdr 129600 62 == [])
+  , (name <> " kes: a bound above the evolution", kesNames hdr 129600 (evo + 1) == [])
+  , (name <> " kes: evolution equals the bound", kesNames hdr 129600 evo == ["OCERT/KESAfterEndOCERT"])
+  , (name <> " kes: tampered cold signature", kesNames (flipAt coldIdx hdr) 129600 62 == ["OCERT/InvalidKesSignatureOCERT", "OCERT/InvalidSignatureOCERT"])
+  , (name <> " kes: tampered KES signature", kesNames (flipAt (BS.length hdr - 1) hdr) 129600 62 == ["OCERT/InvalidKesSignatureOCERT"])
+  , (name <> " kes: window and signatures", kesNames (flipAt (BS.length hdr - 1) (flipAt coldIdx hdr)) 129600 evo == ["OCERT/InvalidKesSignatureOCERT", "OCERT/InvalidSignatureOCERT", "OCERT/KESAfterEndOCERT"])
+  , (name <> " kes: before the start period", kesNames hdr 1000000 62 == ["OCERT/InvalidKesSignatureOCERT", "OCERT/KESBeforeStartOCERT"])
+  , (name <> " opcert: same counter", opNames (Just counter) False False == ([], counter))
+  , (name <> " opcert: unseen registered pool counts from zero", opNames Nothing True False == ([], counter))
+  , (name <> " opcert: unseen genesis delegate counts from zero", opNames Nothing False True == ([], counter))
+  , (name <> " opcert: unseen unregistered", fst (opNames Nothing False False) == ["OCERT/NoCounterForKeyHashOCERT"])
+  , (name <> " opcert: lower than the last", fst (opNames (Just (counter + 1)) True False) == ["OCERT/CounterTooSmallOCERT"])
+  , (name <> " opcert: a skipped counter is allowed", counter == 0 || fst (opNames (Just 0) False False) == [])
+  , (name <> " vrf: valid, leader and nonce values", vrfRes eta0 keyHash Nothing ^. #praosVrfCheck . #leaderValue == leader && vrfRes eta0 keyHash Nothing ^. #praosVrfCheck . #nonceValue == nonceV && vrfNames eta0 keyHash Nothing == [])
+  , (name <> " vrf: wrong key hash", vrfNames eta0 (BS.replicate 32 3) Nothing == ["OVERLAY/VRFKeyWrongVRFKey"])
+  , (name <> " vrf: wrong epoch nonce", vrfNames (BS.replicate 32 1) keyHash Nothing == ["OVERLAY/VRFKeyBadNonce"])
+  , (name <> " vrf: key hash first", vrfNamesH (BS.replicate 32 1) (BS.replicate 32 3) Nothing hdr == ["OVERLAY/VRFKeyWrongVRFKey"])
+  , (name <> " vrf: tampered nonce proof", vrfNamesH eta0 keyHash Nothing (flipAt (nonceIdx + 5) hdr) == ["OVERLAY/VRFKeyBadNonce"])
+  , (name <> " vrf: tampered leader proof", vrfNamesH eta0 keyHash Nothing (flipAt (leaderIdx + 5) hdr) == ["OVERLAY/VRFKeyBadLeaderValue"])
+  , (name <> " vrf: nonce proof before leader proof", vrfNamesH eta0 keyHash Nothing (flipAt (nonceIdx + 5) (flipAt (leaderIdx + 5) hdr)) == ["OVERLAY/VRFKeyBadNonce"])
+  , (name <> " key registered: pool and key hash match", keyRegNames [(pool, keyHash)] == [] && keyRegPool [(pool, keyHash)] == pool)
+  , (name <> " key registered: unknown pool", keyRegNames [(BS.replicate 28 9, keyHash)] == ["OVERLAY/VRFKeyUnknown"])
+  , (name <> " key registered: empty distribution", keyRegNames [] == ["OVERLAY/VRFKeyUnknown"])
+  , (name <> " key registered: wrong key hash", keyRegNames [(pool, BS.replicate 32 1)] == ["OVERLAY/VRFKeyWrongVRFKey"])
+  ]
+  where
+    pp hs bs = defMessage & #maybe'maxBlockHeaderSize .~ Just hs & #maybe'maxBlockBodySize .~ Just bs :: S.ProtocolParameters
+    envRej hs bs = failNames (noRej (call (#praosHeaderEnvelope .~ (defMessage & #era .~ era & #header .~ hdr & #pparams .~ pp hs bs)) ^. #praosHeaderEnvelope . #rejection))
+    kesRes h spkp maxEvo = call (#praosKesCheck .~ (defMessage & #era .~ era & #header .~ h & #slotsPerKesPeriod .~ spkp & #maxKesEvolutions .~ maxEvo))
+    kesNames h spkp maxEvo = failNames (noRej (kesRes h spkp maxEvo ^. #praosKesCheck . #rejection))
+    opNames last' reg gen =
+      let r = call (#praosOpcertCheck .~ (defMessage & #protocolVersion .~ (defMessage & #major .~ major) & #header .~ hdr
+                & #maybe'lastCounter .~ (last' :: Maybe Word64) & #poolRegistered .~ reg & #issuerIsGenesisDelegate .~ gen
+                & #slotsPerKesPeriod .~ 129600 & #maxKesEvolutions .~ 62)) ^. #praosOpcertCheck
+       in (failNames (noRej (r ^. #rejection)), r ^. #newCounter)
+    vrfRes eta k ov = vrfResH eta k ov hdr
+    vrfResH eta k ov h =
+      call (#praosVrfCheck .~ (defMessage & #era .~ era & #header .~ h & #epochNonce . #hash .~ eta & #poolVrfKeyHash .~ k & #maybe'overlay .~ ov))
+    vrfNames eta k ov = vrfNamesH eta k ov hdr
+    vrfNamesH eta k ov h = failNames (noRej (vrfResH eta k ov h ^. #praosVrfCheck . #rejection))
+    keyRegRes dist =
+      call (#praosVrfKeyRegistered .~ (defMessage & #header .~ hdr & #era .~ era
+        & #poolDistribution .~ [defMessage & #poolId .~ pid & #vrfKeyHash .~ vh | (pid, vh) <- dist])) ^. #praosVrfKeyRegistered
+    keyRegNames dist = failNames (noRej (keyRegRes dist ^. #rejection))
+    keyRegPool dist = keyRegRes dist ^. #poolId
+
+-- | OVERLAY in an overlay slot: the shelley header is at slot 16156972, 172972
+-- into a 432000-slot epoch. With d = 1 and f = 1 every slot is an active
+-- overlay slot and the producing key is position mod count of the sorted
+-- genesis keys: 172972 mod 3 = 1, the second of three.
+overlayChecks :: [Check]
+overlayChecks =
+  [ ("overlay vrf: the scheduled delegate", names one one 432000 keys == [])
+  , ("overlay vrf: wrong delegate", names one one 432000 (setAt 1 (#delegateKeyHash .~ BS.replicate 28 0xaa) keys) == ["OVERLAY/WrongGenesisColdKeyOVERLAY"])
+  , ("overlay vrf: wrong VRF key hash", names one one 432000 (setAt 1 (#vrfKeyHash .~ BS.replicate 32 0xaa) keys) == ["OVERLAY/WrongGenesisVRFKeyOVERLAY"])
+  , ("overlay vrf: both wrong, the cold key does not stop the VRF key check", names one one 432000 (setAt 1 (\g -> g & #delegateKeyHash .~ BS.replicate 28 0xaa & #vrfKeyHash .~ BS.replicate 32 0xbb) keys) == ["OVERLAY/WrongGenesisColdKeyOVERLAY", "OVERLAY/WrongGenesisVRFKeyOVERLAY"])
+  , ("overlay vrf: another key's slot, 172972 mod 2 = 0", names one one 432000 (take 2 keys) == ["OVERLAY/WrongGenesisColdKeyOVERLAY", "OVERLAY/WrongGenesisVRFKeyOVERLAY"])
+  , ("overlay vrf: non-active overlay slot, 172972 mod 20 = 12", names one ("1", "20") 432000 keys == ["OVERLAY/NotActiveSlotOVERLAY"])
+  , ("overlay vrf: non-overlay slot with f < 1 is UNSUPPORTED", errCode (run ("1", "2") ("1", "20") 432001 keys (BS.replicate 32 9)) == HARNESS_ERROR_CODE_UNSUPPORTED)
+  , ("overlay vrf: non-overlay slot under the pool registration", failNames (noRej (run ("1", "2") one 432001 keys keyHash ^. #praosVrfCheck . #rejection)) == [])
+  ]
+  where
+    TP _ era _ hdr eta0 delegate keyHash _ _ _ _ _ _ _ _ _ _ _ _ = head tpraosHeaders
+    one = ("1", "1")
+    genesis i = defMessage & #genesisKeyHash .~ BS.replicate 28 i & #delegateKeyHash .~ BS.replicate 28 (0xd0 + i) & #vrfKeyHash .~ BS.replicate 32 (0xe0 + i) :: S.GenesisDelegation
+    keys = setAt 1 (\g -> g & #delegateKeyHash .~ delegate & #vrfKeyHash .~ keyHash) (map genesis [1, 2, 3])
+    setAt i f xs = [if j == i then f x else x | (j, x) <- zip [0 :: Int ..] xs]
+    run d f len ks k =
+      call (#praosVrfCheck .~ (defMessage & #era .~ era & #header .~ hdr & #epochNonce . #hash .~ eta0 & #poolVrfKeyHash .~ k
+        & #overlay .~ (defMessage & #d .~ rat d & #activeSlotCoeff .~ rat f & #epochLength .~ len & #genesisDelegations .~ ks)))
+    names d f len ks = failNames (noRej (run d f len ks (BS.replicate 32 9) ^. #praosVrfCheck . #rejection))
+
+errCode :: Reply -> HarnessErrorCode
+errCode r = r ^. #error . #code
+
+-- | validateEnvelope's position checks through the envelope function: block
+-- number, slot, previous hash, in that order, before the sizes.
+positionChecks :: [Check]
+positionChecks = concatMap forHeader headers
+  where
+    headers =
+      [ ("shelley", ERA_SHELLEY, hdr, no, slot, prev) | TP _ _ _ hdr _ _ _ prev _ _ _ _ _ _ no slot _ _ _ <- take 1 tpraosHeaders ]
+        ++ [("conway_a", ERA_CONWAY, conwayAHdr, 10882991, 135747596, unhex "4eac1e7264c0e80436b04687e75d46d6a0d6b2338c2abb73a14fafbd689f69b2")]
+    forHeader (name, era, hdr, no, slot, prev) =
+      [ (name <> " position: consecutive parent", rej (tip 0 0 prev) == [])
+      , (name <> " position: same block number", rej (tip 1 0 prev) == ["Envelope/UnexpectedBlockNo"])
+      , (name <> " position: gap in block numbers", rej (tip (-1) 0 prev) == ["Envelope/UnexpectedBlockNo"])
+      , (name <> " position: same slot", rej (tip 0 1 prev) == ["Envelope/UnexpectedSlotNo"])
+      , (name <> " position: parent after the header", rej (tip 0 5 prev) == ["Envelope/UnexpectedSlotNo"])
+      , (name <> " position: other parent hash", rej (tip 0 0 (flipAt 31 prev)) == ["Envelope/UnexpectedPrevHash"])
+      , (name <> " position: number before slot", rej (tip 1 1 (flipAt 0 prev)) == ["Envelope/UnexpectedBlockNo"])
+      , (name <> " position: slot before hash", rej (tip 0 1 (flipAt 0 prev)) == ["Envelope/UnexpectedSlotNo"])
+      , (name <> " position: before the sizes", failNames (noRej (env (Just (tip 1 0 prev)) False 0 0 ^. #praosHeaderEnvelope . #rejection)) == ["Envelope/UnexpectedBlockNo"])
+      , ("divergence: " <> name <> " on the empty chain is refused at its block number (dingo queues it, TestDivergenceOriginHasNoPositionCheck)", failNames (noRej (env Nothing True 1100 90112 ^. #praosHeaderEnvelope . #rejection)) == ["Envelope/UnexpectedBlockNo"])
+      ]
       where
-        go (x : y : rest) = fromIntegral (digitToInt x * 16 + digitToInt y) : go rest
-        go _ = []
+        tip dNo dSlot h = defMessage & #blockNo .~ (no - 1 + fromInteger dNo) & #slot .~ (slot - 1 + fromInteger dSlot) & #hash .~ h :: EnvelopeTip
+        rej t = failNames (noRej (env (Just t) False 1100 90112 ^. #praosHeaderEnvelope . #rejection))
+        env parent origin hs bs =
+          call (#praosHeaderEnvelope .~ (defMessage & #era .~ era & #header .~ hdr & #maybe'parent .~ parent & #origin .~ origin
+            & #pparams .~ (defMessage & #maybe'maxBlockHeaderSize .~ Just hs & #maybe'maxBlockBodySize .~ Just bs :: S.ProtocolParameters)))
+
+conwayAHdr :: BS.ByteString
+conwayAHdr = unhex "828a1a00a60faf1a0817580c58204eac1e7264c0e80436b04687e75d46d6a0d6b2338c2abb73a14fafbd689f69b2582012209e0b93f0128f670c9a02781c5466c4c4be003da3a51344b6a94f709ce51f58209c1a5fc5dec0a4b822d5a3b254ce9b168299479127aadcf97506ef257517fff682584023c2d70c24c44041644f5152f7e8a1bb580e516eb8e73c7df287116adb5f009c0c001feccfeebdf34c2275d1fce859c6c46182631b6306d5fd2724ac7ab1c6be58500dbe31ef7c00c34b6522e983d223e05075359cb170668d960b8cebfced178287ee6ca5cfc6e8e60aec97fd197aebfefc24aae695680631d575c6dacdfd9efc5687e46eb2a5c04a755c7f260af9ef830819c5ea5820d2b74b6333637801f2e9c7265792d5b8fc1647f9056d67c769dbac27f25f2fd08458200946347d22a3b6da29d79102424973c932b898808ff2436fa138df102484230a0a1904165840c75619c3ebad0758349eb1dedc154a8cd280d8189d6da973b4a147b0cdb0f60442d493feeba64167a05b5fc40bc695192bf1c08afad3c07ebd33cb5925f378018209015901c00a8442332bd3f33a4d78fe2736a75110b528a1e7501bc7887910d1475fc0e425f49a84f94e98f87047916cf622f3db1f61b60c5f06709769f98c4cc67de8f50c320c6772b647ac9916765b6985d4eafccb54e71064d01df41f8d0638ed5cd62b7b6e49ba15dd87cc687ab87d3fb22490d355e8fa9c5f7c24ed88b800fcc4cb1f1b54e65b5ba82c442f4643caadc86583072b8b6956f4f9a4530c29873f7231605efd7a7f961a863530512ef86b50f9b1004748c31fa07978f2ece7d8e76ffde67d713015824b28e19f05f0383c2def3cdeb67247f33f5eae329c38a375b2eb06a586dcc2e102a776a6deaad1741f2a7f5aa604074698e876afab4455278fd84a1db5768078e2848cc85e3c8a0b48630a2622832ecd2dbb3c505df2a70b93b49ce99616f601e5e2004a8ce8926319c23f2a26ac8550cb1c05c9d2d25fc5fcd122fc35b057a71d6e961250c99b19a7bfd9acdc60a8151d6c81ef2d7d69a62fd0f17d184dd753cce9a2e9c32b53baf317e31c6c5e3cf8ea8b203b413ae8b0253db53d0cbe19b0f0547a0e67d3591d1cade6ceb4a47779ba4a09e7526280acb62200f42c98f6185ea9da3daf47aa3d10ffe5307331fa3430af6c6361154943c39375"

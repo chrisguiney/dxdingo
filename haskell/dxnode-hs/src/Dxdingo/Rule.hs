@@ -1,11 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -14,12 +17,23 @@
 module Dxdingo.Rule
   ( dispatch
   , implemented
+  -- * For the divergence checks in the tests
+  , Run (..)
+  , historyGlobals
+  , pparamsAlonzo
+  , pparamsBabbage
+  , pparamsConway
+  , prepareWith
   ) where
 
 import Cardano.Crypto.Hash (hashFromBytes)
+import Cardano.Ledger.Allegra (AllegraEra)
+import Cardano.Ledger.Allegra.Rules (AllegraUtxoPredFailure)
 import Cardano.Ledger.Alonzo (AlonzoEra)
+import Cardano.Ledger.Alonzo.Rules (AlonzoUtxoPredFailure, AlonzoUtxosPredFailure, AlonzoUtxowPredFailure, UtxosEnv (UtxosEnv))
 import Cardano.Ledger.Alonzo.Core
   ( AlonzoEraPParams
+  , AlonzoEraTxBody (collateralInputsTxBodyL)
   , CoinPerWord (..)
   , ppCoinsPerUTxOWordL
   , ppCollateralPercentageL
@@ -32,8 +46,11 @@ import Cardano.Ledger.Alonzo.Core
   , ppPricesL
   )
 import Cardano.Ledger.Alonzo.Scripts (ExUnits (..), Prices (..))
+import Cardano.Ledger.Alonzo.Tx (AlonzoEraTx (isValidTxL), pattern IsValid)
 import Cardano.Ledger.Core
 import Cardano.Ledger.Babbage (BabbageEra)
+import Cardano.Ledger.Babbage.Rules (BabbageUtxoPredFailure, BabbageUtxowPredFailure)
+import Cardano.Ledger.Babbage.Collateral (collAdaBalance)
 import Cardano.Ledger.Babbage.Core (CoinPerByte (..), ppCoinsPerUTxOByteL)
 import Cardano.Ledger.BaseTypes
   ( BoundedRational (boundRational)
@@ -48,22 +65,27 @@ import Cardano.Ledger.BaseTypes
   , nonZero
   )
 import Cardano.Ledger.Binary (decCBOR, decodeFull', decodeFullAnnotator)
-import Cardano.Ledger.Coin (Coin (..), CompactForm (..))
+import Cardano.Ledger.Coin (Coin (..), CompactForm (..), DeltaCoin (..))
 import Cardano.Slotting.EpochInfo.Extend (unsafeLinearExtendEpochInfo)
 import Cardano.Ledger.Conway (ConwayEra)
+import Cardano.Ledger.Conway.Rules (ConwayUtxoPredFailure, ConwayUtxosPredFailure, ConwayUtxowPredFailure)
+import Cardano.Ledger.Mary (MaryEra)
+import Cardano.Ledger.Shelley (ShelleyEra)
 import Cardano.Ledger.Hashes (unsafeMakeSafeHash)
 import Cardano.Ledger.Plutus.CostModels (mkCostModel, mkCostModels)
 import Cardano.Ledger.Plutus.Language (Language (..))
 import Cardano.Ledger.Shelley.API.Mempool (ApplyTx (mkStAnnTx))
 import Cardano.Ledger.Shelley.LedgerState (UTxOState (..), smartUTxOState)
-import Cardano.Ledger.Shelley.Rules (UtxoEnv (..))
+import Cardano.Ledger.Shelley.Rules (ShelleyPpupPredFailure, ShelleyUtxoPredFailure, ShelleyUtxowPredFailure, UtxoEnv (..))
 import Cardano.Ledger.State
-import Cardano.Ledger.TxIn (TxId (..), mkTxInPartial)
-import Cardano.Slotting.EpochInfo (fixedEpochInfo)
-import Cardano.Slotting.Slot (SlotNo (..))
-import Cardano.Slotting.Time (SystemStart (..), mkSlotLength)
+import Cardano.Ledger.TxIn (TxId (..), TxIn, mkTxInPartial)
+import Cardano.Slotting.EpochInfo (fixedEpochInfo, hoistEpochInfo)
+import Cardano.Slotting.Slot (EpochNo (..), SlotNo (..))
+import Cardano.Slotting.Time (RelativeTime (..), SystemStart (..), mkSlotLength)
+import Control.Monad.Except (runExcept)
 import Control.Monad.Reader (runReaderT)
 import Control.State.Transition.Extended (STS (..), TRC (..), applySTS)
+import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import Data.Default (def)
@@ -76,11 +98,27 @@ import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.SOP.Counting (exactlyOne, exactlyTwo)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import GHC.Generics (C1, Constructor (conName), D1, Generic, K1 (..), M1 (..), Rep, S1, from, (:+:) (..))
 import Data.Word (Word64)
 import Dxdingo.Answer (Answer, respond)
 import Dxdingo.Domain
+import qualified Dxdingo.Rule.Certs as Certs
+import qualified Dxdingo.Rule.Ledger as Ledger
 import Lens.Micro ((&), (.~), (^.))
+import Ouroboros.Consensus.Config.SecurityParam (SecurityParam (..))
+import Ouroboros.Consensus.HardFork.History
+  ( Bound (..)
+  , EraEnd (..)
+  , EraParams (..)
+  , EraSummary (..)
+  , SafeZone (..)
+  , defaultEraParams
+  , initBound
+  , summaryToEpochInfo
+  , summaryWithExactly
+  )
 import Proto.Dxdingo.V1.Envelope (Call'Request (..))
 import Proto.Dxdingo.V1.Rule
 import qualified Proto.Dxdingo.V1.State as S
@@ -89,14 +127,17 @@ import qualified Proto.Dxdingo.V1.Types as P
 -- ---------------------------------------------------------------------
 -- Inputs
 
-data RuleEra = RAlonzo | RBabbage | RConway deriving (Eq, Show)
+data RuleEra = RShelley | RAllegra | RMary | RAlonzo | RBabbage | RConway deriving (Eq, Show)
 
 eraArg :: P.Era -> Result RuleEra
 eraArg = \case
+  P.ERA_SHELLEY -> pure RShelley
+  P.ERA_ALLEGRA -> pure RAllegra
+  P.ERA_MARY -> pure RMary
   P.ERA_ALONZO -> pure RAlonzo
   P.ERA_BABBAGE -> pure RBabbage
   P.ERA_CONWAY -> pure RConway
-  e -> unsupported ("transaction rules are modelled for Alonzo, Babbage and Conway, not " <> T.pack (show e))
+  e -> unsupported ("transaction rules are modelled for Shelley through Conway, not " <> T.pack (show e))
 
 -- | Globals from the request. Fields the rules in scope never read still get
 -- a value so the record is total.
@@ -173,6 +214,23 @@ alonzoPParams p base = do
       Right m -> pure [(lang, m)]
       Left e -> unsupported ("cost model " <> T.pack (show lang) <> ": " <> T.pack (show e))
 
+-- | Shelley, Allegra and Mary share one parameter shape: a decentralisation
+-- parameter and a flat minimum UTxO value, no Plutus fields.
+shelleyFamilyPParams :: forall era. (EraPParams era, ProtVerAtMost era 4, ProtVerAtMost era 6) => S.ProtocolParameters -> Result (PParams era)
+shelleyFamilyPParams p = do
+  b <- basePParams p
+  d <- boundedArg "d" (p ^. #maybe'd)
+  pure (b & ppDL .~ d & ppMinUTxOValueL .~ Coin (toInteger (p ^. #minUtxoValue)))
+
+pparamsShelley :: S.ProtocolParameters -> Result (PParams ShelleyEra)
+pparamsShelley = shelleyFamilyPParams
+
+pparamsAllegra :: S.ProtocolParameters -> Result (PParams AllegraEra)
+pparamsAllegra = shelleyFamilyPParams
+
+pparamsMary :: S.ProtocolParameters -> Result (PParams MaryEra)
+pparamsMary = shelleyFamilyPParams
+
 pparamsAlonzo :: S.ProtocolParameters -> Result (PParams AlonzoEra)
 pparamsAlonzo p = do
   b <- basePParams p
@@ -229,8 +287,24 @@ prepare ::
   S.LedgerState ->
   ByteString ->
   Result (Run era)
-prepare extend mkPP ctx g p st tx = do
-  globals <- globalsArg g (fromIntegral (ctx ^. #networkId))
+prepare extend = prepareWith extend pure
+
+-- | 'prepare', with the globals adjusted before use (the UTXOS rule replaces
+-- the single-era epoch info with one built from the request's era history).
+prepareWith ::
+  forall era.
+  (EraTx era, EraStake era, EraGov era, EraCertState era, ApplyTx era) =>
+  Bool ->
+  (Globals -> Result Globals) ->
+  (S.ProtocolParameters -> Result (PParams era)) ->
+  S.LedgerContext ->
+  S.Globals ->
+  S.ProtocolParameters ->
+  S.LedgerState ->
+  ByteString ->
+  Result (Run era)
+prepareWith extend adjust mkPP ctx g p st tx = do
+  globals <- globalsArg g (fromIntegral (ctx ^. #networkId)) >>= adjust
   pp <- mkPP p
   utxo <- utxoArg st
   t <- txArg tx
@@ -249,6 +323,7 @@ execute ::
   , State s ~ UTxOState era
   , Signal s ~ StAnnTx TopTx era
   , Show (PredicateFailure s)
+  , Embed (PredicateFailure s)
   ) =>
   Text ->
   Run era ->
@@ -256,7 +331,7 @@ execute ::
 execute top r =
   case runIdentity (runReaderT (applySTS @s (TRC (runEnv r, runState r, runTx r))) (runGlobals r)) of
     Right _ -> []
-    Left fs -> sort (nub (concatMap (flattenFailure top . show) (NE.toList fs)))
+    Left fs -> sort (nub (concatMap (nameFailure top) (NE.toList fs)))
 
 rejection :: [(Text, Text)] -> Maybe P.Rejection
 rejection [] = Nothing
@@ -267,15 +342,85 @@ rejection xs =
           .~ [defMessage & #rule .~ r & #name .~ n | (r, n) <- xs]
     )
 
--- | Walk the showed failure down the wrapper constructors to the innermost
--- one, tracking which STS rule owns it.
-flattenFailure :: Text -> String -> [(Text, Text)]
-flattenFailure rule s = case words s of
+-- | The constructor names of a predicate failure, flattened to the innermost
+-- constructor and the STS rule that owns it. A failure type with an 'Embed'
+-- instance is walked structurally through 'GHC.Generics'; any other type
+-- falls back to parsing 'show'.
+nameFailure :: (Show a, Embed a) => Text -> a -> [(Text, Text)]
+nameFailure top f = fromMaybe (flattenShown top (show f)) (embed f)
+
+-- | A predicate failure type the generic walk understands. A constructor
+-- whose only field is itself an 'Embed' type is a wrapper and is replaced by
+-- that field's own flattening; every other constructor is a leaf named after
+-- the rule that owns its type. Types without an instance are leaves, so each
+-- failure type that appears as a wrapper's field needs one.
+class Embed x where
+  embed :: x -> Maybe [(Text, Text)]
+  embed _ = Nothing
+
+instance {-# OVERLAPPABLE #-} Embed x
+
+-- | The 'embed' of a failure type owned by the given STS rule.
+owned :: (Generic a, GFlatten (Rep a)) => Text -> a -> Maybe [(Text, Text)]
+owned rule = Just . gflatten rule . from
+
+class GFlatten f where
+  gflatten :: Text -> f p -> [(Text, Text)]
+
+instance GFlatten f => GFlatten (D1 c f) where
+  gflatten rule (M1 x) = gflatten rule x
+
+instance (GFlatten f, GFlatten g) => GFlatten (f :+: g) where
+  gflatten rule (L1 x) = gflatten rule x
+  gflatten rule (R1 x) = gflatten rule x
+
+instance (Constructor c, GField f) => GFlatten (C1 c f) where
+  gflatten rule m@(M1 x) = fromMaybe [(rule, T.pack (conName m))] (gfield x)
+
+-- | The flattening of a constructor's only field, when it is an 'Embed' type.
+class GField f where
+  gfield :: f p -> Maybe [(Text, Text)]
+
+instance {-# OVERLAPPABLE #-} GField f where
+  gfield _ = Nothing
+
+instance Embed x => GField (S1 s (K1 i x)) where
+  gfield (M1 (K1 x)) = embed x
+
+instance Embed (ShelleyUtxowPredFailure ShelleyEra) where embed = owned "UTXOW"
+instance Embed (ShelleyUtxowPredFailure AllegraEra) where embed = owned "UTXOW"
+instance Embed (ShelleyUtxowPredFailure MaryEra) where embed = owned "UTXOW"
+instance Embed (ShelleyUtxowPredFailure AlonzoEra) where embed = owned "UTXOW"
+instance Embed (ShelleyUtxowPredFailure BabbageEra) where embed = owned "UTXOW"
+instance Embed (ShelleyUtxoPredFailure ShelleyEra) where embed = owned "UTXO"
+instance Embed (AllegraUtxoPredFailure AllegraEra) where embed = owned "UTXO"
+instance Embed (AllegraUtxoPredFailure MaryEra) where embed = owned "UTXO"
+instance Embed (AlonzoUtxowPredFailure AlonzoEra) where embed = owned "UTXOW"
+instance Embed (AlonzoUtxowPredFailure BabbageEra) where embed = owned "UTXOW"
+instance Embed (AlonzoUtxoPredFailure AlonzoEra) where embed = owned "UTXO"
+instance Embed (AlonzoUtxoPredFailure BabbageEra) where embed = owned "UTXO"
+instance Embed (AlonzoUtxosPredFailure AlonzoEra) where embed = owned "UTXOS"
+instance Embed (AlonzoUtxosPredFailure BabbageEra) where embed = owned "UTXOS"
+instance Embed (BabbageUtxowPredFailure BabbageEra) where embed = owned "UTXOW"
+instance Embed (BabbageUtxoPredFailure BabbageEra) where embed = owned "UTXO"
+instance Embed (ConwayUtxowPredFailure ConwayEra) where embed = owned "UTXOW"
+instance Embed (ConwayUtxoPredFailure ConwayEra) where embed = owned "UTXO"
+instance Embed (ConwayUtxosPredFailure ConwayEra) where embed = owned "UTXOS"
+instance Embed (ShelleyPpupPredFailure ShelleyEra) where embed = owned "PPUP"
+instance Embed (ShelleyPpupPredFailure AllegraEra) where embed = owned "PPUP"
+instance Embed (ShelleyPpupPredFailure MaryEra) where embed = owned "PPUP"
+instance Embed (ShelleyPpupPredFailure AlonzoEra) where embed = owned "PPUP"
+instance Embed (ShelleyPpupPredFailure BabbageEra) where embed = owned "PPUP"
+
+-- | Fallback for failure types without an 'Embed' instance: walk the showed
+-- failure down the wrapper constructors to the innermost one.
+flattenShown :: Text -> String -> [(Text, Text)]
+flattenShown rule s = case words s of
   [] -> []
   (c : _)
     | Just next <- lookup c wrappers
     , Just inner <- argument (drop (length c) s) ->
-        flattenFailure (fromMaybe rule next) inner
+        flattenShown (fromMaybe rule next) inner
     | otherwise -> [(rule, T.pack c)]
 
 -- | Wrapper constructors and the rule their argument belongs to ('Nothing'
@@ -285,10 +430,7 @@ wrappers =
   [ ("UtxoFailure", Just "UTXO")
   , ("UtxosFailure", Just "UTXOS")
   , ("ShelleyInAlonzoUtxowPredFailure", Just "UTXOW")
-  , ("FromAlonzoUtxowFail", Just "UTXOW")
-  , ("FromAlonzoUtxoFail", Just "UTXO")
   , ("AlonzoInBabbageUtxoPredFailure", Just "UTXO")
-  , ("FromAlonzoUtxosFail", Just "UTXOS")
   , ("AlonzoInBabbageUtxowPredFailure", Just "UTXOW")
   ]
 
@@ -297,6 +439,111 @@ argument :: String -> Maybe String
 argument rest = case dropWhile (== ' ') rest of
   ('(' : more) -> Just (init more)
   _ -> Nothing
+
+-- ---------------------------------------------------------------------
+-- UTXOS
+
+-- | The epoch info and system start of the request's era history, in place
+-- of the single-era ones 'globalsArg' derives from the globals. One or two
+-- eras are supported.
+historyGlobals :: S.EraHistory -> Globals -> Result Globals
+historyGlobals h g = do
+  eras <- traverse summaryOf (h ^. #eras)
+  ei <- case eras of
+    [a] -> pure (summaryToEpochInfo (summaryWithExactly (exactlyOne a)))
+    [a, b] -> pure (summaryToEpochInfo (summaryWithExactly (exactlyTwo a b)))
+    _ -> unsupported "era_history must hold one or two eras"
+  pure
+    g
+      { epochInfo = hoistEpochInfo (first (T.pack . show) . runExcept) ei
+      , systemStart = SystemStart (posixSecondsToUTCTime (fromIntegral (h ^. #systemStartUnix)))
+      }
+  where
+    summaryOf e = do
+      start <- boundOf (e ^. #startSlot) (e ^. #startEpoch) (e ^. #maybe'startTime)
+      slotLen <- rationalArg "slot_length" (e ^. #maybe'slotLength)
+      end <- case (e ^. #maybe'endSlot, e ^. #maybe'endEpoch) of
+        (Just sl, Just ep) -> EraEnd <$> boundOf sl ep (e ^. #maybe'endTime)
+        _ -> pure EraUnbounded
+      let params =
+            (defaultEraParams (SecurityParam (securityParameter g)) (mkSlotLength (fromRational slotLen)))
+              { eraEpochSize = EpochSize (e ^. #epochLength)
+              , eraSafeZone = StandardSafeZone (e ^. #safeZone)
+              }
+      pure (EraSummary start end params)
+    boundOf slotNo epochNo time = do
+      t <- rationalArg "era time" time
+      pure initBound {boundTime = RelativeTime (fromRational t), boundSlot = SlotNo slotNo, boundEpoch = EpochNo epochNo}
+
+-- | Run the UTXOS rule on the given environment and state and name its
+-- failures. In Conway the rule has no environment or state of its own; before
+-- Conway it carries the pending parameter updates.
+applyUtxos ::
+  forall s era.
+  ( STS s
+  , BaseM s ~ ShelleyBase
+  , Signal s ~ StAnnTx TopTx era
+  , Show (PredicateFailure s)
+  , Embed (PredicateFailure s)
+  ) =>
+  Run era ->
+  Environment s ->
+  State s ->
+  [(Text, Text)]
+applyUtxos r env st =
+  case runIdentity (runReaderT (applySTS @s (TRC (env, st, runTx r))) (runGlobals r)) of
+    Right _ -> []
+    Left fs -> sort (nub (concatMap (nameFailure "UTXOS") (NE.toList fs)))
+
+-- | UTXOS: scripts run against the transaction's is_valid flag. The rule
+-- itself only accepts or rejects; the UTXO rule is what forfeits collateral
+-- for a transaction flagged invalid, so @collateral_consumed@ is that rule's
+-- own collateral balance. @scripts_valid@ is whether the scripts passed: the
+-- flag when the rule accepts, its negation on a tag mismatch, false on
+-- collect errors.
+ruleUtxos :: RuleUtxosRequest -> Result RuleUtxosResponse
+ruleUtxos req = do
+  era <- eraArg (req ^. #context . #era)
+  let prep :: forall era. (EraTx era, EraStake era, EraGov era, EraCertState era, ApplyTx era) =>
+              (S.ProtocolParameters -> Result (PParams era)) -> Result (Run era)
+      prep mkPP =
+        prepareWith False (historyGlobals (fromMaybe defMessage (req ^. #maybe'eraHistory))) mkPP
+          (req ^. #context) (fromMaybe defMessage (req ^. #maybe'globals)) (fromMaybe defMessage (req ^. #maybe'pparams))
+          (fromMaybe defMessage (req ^. #maybe'state)) (req ^. #tx)
+      finish :: forall era. AlonzoEraTx era => [(Text, Text)] -> (TxBody TopTx era -> Coin) -> Result RuleUtxosResponse
+      finish fs collateral = do
+        t <- txArg @era (req ^. #tx)
+        let flagged = case t ^. isValidTxL of IsValid b -> b
+        pure $
+          case fs of
+            [] ->
+              defMessage
+                & #scriptsValid .~ flagged
+                & #collateralConsumed .~ (if flagged then 0 else fromIntegral (unCoin (collateral (t ^. bodyTxL))))
+            _ ->
+              defMessage
+                & #maybe'rejection .~ rejection fs
+                & #scriptsValid .~ (("UTXOS", "ValidationTagMismatch") `elem` fs && not flagged)
+      restricted :: forall era. (AlonzoEraTxBody era) => Run era -> TxBody TopTx era -> Map.Map TxIn (TxOut era)
+      restricted r body = Map.restrictKeys (unUTxO (utxosUtxo (runState r))) (body ^. collateralInputsTxBodyL)
+      oldEnv r = case runEnv r of UtxoEnv sl pp cs -> UtxosEnv sl pp cs
+  case era of
+    RAlonzo -> do
+      r <- prep pparamsAlonzo
+      finish @AlonzoEra
+        (applyUtxos @(EraRule "UTXOS" AlonzoEra) r (oldEnv r) (utxosGovState (runState r)))
+        (\b -> sumAllCoin (restricted r b))
+    RBabbage -> do
+      r <- prep pparamsBabbage
+      finish @BabbageEra
+        (applyUtxos @(EraRule "UTXOS" BabbageEra) r (oldEnv r) (utxosGovState (runState r)))
+        (\b -> case collAdaBalance b (restricted r b) of DeltaCoin c -> Coin c)
+    RConway -> do
+      r <- prep pparamsConway
+      finish @ConwayEra
+        (applyUtxos @(EraRule "UTXOS" ConwayEra) r () ())
+        (\b -> case collAdaBalance b (restricted r b) of DeltaCoin c -> Coin c)
+    _ -> unsupported ("the UTXOS rule exists from Alonzo on, not in " <> T.pack (show era))
 
 -- ---------------------------------------------------------------------
 -- Functions
@@ -327,6 +574,27 @@ onEra ctx mg mp ms tx withWitnesses = do
       p = fromMaybe defMessage mp
       st = fromMaybe defMessage ms
   case era of
+    RShelley -> do
+      r <- prepare False pparamsShelley ctx g p st tx
+      pure
+        ( if withWitnesses
+            then execute @(EraRule "UTXOW" ShelleyEra) "UTXOW" r
+            else execute @(EraRule "UTXO" ShelleyEra) "UTXO" r
+        )
+    RAllegra -> do
+      r <- prepare False pparamsAllegra ctx g p st tx
+      pure
+        ( if withWitnesses
+            then execute @(EraRule "UTXOW" AllegraEra) "UTXOW" r
+            else execute @(EraRule "UTXO" AllegraEra) "UTXO" r
+        )
+    RMary -> do
+      r <- prepare False pparamsMary ctx g p st tx
+      pure
+        ( if withWitnesses
+            then execute @(EraRule "UTXOW" MaryEra) "UTXOW" r
+            else execute @(EraRule "UTXO" MaryEra) "UTXO" r
+        )
     RConway -> do
       r <- prepare False pparamsConway ctx g p st tx
       pure
@@ -353,7 +621,8 @@ dispatch :: Call'Request -> Maybe Answer
 dispatch = \case
   Call'RuleUtxo q -> Just (respond #ruleUtxo (ruleUtxo q))
   Call'RuleUtxow q -> Just (respond #ruleUtxow (ruleUtxow q))
-  _ -> Nothing
+  Call'RuleUtxos q -> Just (respond #ruleUtxos (ruleUtxos q))
+  req -> maybe (Ledger.dispatch req) Just (Certs.dispatch req)
 
 implemented :: [Text]
-implemented = ["rule_utxo", "rule_utxow"]
+implemented = ["rule_utxo", "rule_utxow", "rule_utxos"] ++ Certs.implemented ++ Ledger.implemented

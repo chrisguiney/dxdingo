@@ -1,0 +1,6 @@
+# intersection not found
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StIntersect"
+  message_type: "MsgIntersectNotFound"
+}

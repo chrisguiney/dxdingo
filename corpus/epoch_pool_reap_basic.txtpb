@@ -1,0 +1,64 @@
+# pools 1,2 share account A (refunds merge), pool 3 has an unregistered account, pool 4 retires later; account C is delegated to a retiring pool and is cleared
+epoch_pool_reap:  {
+  epoch:  5
+  pools:  {
+    pool_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+    deposit:  500
+    retiring_epoch:  5
+  }
+  pools:  {
+    pool_id:  "\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02\x02"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+    deposit:  300
+    retiring_epoch:  5
+  }
+  pools:  {
+    pool_id:  "\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b"
+    }
+    deposit:  200
+    retiring_epoch:  5
+  }
+  pools:  {
+    pool_id:  "\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+    deposit:  900
+    retiring_epoch:  6
+  }
+  accounts:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+  }
+  accounts:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c"
+    }
+    pool_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  }
+  accounts:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r"
+    }
+    pool_id:  "\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04\x04"
+  }
+}

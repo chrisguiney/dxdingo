@@ -1,0 +1,8 @@
+# acquire failed: point too old
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StAcquiring"
+    message: "\x82\x02\x00"
+  }
+}

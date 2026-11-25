@@ -45,11 +45,57 @@ func TestGenerateCodecCorpus(t *testing.T) {
 // returns the wire bytes it was given. Each has direct tests on both sides
 // (dxnode-go TestDivergenceCodec*, Test.Codec "divergence: ..." checks).
 var codecDivergences = map[string]string{
-	"codec_tx_output_babbage_1_1":            "real mainnet output: the reference re-encodes the multi-asset map sorted by bytes in an indefinite-length map; gouroboros keeps the wire order (TestDivergenceCodecOutputKeepsWireBytes)",
-	"codec_tx_output_conway_1_1":             "real mainnet output [address, [coin, {}]]: the reference drops the empty multi-asset, gouroboros keeps it (TestDivergenceCodecOutputKeepsWireBytes)",
-	"codec_tx_output_conway_datum_hash":      "Babbage map output with a datum hash: the reference re-encodes the legacy array [address, coin, datum_hash] (TestDivergenceCodecOutputKeepsWireBytes)",
-	"codec_pparams_update_alonzo_cost_model": "a three-entry PlutusV1 cost model: the reference rejects it in Alonzo, gouroboros accepts it (TestDivergenceCodecAlonzoCostModelLength)",
-	"codec_tx_wrong_era_shelley_as_conway":   "a three-element transaction decodes as Conway on both nodes; the reference re-encodes it with IsValid, gouroboros keeps three elements (TestDivergenceCodecThreeElementTx)",
+	"codec_tx_output_babbage_1_1":                     "real mainnet output: the reference re-encodes the multi-asset map sorted by bytes in an indefinite-length map; gouroboros keeps the wire order (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_tx_output_conway_1_1":                      "real mainnet output [address, [coin, {}]]: the reference drops the empty multi-asset, gouroboros keeps it (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_tx_output_conway_datum_hash":               "Babbage map output with a datum hash: the reference re-encodes the legacy array [address, coin, datum_hash] (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_pparams_update_alonzo_cost_model":          "a three-entry PlutusV1 cost model: the reference rejects it in Alonzo, gouroboros accepts it (TestDivergenceCodecAlonzoCostModelLength)",
+	"codec_ledger_state_nes_pool_retire_reregister":   "a registered DRep with five dormant epochs: the reference keeps the stored expiry, dingo reports it plus the dormant epochs (TestDivergenceLedgerStateDRepExpiry)",
+	"codec_ledger_state_nes_trailing":                 "a trailing byte after a NewEpochState: the reference rejects it, dingo decodes the state (TestDivergenceLedgerStateLenient)",
+	"codec_ledger_state_nes_short_array":              "a six-element array where NewEpochState has seven: the reference rejects it, dingo decodes the state (TestDivergenceLedgerStateLenient)",
+	"codec_ledger_state_nes_snapshot_shared_hash":     "a key and a script credential with one hash in a snapshot: the reference keeps both, dingo's per-hash map keeps one (TestDivergenceLedgerStateSnapshotSharedHash)",
+	"codec_ledger_state_nes_utxo_minimal":             "every output of a state: dingo rewrites a MemPack ada-only output as the map format, the reference as the two-element array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_nes_utxo_many":                "every output of a state: dingo rewrites MemPack outputs as the map format, the reference as the legacy array where it can (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_ada_only":             "dingo writes a MemPack output as the map format, the reference as the two-element array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_address_hash28":       "as codec_ledger_state_mempack_ada_only, for the address-hash tag (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_datum_hash":           "as codec_ledger_state_mempack_ada_only, for the datum-hash tag (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_vector_0":             "as codec_ledger_state_mempack_ada_only, an output of a ledger vector (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_vector_1":             "as codec_ledger_state_mempack_ada_only, an output of a ledger vector (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_vector_2":             "as codec_ledger_state_mempack_ada_only, an output of a ledger vector (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_vector_3":             "as codec_ledger_state_mempack_ada_only, an output of a ledger vector (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_hfc_block_dijkstra_body_three_components":  "a Dijkstra block body of three components: gouroboros accepts it, the reference needs four (TestDivergenceDijkstraBlockBodyComponents)",
+	"codec_hfc_block_dijkstra_body_four_components":   "a Dijkstra block body of four components: the reference accepts it, gouroboros needs three (TestDivergenceDijkstraBlockBodyComponents)",
+	"codec_certificate_dijkstra_stake_registration":   "tag 0 certificate under Dijkstra: gouroboros decodes it, the reference rejects the expunged RegTxCert (TestDivergenceDijkstraExpungedCertificates)",
+	"codec_certificate_dijkstra_stake_deregistration": "tag 1 certificate under Dijkstra: gouroboros decodes it, the reference rejects the expunged UnRegTxCert (TestDivergenceDijkstraExpungedCertificates)",
+	"codec_certificate_dijkstra_genesis_delegation":   "tag 5 certificate under Dijkstra: gouroboros decodes it, the reference has no genesis delegation (TestDivergenceDijkstraExpungedCertificates)",
+	"codec_tx_dijkstra_mempool_valid":                 "mempool form with is_valid true: the reference re-encodes the three-element form, gouroboros keeps the four elements (TestDivergenceDijkstraMempoolTxKeepsWireBytes)",
+	"codec_tx_output_dijkstra_conway_1_1":             "real mainnet output [address, [coin, {}]]: the reference rejects the empty multi-asset in Dijkstra, gouroboros keeps it (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_tx_output_dijkstra_datum_hash":             "map output with a datum hash: the reference re-encodes the legacy array [address, coin, datum_hash] (TestDivergenceCodecOutputKeepsWireBytes)",
+	"codec_block_body_dijkstra_three_components":      "a Dijkstra block body of three components: gouroboros accepts it, the reference needs four (TestDivergenceDijkstraBlockBodyComponents)",
+	"codec_block_body_dijkstra_four_components":       "a Dijkstra block body of four components: the reference accepts it, gouroboros needs three (TestDivergenceDijkstraBlockBodyComponents)",
+	"codec_ledger_state_nes_shelley":                  "a shelley state: dingo cannot read the ledger's protocol parameters of this era, the reference reads the state (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_shelley_utxo":             "as the state without outputs (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_allegra":                  "a allegra state: dingo cannot read the ledger's protocol parameters of this era, the reference reads the state (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_allegra_utxo":             "as the state without outputs (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_mary":                     "a mary state: dingo cannot read the ledger's protocol parameters of this era, the reference reads the state (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_mary_utxo":                "as the state without outputs (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_alonzo":                   "a alonzo state: dingo cannot read the ledger's protocol parameters of this era, the reference reads the state (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_alonzo_utxo":              "as the state without outputs (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_babbage":                  "a babbage state: dingo cannot read the ledger's protocol parameters of this era, the reference reads the state (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_babbage_utxo":             "as the state without outputs (TestDivergenceLedgerStatePreConwayPParams)",
+	"codec_ledger_state_nes_dijkstra_utxo":            "a Dijkstra state with one output: dingo rewrites the output as the map format, the reference as the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_nes_dijkstra_utxo_ix1":        "a Dijkstra state with an output at index 1: dingo reads the packed index as 256, and writes the output as the map format (TestDivergenceLedgerStateTxInIndexByteOrder)",
+	"codec_ledger_state_mempack_shelley_ada":          "a shelley MemPack output (ada): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_allegra_ada":          "a allegra MemPack output (ada): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_mary_ada":             "a mary MemPack output (ada): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_mary_assets":          "a mary MemPack output (assets): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_alonzo_ada":           "a alonzo MemPack output (ada): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_alonzo_datum_hash":    "a alonzo MemPack output (datum_hash): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_babbage_ada":          "a babbage MemPack output (ada): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_babbage_datum_hash":   "a babbage MemPack output (datum_hash): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_dijkstra_ada":         "a dijkstra MemPack output (ada): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_ledger_state_mempack_alonzo_conway_row":    "the ada-only row under the Alonzo era: dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)",
+	"codec_tx_byron_definite_lists":                   "a Byron transaction with definite-length input and output lists: gouroboros decodes it, the reference rejects it (TestDivergenceByronTxDefiniteLists)",
+	"codec_tx_wrong_era_shelley_as_conway":            "a three-element transaction decodes as Conway on both nodes; the reference re-encodes it with IsValid, gouroboros keeps three elements (TestDivergenceCodecThreeElementTx)",
 }
 
 type codecEra struct {
@@ -323,6 +369,10 @@ func codecCases(t *testing.T) []entry {
 	add("codec_byron_block_truncated", "Byron block cut by one byte is rejected", byronCall(tr))
 	add("codec_byron_block_trailing", "Byron block with a trailing byte is rejected", byronCall(tl))
 	add("codec_byron_block_bad_tag", "tag 2 is neither boundary nor main", byronCall(append([]byte{0x82, 0x02}, byron...)))
+	out = hfcCases(t, dir, out)
+	out = ledgerStateCases(t, out)
+	out = dijkstraCodecCases(t, out)
+	out = byronTxCodecCases(t, out)
 	return pparamsUpdateCases(t, out)
 }
 

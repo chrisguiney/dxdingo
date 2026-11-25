@@ -1,0 +1,8 @@
+# server reports the snapshot slot
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StAcquiring"
+    message: "\x82\x02\x19\x04\xd2"
+  }
+}

@@ -1,0 +1,73 @@
+# utxo scripted 0 of the mary mainnet scripted (native scripts, minting, collateral, reference inputs, Plutus data) with key-locked inputs block: ledger network is testnet, addresses are mainnet
+rule_utxo: {
+  context: {
+    era: ERA_MARY
+    protocol_version: {
+      major: 4
+    }
+    slot: 41499999
+    epoch: 600
+  }
+  globals: {
+    network_magic: 764824073
+    epoch_length: 432000
+    slot_length: {
+      numerator: "1"
+      denominator: "1"
+    }
+    security_param: 2160
+    active_slot_coeff: {
+      numerator: "1"
+      denominator: "20"
+    }
+    slots_per_kes_period: 129600
+    max_kes_evolutions: 62
+    max_lovelace_supply: 45000000000000000
+    system_start_unix: 1506203091
+    quorum: 5
+  }
+  pparams: {
+    min_fee_a: 44
+    min_fee_b: 155381
+    max_block_body_size: 90112
+    max_tx_size: 16384
+    max_block_header_size: 1100
+    key_deposit: 2000000
+    pool_deposit: 500000000
+    max_epoch: 18
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+    rho: {
+      numerator: "3"
+      denominator: "1000"
+    }
+    tau: {
+      numerator: "2"
+      denominator: "10"
+    }
+    d: {
+      numerator: "0"
+      denominator: "1"
+    }
+    protocol_version: {
+      major: 4
+    }
+    min_utxo_value: 1000000
+    min_pool_cost: 170000000
+  }
+  state: {
+    utxo: {
+      txin: {
+        tx_id: "@\x03e\xb0\xeah?\x94(}|X\xf5\t8\x9cO.9ej\xddhJɔ.N|\x08\xbf&"
+      }
+      txout: "\x82X\x1daT'\xe5-\x1cؑB\xcb\xc6X\xf2\xed\xf00W)\x7f\xf0\x8e,\x16\xe6\xd3ӗŽ\x1a\x00\x98\x96\x80"
+    }
+    pots: {
+      treasury: 1000000000000
+    }
+  }
+  tx: "\x83\xa6\x00\x81\x82X @\x03e\xb0\xeah?\x94(}|X\xf5\t8\x9cO.9ej\xddhJɔ.N|\x08\xbf&\x00\x01\x82\x82X9\x01P\xab\x97\x06\xfb\xb3\x1eX\xd5?F\x10\xee\xdfu\xa0\xeeU\x0e\xae\x0f{\x0b\x90\x7f\x060`\x07;\xea\x94k\x18\x92\\\xe2{aWc\xb4@П]\xbd\xa0ƅ\x91\xdf\xfb\xca\r6\x1a\x00v\xde\xf3\x82X9\x01\xc8Up\x12\x88\xbe\xb1\x03K\xe30\x9b/\x80\x0f\xfa\x9f\xf8\x07\xcc$|\xa2\xee\x00<\xb2?=\x96x\xafy\xfc\x0cǘ\x9a\xc5&E\x14\xa7\x8eΠg\x86\x0c\xbf\xb3{\x8aq\x1cE\x82\x1a\x00\x1e\x84\x80\xa1X\x1cK\x9cD\xc5: \xcd\xfa\xec\x04\xf6\xa2M\xd6W 7\xa5J\xed'\xa4d{@\x02U\xf3\xa1LHardFork1297\x01\x02\x1a\x00\x033\r\x03\x1a\x02y=`\x07X 7\xb2]k>\x99Oh\xd2D\x12\xf3\x84:\x7f\xff\xa5\x0b\xb9\x06a\xb2v\xc7\xe7\xf4m!΂\xd2%\t\xa1X\x1cK\x9cD\xc5: \xcd\xfa\xec\x04\xf6\xa2M\xd6W 7\xa5J\xed'\xa4d{@\x02U\xf3\xa1LHardFork1297\x01\xa2\x00\x82\x82X ⋧Ċ\x1544\xff\xf0f`\x90\x84g\xc4SM(\xf20\x0e5\xf0\xd7y\xf06\xcbL\t\xf6X@͇!+\xa9\x88.\xba\xcc)\xc2\xf1\x06\x96\x00\xcd\xfb\xa1O\x8d\x02\xf6\x97JP\xc0\x9a\xd6\x1b\xbf+uaP\xbe\x860-LW\xd6\xcc\xe3\xabYY\x8b'\x89b-\xa5\x10m\x00\xe2\xa7\x0bH\xf5]\xc1\x9b\x02\x82X \xe3v\xd7!\xac\xd5\xe6ህǾ\xc9\xc7r[\"\x8d\xc7\xe2\xacc\xd2Hmd\\\xf3\x07\xdbzvX@!\xcbY\x83p\x01\x1cɧ\x146\xe3v3\x8a\xfd,C \xfd\xcfӌ\xf3\x10\xedm\xe1\xe9\xc3%\xc40\x83\xe2\\\xcd8\x02\xa6\xd7Al%\xfb\xd9z\xdc:$\xb9c6\xb1\x99*\xd7S\x1f\x18I\xea\xf0\x02\x01\x81\x82\x01\x82\x82\x00X\x1cu(Ǐc\xdcm\xe1ܙ\x8eL\xa9\xea\x1f\x19\x82\x9b\tXϑkrԀ\xbf%\x82\x05\x1a\x02y=`\x82\xa1\x19\x02ѡx84b9c44c53a20cdfaec04f6a24dd6572037a54aed27a4647b400255f3\xa1lHardFork1297\xa5gAlfonzo\x83tClaymemorative piecex)to celebrate the Alonzo hard fork upgradeuon September 12, 2021efiles\x81\xa3imediaTypeivideo/mp4dnamex\x1bHard Fork - Clay Mates 1297csrcx5ipfs://QmZknmAf8B3DPpSXAfZibzVUQzELMWcGsjnbbTmHKi6fdreimagex5ipfs://QmVjqJcEvNq1yGkJwMQWx69VRwnX1xnV2AKvmA8S6RyZPRdnamex\x1bHard Fork - Clay Mates 1297gtwitterx!https://twitter.com/The_ClayMates\x80"
+}

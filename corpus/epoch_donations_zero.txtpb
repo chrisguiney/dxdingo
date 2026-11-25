@@ -1,0 +1,4 @@
+# no donations leaves the treasury
+epoch_donations:  {
+  treasury:  5
+}

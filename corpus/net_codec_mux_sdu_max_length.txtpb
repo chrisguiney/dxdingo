@@ -1,0 +1,4 @@
+# the largest payload length
+net_codec_mux_sdu: {
+  header: "\xff\xff\xff\xff\x7f\xff\xff\xff"
+}

@@ -19,6 +19,9 @@ import (
 func registerRule(r *dispatch.Registry) {
 	dispatch.Register(r, ruleUtxo)
 	dispatch.Register(r, ruleUtxow)
+	dispatch.Register(r, ruleUtxos)
+	registerRuleCerts(r)
+	registerRuleLedger(r)
 }
 
 // ruleUtxo maps to the UTXO rule and the UTXOS rule it embeds, run through
@@ -29,7 +32,7 @@ func ruleUtxo(_ context.Context, req *v1.RuleUtxoRequest) (*v1.RuleUtxoResponse,
 	if err != nil {
 		return nil, err
 	}
-	return &v1.RuleUtxoResponse{Rejection: rej}, nil
+	return &v1.RuleUtxoResponse{Rejection: withoutRule(rej, "UTXOW")}, nil
 }
 
 // ruleUtxow maps to the UTXOW rule, which embeds UTXO and UTXOS.
@@ -51,7 +54,7 @@ func txTypeOf(era v1.Era) (uint, error) {
 	case v1.Era_ERA_CONWAY:
 		return ledger.TxTypeConway, nil
 	}
-	return 0, dispatch.Unsupported(fmt.Errorf("transaction rules are modelled for Alonzo, Babbage and Conway, not %v", era))
+	return legacyTxType(era)
 }
 
 func runUtxoFamilies(
@@ -82,6 +85,8 @@ func runUtxoFamilies(
 		failures = babbage.UtxoValidationFailures(tx, lc.GetSlot(), rs, params, families...)
 	case v1.Era_ERA_CONWAY:
 		failures = conway.UtxoValidationFailures(tx, lc.GetSlot(), rs, params, families...)
+	default:
+		failures = legacyUtxoFailures(lc.GetEra(), tx, lc.GetSlot(), rs, params, families...)
 	}
 	return rejectionOf(lc.GetEra(), failures), nil
 }
@@ -156,6 +161,9 @@ var utxoRuleNames = map[common.UtxoValidationRuleId]ruleName{
 }
 
 func haskellFailure(era v1.Era, f common.UtxoValidationFailure) ruleName {
+	if n, ok := legacyFailureName(era, f); ok {
+		return n
+	}
 	// gouroboros checks vkey signatures and the presence of a witness for
 	// every key-locked input in one rule; the reference reports them as
 	// InvalidWitnessesUTXOW and MissingVKeyWitnessesUTXOW.

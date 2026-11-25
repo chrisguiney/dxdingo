@@ -1,0 +1,20 @@
+# negative delta is outside the reference Coin map: UNSUPPORTED on both
+epoch_mir:  {
+  protocol_version:  {
+    major:  6
+  }
+  reserves:  10
+  treasury:  10
+  mir:  {
+    source:  MIR_SOURCE_RESERVES
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    }
+    amount:  -3
+  }
+  registered:  {
+    kind:  CREDENTIAL_KIND_KEY
+    hash:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  }
+}

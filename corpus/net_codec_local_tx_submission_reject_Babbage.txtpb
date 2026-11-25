@@ -1,0 +1,8 @@
+# reject carrying the reference's Babbage ApplyTxErr
+net_codec_local_tx_submission: {
+  codec: {
+    version: 32787
+    state: "StBusy"
+    message: "\x82\x02\x81\x82\x05\x81\x82\x01\x82\x01\x82\x01\x82\x10X\x1c\xe0\xa7\x141\x98\x12\xc3\xf7s\xba\x04\xec]k?\xfcժ\xd8P\x06\x80[\x04{\x08%A"
+  }
+}

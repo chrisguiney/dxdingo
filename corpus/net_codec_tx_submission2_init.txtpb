@@ -1,0 +1,8 @@
+# client opens the protocol
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StInit"
+    message: "\x81\x06"
+  }
+}

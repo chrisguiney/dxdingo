@@ -1,0 +1,8 @@
+# no peers to share
+net_codec_peer_sharing: {
+  codec: {
+    version: 14
+    state: "StBusy"
+    message: "\x82\x01\x80"
+  }
+}

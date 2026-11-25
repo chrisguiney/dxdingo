@@ -1,0 +1,8 @@
+# server ends the batch
+net_codec_block_fetch: {
+  codec: {
+    version: 14
+    state: "BFStreaming"
+    message: "\x81\x05"
+  }
+}

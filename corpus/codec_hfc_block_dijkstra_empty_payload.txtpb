@@ -1,0 +1,4 @@
+# tag 8 followed by an empty list is no block
+codec_hfc_block: {
+  cbor: "\x82\x08\x80"
+}

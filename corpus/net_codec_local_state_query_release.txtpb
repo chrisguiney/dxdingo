@@ -1,0 +1,8 @@
+# client releases
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StAcquired"
+    message: "\x81\x05"
+  }
+}

@@ -1,0 +1,6 @@
+# server answers
+net_agency: {
+  protocol: MINI_PROTOCOL_LOCAL_STATE_QUERY
+  state: "StAcquired"
+  message_type: "MsgQuery"
+}

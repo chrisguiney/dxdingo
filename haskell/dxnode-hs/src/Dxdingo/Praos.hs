@@ -28,11 +28,13 @@ import qualified Cardano.Crypto.KES as KES
 import qualified Cardano.Crypto.VRF as VRF
 import Cardano.Ledger.BaseTypes
   ( ActiveSlotCoeff
-  , BoundedRational (boundRational)
+  , BoundedRational (boundRational, unboundRational)
   , Globals (..)
   , Network (..)
   , Nonce (..)
+  , PositiveUnitInterval
   , ProtVer (..)
+  , UnitInterval
   , Version
   , mkActiveSlotCoeff
   , mkNonceFromOutputVRF
@@ -43,7 +45,7 @@ import Cardano.Ledger.BaseTypes
 import Cardano.Ledger.Binary (decCBOR, decodeFullAnnotator)
 import Cardano.Ledger.Chain (ChainChecksPParams (..))
 import Cardano.Ledger.Coin (Coin (..), CompactForm (..))
-import Cardano.Ledger.Hashes (HASH)
+import Cardano.Ledger.Hashes (GenDelegPair (..), GenDelegs (..), HASH, HashHeader (..), originalBytesSize)
 import Cardano.Ledger.Keys (KeyHash (..), VKey (..), coerceKeyRole, hashKey, toVRFVerKeyHash)
 import qualified Cardano.Ledger.Keys as Keys
 import Cardano.Ledger.Shelley.StabilityWindow (computeRandomnessStabilisationWindow, computeStabilityWindow)
@@ -51,26 +53,36 @@ import qualified Cardano.Ledger.State as SL
 import Cardano.Protocol.Crypto (StandardCrypto, VRF)
 import Cardano.Protocol.Praos.BlockHeader (Header (..), HeaderBody (..), headerSize)
 import Cardano.Protocol.Praos.VRF (InputVRF, vrfLeaderValue, vrfNonceValue)
-import Cardano.Protocol.TPraos.BlockHeader (BoundedNatural (bvValue), PrevHash (..))
+import Cardano.Protocol.TPraos.BlockHeader (BHBody (..), BHeader, BoundedNatural (bvValue), PrevHash (..), bhbody)
+import qualified Cardano.Protocol.TPraos.Rules.OCert as OC
+import qualified Cardano.Protocol.TPraos.Rules.Overlay as OV
 import Cardano.Protocol.TPraos.OCert (KESPeriod (..), OCert (..))
 import Cardano.Protocol.TPraos.Rules.Updn (UPDN, UpdnEnv (..), UpdnState (..))
 import Cardano.Slotting.EpochInfo (EpochInfo, fixedEpochInfo)
 import Cardano.Slotting.Slot (EpochSize (..), WithOrigin (..))
 import Cardano.Slotting.Time (SystemStart (..), mkSlotLength)
-import Control.Monad (foldM)
+import Control.Monad (foldM, when)
 import Control.Monad.Except (Except, runExcept)
 import Control.Monad.Trans.Reader (runReaderT)
 import Control.State.Transition.Extended (TRC (..), applySTS)
+import Data.Functor (void)
 import Data.Functor.Identity (runIdentity)
 import GHC.Exts (fromList)
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
 import Data.Word (Word16, Word64)
 import Numeric.Natural (Natural)
 import qualified Ouroboros.Consensus.HardFork.History as History
 import Ouroboros.Consensus.Config.SecurityParam (SecurityParam (..))
+import Cardano.Slotting.Block (BlockNo (..))
+import Ouroboros.Consensus.HeaderValidation
+  ( BasicEnvelopeValidation (expectedFirstBlockNo, expectedNextBlockNo, minimumNextSlotNo, minimumPossibleSlotNo)
+  )
 import Ouroboros.Consensus.Protocol.Abstract (ConsensusProtocol (reupdateChainDepState))
+import Ouroboros.Consensus.Protocol.TPraos ()
+import Ouroboros.Consensus.Shelley.HFEras (StandardConwayBlock, StandardShelleyBlock)
 import Ouroboros.Consensus.Protocol.Praos
   ( ConsensusConfig (..)
   , PraosParams (..)
@@ -84,7 +96,6 @@ import qualified Ouroboros.Consensus.Protocol.Praos as PraosP
 import Ouroboros.Consensus.Protocol.Praos.Common (MaxMajorProtVer (..))
 import Ouroboros.Consensus.Protocol.Praos.Views (HeaderView (..), PraosLedgerView (..))
 import Ouroboros.Consensus.Shelley.Protocol.EnvelopeChecks (EnvelopeError (..), EnvelopeHeaderView (..), envelopeCheck)
-import Ouroboros.Consensus.Protocol.TPraos ()
 import Cardano.Ledger.Slot (isOverlaySlot)
 import Cardano.Protocol.TPraos.BHeader (assertBoundedNatural, checkLeaderNatValue)
 import Cardano.Protocol.TPraos.Rules.Overlay (OBftSlot (..), classifyOverlaySlot)
@@ -246,37 +257,353 @@ poolEntry vrfHash = do
   h <- maybe (badRequest "vrf key hash must be 32 bytes") pure (hashFromBytes vrfHash :: Maybe (Hash HASH (VRF.VerKeyVRF (VRF C))))
   pure (SL.IndividualPoolStake 1 (CompactCoin 0) (toVRFVerKeyHash h))
 
--- | 'envelopeCheck': the header's encoded size against the maximum header
--- size, then the body size it declares against the maximum body size. The
--- obsolete-node bound is set to the header's own version, so it never fires.
+-- | The eras whose headers run TPraos.
+isTPraos :: P.Era -> Bool
+isTPraos e = e `elem` [P.ERA_SHELLEY, P.ERA_ALLEGRA, P.ERA_MARY, P.ERA_ALONZO]
+
+-- | The protocol version a TPraos era's header is decoded at.
+tpraosVersion :: P.Era -> Result Version
+tpraosVersion = \case
+  P.ERA_SHELLEY -> pure (natVersion @2)
+  P.ERA_ALLEGRA -> pure (natVersion @3)
+  P.ERA_MARY -> pure (natVersion @4)
+  P.ERA_ALONZO -> pure (natVersion @5)
+  e -> unsupported ("no TPraos header check in " <> T.pack (show e))
+
+-- | Decode a TPraos block header as it appears in a block. A decode failure is
+-- the rejection DeserialiseFailure.
+decodeBHeader :: P.Era -> BS.ByteString -> Result (Either P.Rejection (BHeader C))
+decodeBHeader era raw = do
+  v <- tpraosVersion era
+  pure $ case decodeFullAnnotator v "Header" decCBOR (BL.fromStrict raw) of
+    Left err -> Left (rejection "header" "DeserialiseFailure" (T.pack (show err)))
+    Right h -> Right h
+
+-- | The protocol version major of an operational-certificate request names the
+-- header format: 2 Shelley, 3 Allegra, 4 Mary, 5 and 6 Alonzo.
+tpraosEraOfMajor :: Word64 -> Maybe P.Era
+tpraosEraOfMajor = \case
+  2 -> Just P.ERA_SHELLEY
+  3 -> Just P.ERA_ALLEGRA
+  4 -> Just P.ERA_MARY
+  5 -> Just P.ERA_ALONZO
+  6 -> Just P.ERA_ALONZO
+  _ -> Nothing
+
+-- | A predicate failure as (rule, name, detail).
+type Failure = (Text, Text, Text)
+
+failuresReply :: [Failure] -> P.Rejection
+failuresReply fs = defMessage & #failures .~ [defMessage & #rule .~ r & #name .~ n & #detail .~ d | (r, n, d) <- fs]
+
+ocertFailure :: OC.OcertPredicateFailure -> Failure
+ocertFailure f = ("OCERT", name, T.pack (show f))
+  where
+    name = case f of
+      OC.KESBeforeStartOCERT {} -> "KESBeforeStartOCERT"
+      OC.KESAfterEndOCERT {} -> "KESAfterEndOCERT"
+      OC.CounterTooSmallOCERT {} -> "CounterTooSmallOCERT"
+      OC.InvalidSignatureOCERT {} -> "InvalidSignatureOCERT"
+      OC.InvalidKesSignatureOCERT {} -> "InvalidKesSignatureOCERT"
+      OC.NoCounterForKeyHashOCERT {} -> "NoCounterForKeyHashOCERT"
+
+overlayFailure :: OV.OverlayPredicateFailure C -> Failure
+overlayFailure = \case
+  OV.OcertFailure f -> ocertFailure f
+  f -> ("OVERLAY", name f, T.pack (show f))
+  where
+    name = \case
+      OV.VRFKeyUnknown {} -> "VRFKeyUnknown"
+      OV.VRFKeyWrongVRFKey {} -> "VRFKeyWrongVRFKey"
+      OV.VRFKeyBadNonce {} -> "VRFKeyBadNonce"
+      OV.VRFKeyBadLeaderValue {} -> "VRFKeyBadLeaderValue"
+      OV.VRFLeaderValueTooBig {} -> "VRFLeaderValueTooBig"
+      OV.NotActiveSlotOVERLAY {} -> "NotActiveSlotOVERLAY"
+      OV.WrongGenesisColdKeyOVERLAY {} -> "WrongGenesisColdKeyOVERLAY"
+      OV.WrongGenesisVRFKeyOVERLAY {} -> "WrongGenesisVRFKeyOVERLAY"
+      OV.UnknownGenesisKeyOVERLAY {} -> "UnknownGenesisKeyOVERLAY"
+      OV.OcertFailure {} -> "OcertFailure"
+
+-- | Globals for the OVERLAY and OCERT rules: the epoch length that fixes the
+-- first slot of the header's epoch, the active slot coefficient, and the KES
+-- parameters.
+ruleGlobals :: Word64 -> ActiveSlotCoeff -> Word64 -> Word64 -> Globals
+ruleGlobals epochLength asc spkp maxEvo =
+  (tpraosGlobals (fixedEpochInfo (EpochSize epochLength) (mkSlotLength 1)) 1 asc 0 0)
+    { slotsPerKESPeriod = spkp
+    , maxKESEvo = maxEvo
+    }
+
+type Counters = Map.Map (KeyHash Keys.BlockIssuer) Word64
+
+-- | The OVERLAY rule over one header.
+runOverlay :: Globals -> OV.OverlayEnv -> Counters -> BHeader C -> [OV.OverlayPredicateFailure C]
+runOverlay g env cs bh =
+  either NE.toList (const []) (void <$> runIdentity (runReaderT (applySTS @(OV.OVERLAY C) (TRC (env, cs, bh))) g))
+
+-- | The OCERT rule over one header.
+runOcert :: Globals -> OC.OCertEnv -> Counters -> BHeader C -> [OC.OcertPredicateFailure]
+runOcert g env cs bh =
+  either NE.toList (const []) (void <$> runIdentity (runReaderT (applySTS @(OC.OCERT C) (TRC (env, cs, bh))) g))
+
+issuerKeyHash :: BHBody C -> KeyHash Keys.BlockIssuer
+issuerKeyHash = hashKey . bheaderVk
+
+-- | The overlay environment of a TPraos VRF check: without one no slot is an
+-- overlay slot (d = 0, f = 1).
+data Overlay = Overlay
+  { ovD :: UnitInterval
+  , ovF :: PositiveUnitInterval
+  , ovLength :: Word64
+  , ovDelegs :: Map.Map (KeyHash Keys.GenesisRole) GenDelegPair
+  }
+
+overlayArg :: Maybe TpraosOverlayEnv -> Result Overlay
+overlayArg Nothing = do
+  d <- maybe (internal "unit interval zero") pure (boundRational 0)
+  f <- maybe (internal "unit interval one") pure (boundRational 1)
+  pure (Overlay d f 1 Map.empty)
+overlayArg (Just o) = do
+  d <- unitIntervalArg "overlay.d" (o ^. #maybe'd)
+  f <- positiveUnitIntervalArg "overlay.active_slot_coeff" (o ^. #maybe'activeSlotCoeff)
+  len <- nonzero' "overlay.epoch_length" (o ^. #epochLength)
+  pairs <- traverse pair (o ^. #genesisDelegations)
+  if Map.size (Map.fromList pairs) /= length pairs then unsupported "duplicate genesis key" else pure ()
+  if unboundRational d > 0 && null pairs then unsupported "no genesis keys" else pure ()
+  pure (Overlay d f len (Map.fromList pairs))
+  where
+    pair g = do
+      gk <- hashArg "genesis_key_hash" 28 (g ^. #genesisKeyHash)
+      dk <- hashArg "delegate_key_hash" 28 (g ^. #delegateKeyHash)
+      vk <- hashArg "vrf_key_hash" 32 (g ^. #vrfKeyHash)
+      gkh <- maybe (badRequest "genesis_key_hash must be 28 bytes") (pure . KeyHash) (hashFromBytes gk)
+      dkh <- maybe (badRequest "delegate_key_hash must be 28 bytes") (pure . KeyHash) (hashFromBytes dk)
+      vh <- maybe (badRequest "vrf_key_hash must be 32 bytes") pure (hashFromBytes vk :: Maybe (Hash HASH (VRF.VerKeyVRF (VRF C))))
+      pure (gkh, GenDelegPair dkh (toVRFVerKeyHash vh))
+
+-- | The VRF checks of OVERLAY on a TPraos header, the failures of its OCERT
+-- sub-rule left out. The header's issuer is registered under the given VRF key
+-- hash outside the overlay schedule.
+tpraosVrfFailures :: Overlay -> Nonce -> BS.ByteString -> BHeader C -> Result [Failure]
+tpraosVrfFailures ov eta0 keyHash bh = do
+  entry <- poolEntry keyHash
+  let body = bhbody bh
+      slot@(SlotNo s) = bheaderSlotNo body
+      first = SlotNo (s - s `mod` ovLength ov)
+      pd = SL.PoolDistr (Map.singleton (coerceKeyRole (issuerKeyHash body)) entry) (unsafeNonZero (Coin 1))
+      asc = mkActiveSlotCoeff (ovF ov)
+      g = ruleGlobals (ovLength ov) asc 129600 62
+      cs = Map.singleton (issuerKeyHash body) 0
+      env = OV.OverlayEnv (ovD ov) pd (GenDelegs (ovDelegs ov)) eta0
+  -- Outside the overlay schedule the leader threshold applies, with the
+  -- issuer holding all the stake; it cannot fail only when f = 1.
+  when (not (isOverlaySlot first (ovD ov) slot) && unboundRational (ovF ov) /= 1) $
+    unsupported "a slot outside the overlay schedule needs active_slot_coeff 1: the leader threshold is not part of the request"
+  pure [overlayFailure f | f <- runOverlay g env cs bh, notOcert f]
+  where
+    notOcert = \case
+      OV.OcertFailure {} -> False
+      _ -> True
+
+-- | The TPraos branch of the VRF check.
+tpraosVrfCheck :: PraosVrfCheckRequest -> Result PraosVrfCheckResponse
+tpraosVrfCheck req = do
+  let era = req ^. #era
+  _ <- tpraosVersion era
+  eta0 <- case req ^. #epochNonce . #hash of
+    bs
+      | BS.null bs -> unsupported "neutral epoch nonce"
+      | otherwise -> maybe (badRequest "epoch_nonce must be 32 bytes") (pure . Nonce) (hashFromBytes bs)
+  keyHash <- hashArg "pool_vrf_key_hash" 32 (req ^. #poolVrfKeyHash)
+  ov <- overlayArg (req ^. #maybe'overlay)
+  decoded <- decodeBHeader era (req ^. #header)
+  case decoded of
+    Left rej -> pure (defMessage & #rejection .~ rej)
+    Right bh -> do
+      fs <- tpraosVrfFailures ov eta0 keyHash bh
+      let body = bhbody bh
+      pure $
+        if null fs
+          then
+            defMessage
+              & #leaderValue .~ VRF.getOutputVRFBytes (VRF.certifiedOutput (bheaderL body))
+              & #nonceValue .~ nonceBytes (mkNonceFromOutputVRF (VRF.certifiedOutput (bheaderEta body)))
+          else defMessage & #rejection .~ failuresReply fs
+
+-- | The TPraos branch of the KES check: OCERT with a counter that passes.
+tpraosKesCheck :: PraosKesCheckRequest -> Result PraosKesCheckResponse
+tpraosKesCheck req = do
+  _ <- tpraosVersion (req ^. #era)
+  spkp <- nonzero' "slots_per_kes_period" (req ^. #slotsPerKesPeriod)
+  maxEvo <- nonzero' "max_kes_evolutions" (req ^. #maxKesEvolutions)
+  decoded <- decodeBHeader (req ^. #era) (req ^. #header)
+  pure $ case decoded of
+    Left rej -> defMessage & #rejection .~ rej
+    Right bh ->
+      let body = bhbody bh
+          OCert _ n (KESPeriod c0) _ = bheaderOCert body
+          SlotNo slot = bheaderSlotNo body
+          cs = Map.singleton (issuerKeyHash body) n
+          g = ruleGlobals 1 (alwaysLeaderCoeff) spkp maxEvo
+       in case runOcert g (OC.OCertEnv mempty mempty) cs bh of
+            [] -> defMessage & #kesPeriod .~ (slot `div` spkp - fromIntegral c0)
+            fs -> defMessage & #rejection .~ failuresReply (map ocertFailure fs)
+
+-- | The TPraos branch of the operational certificate check: OCERT with the
+-- recorded counter, or the issuer registered as a pool or genesis delegate.
+tpraosOpcertCheck :: P.Era -> PraosOpCertCheckRequest -> Result PraosOpCertCheckResponse
+tpraosOpcertCheck era req = do
+  spkp <- nonzero' "slots_per_kes_period" (req ^. #slotsPerKesPeriod)
+  maxEvo <- nonzero' "max_kes_evolutions" (req ^. #maxKesEvolutions)
+  decoded <- decodeBHeader era (req ^. #header)
+  pure $ case decoded of
+    Left rej -> defMessage & #rejection .~ rej
+    Right bh ->
+      let body = bhbody bh
+          OCert _ n _ _ = bheaderOCert body
+          hk = issuerKeyHash body
+          cs = maybe Map.empty (Map.singleton hk) (req ^. #maybe'lastCounter)
+          pools = if req ^. #poolRegistered then Set.singleton (coerceKeyRole hk) else Set.empty
+          genesis = if req ^. #issuerIsGenesisDelegate then Set.singleton (coerceKeyRole hk) else Set.empty
+          g = ruleGlobals 1 alwaysLeaderCoeff spkp maxEvo
+       in case runOcert g (OC.OCertEnv pools genesis) cs bh of
+            [] -> defMessage & #newCounter .~ n
+            fs -> defMessage & #rejection .~ failuresReply (map ocertFailure fs)
+
+-- | The TPraos branch of the VRF key registration check: the pool and key hash
+-- lookups of OVERLAY under the neutral epoch nonce and no overlay slots.
+tpraosVrfKeyRegistered :: P.Era -> [(KeyHash Keys.StakePool, SL.IndividualPoolStake)] -> BS.ByteString -> Result PraosVrfKeyRegisteredResponse
+tpraosVrfKeyRegistered era entries raw = do
+  ov <- overlayArg Nothing
+  decoded <- decodeBHeader era raw
+  pure $ case decoded of
+    Left rej -> defMessage & #rejection .~ rej
+    Right bh ->
+      let body = bhbody bh
+          pool = coerceKeyRole (issuerKeyHash body) :: KeyHash Keys.StakePool
+          pd = SL.PoolDistr (Map.fromList entries) (unsafeNonZero (Coin 1))
+          g = ruleGlobals 1 (mkActiveSlotCoeff (ovF ov)) 129600 62
+          env = OV.OverlayEnv (ovD ov) pd (GenDelegs Map.empty) NeutralNonce
+          cs = Map.singleton (issuerKeyHash body) 0
+          registration = [overlayFailure f | f <- runOverlay g env cs bh, isRegistration f]
+       in case registration of
+            [] -> defMessage & #poolId .~ (let KeyHash h = pool in hashToBytes h)
+            fs -> defMessage & #rejection .~ failuresReply fs
+  where
+    isRegistration = \case
+      OV.VRFKeyUnknown {} -> True
+      OV.VRFKeyWrongVRFKey {} -> True
+      _ -> False
+
+-- | An active slot coefficient of one for rules whose leader threshold is not
+-- under test.
+alwaysLeaderCoeff :: ActiveSlotCoeff
+alwaysLeaderCoeff = mkActiveSlotCoeff one
+  where
+    one = case boundRational 1 of
+      Just u -> u
+      Nothing -> error "unit interval one"
+
+-- | The position checks of 'validateEnvelope', then 'envelopeCheck': the
+-- header's encoded size against the maximum header size, then the body size
+-- it declares against the maximum body size. The obsolete-node bound is set to
+-- the header's own version, so it never fires.
 headerEnvelope :: PraosHeaderEnvelopeRequest -> Result PraosHeaderEnvelopeResponse
 headerEnvelope req = do
-  v <- praosVersion (req ^. #era)
+  let era = req ^. #era
+  v <- if isTPraos era then tpraosVersion era else praosVersion era
   pparams <- maybe (badRequest "pparams is required") pure (req ^. #maybe'pparams)
   maxHeader <- limit "max_block_header_size" (pparams ^. #maybe'maxBlockHeaderSize)
   maxBody <- limit "max_block_body_size" (pparams ^. #maybe'maxBlockBodySize)
   if maxHeader > fromIntegral (maxBound :: Word16) then unsupported "max_block_header_size does not fit a Word16" else pure ()
-  decoded <- decodeHeader (req ^. #era) (req ^. #header)
-  pure $ case decoded of
-    Left rej -> defMessage & #rejection .~ rej
-    Right hdr@(Header body _) ->
-      let ccd =
-            ChainChecksPParams
-              { ccMaxBHSize = fromIntegral maxHeader
-              , ccMaxBBSize = maxBody
-              , ccProtocolVersion = ProtVer v 0
-              }
-          view =
-            EnvelopeHeaderView
-              { ehvProtVer = v
-              , ehvHeaderSize = headerSize hdr
-              , ehvBodySize = hbBodySize body
-              }
-       in case runExcept (envelopeCheck v ccd view) of
-            Right () -> defMessage
-            Left e -> defMessage & #rejection .~ rejection "Envelope" (envelopeErrName e) (T.pack (show e))
+  parent <- parentArg req
+  if isTPraos era
+    then do
+      decoded <- decodeBHeader era (req ^. #header)
+      pure $ case decoded of
+        Left rej -> defMessage & #rejection .~ rej
+        Right hdr ->
+          let body = bhbody hdr
+              ProtVer m _ = bprotver body
+              ccd = ChainChecksPParams {ccMaxBHSize = fromIntegral maxHeader, ccMaxBBSize = maxBody, ccProtocolVersion = ProtVer m 0}
+              view = EnvelopeHeaderView {ehvProtVer = m, ehvHeaderSize = originalBytesSize hdr, ehvBodySize = bsize body}
+           in envelopeReply
+                (positionFailure (Proxy @StandardShelleyBlock) parent (bheaderBlockNo body) (bheaderSlotNo body) (bheaderPrev body))
+                (runExcept (envelopeCheck m ccd view))
+    else do
+      decoded <- decodeHeader era (req ^. #header)
+      pure $ case decoded of
+        Left rej -> defMessage & #rejection .~ rej
+        Right hdr@(Header body _) ->
+          let ccd =
+                ChainChecksPParams
+                  { ccMaxBHSize = fromIntegral maxHeader
+                  , ccMaxBBSize = maxBody
+                  , ccProtocolVersion = ProtVer v 0
+                  }
+              view =
+                EnvelopeHeaderView
+                  { ehvProtVer = v
+                  , ehvHeaderSize = headerSize hdr
+                  , ehvBodySize = hbBodySize body
+                  }
+           in envelopeReply
+                (positionFailure (Proxy @StandardConwayBlock) parent (hbBlockNo body) (hbSlotNo body) (hbPrev body))
+                (runExcept (envelopeCheck v ccd view))
   where
     limit name = maybe (badRequest (name <> " is required")) pure
+    envelopeReply position sizes = case (position, sizes) of
+      (Just (name, detail), _) -> defMessage & #rejection .~ rejection "Envelope" name detail
+      (Nothing, Left e) -> defMessage & #rejection .~ rejection "Envelope" (envelopeErrName e) (T.pack (show e))
+      (Nothing, Right ()) -> defMessage
+
+-- | The tip a header is checked against.
+data Parent
+  = -- | No position check.
+    NoParent
+  | -- | The header extends the empty chain.
+    AtOrigin
+  | Tip Word64 Word64 PrevHash
+
+parentArg :: PraosHeaderEnvelopeRequest -> Result Parent
+parentArg req = case req ^. #maybe'parent of
+  Just t -> do
+    h <- hashArg "parent.hash" 32 (t ^. #hash)
+    hh <- maybe (badRequest "parent.hash must be 32 bytes") (pure . HashHeader) (hashFromBytes h)
+    if t ^. #blockNo == maxBound || t ^. #slot == maxBound
+      then unsupported "parent block number or slot is the largest Word64: its successor is not representable"
+      else pure (Tip (t ^. #blockNo) (t ^. #slot) (BlockHash hh))
+  Nothing
+    | req ^. #origin -> pure AtOrigin
+    | otherwise -> pure NoParent
+
+-- | The three position checks of 'validateEnvelope' in its order: block
+-- number, slot, then the previous hash. The expected block number and the
+-- minimum slot are the 'BasicEnvelopeValidation' methods of the block type, not
+-- restated here.
+positionFailure ::
+  forall blk.
+  BasicEnvelopeValidation blk =>
+  Proxy blk ->
+  Parent ->
+  BlockNo ->
+  SlotNo ->
+  PrevHash ->
+  Maybe (Text, Text)
+positionFailure p parent no slot prev = case parent of
+  NoParent -> Nothing
+  AtOrigin -> go (expectedFirstBlockNo p) (minimumPossibleSlotNo p) (prev == GenesisHash)
+  Tip pno pslot h ->
+    go
+      (expectedNextBlockNo p (error "tip info") (error "tip info") (BlockNo pno))
+      (minimumNextSlotNo p (error "tip info") (error "tip info") (SlotNo pslot))
+      (prev == h)
+  where
+    go expectedNo minSlot hashOk
+      | no /= expectedNo = Just ("UnexpectedBlockNo", T.pack (show (expectedNo, no)))
+      | slot < minSlot = Just ("UnexpectedSlotNo", T.pack (show (minSlot, slot)))
+      | not hashOk = Just ("UnexpectedPrevHash", T.pack (show prev))
+      | otherwise = Nothing
 
 envelopeErrName :: EnvelopeError -> Text
 envelopeErrName = \case
@@ -288,6 +615,7 @@ envelopeErrName = \case
 -- given VRF key hash: key hash first, then the proof over the Praos VRF input.
 -- The leader and nonce values are 'vrfLeaderValue' and 'vrfNonceValue'.
 vrfCheck :: PraosVrfCheckRequest -> Result PraosVrfCheckResponse
+vrfCheck req | isTPraos (req ^. #era) = tpraosVrfCheck req
 vrfCheck req = do
   _ <- praosVersion (req ^. #era)
   eta0 <- case req ^. #epochNonce . #hash of
@@ -326,6 +654,7 @@ nonceBytes = \case
 -- signature. The reported kes_period is the evolution, the header's KES period
 -- less the certificate's start period.
 kesCheck :: PraosKesCheckRequest -> Result PraosKesCheckResponse
+kesCheck req | isTPraos (req ^. #era) = tpraosKesCheck req
 kesCheck req = do
   _ <- praosVersion (req ^. #era)
   spkp <- nonzero' "slots_per_kes_period" (req ^. #slotsPerKesPeriod)
@@ -349,11 +678,13 @@ nonzero' name x = fromIntegral <$> nonzero name x
 -- stake distribution when none is recorded: after the period window and
 -- signatures it checks counter m <= n <= m + 1.
 opcertCheck :: PraosOpCertCheckRequest -> Result PraosOpCertCheckResponse
+opcertCheck req
+  | Just era <- tpraosEraOfMajor (fromIntegral (req ^. #protocolVersion . #major)) = tpraosOpcertCheck era req
 opcertCheck req = do
   era <- case req ^. #protocolVersion . #major of
     m | m >= 9 -> pure P.ERA_CONWAY
     m | m >= 7 -> pure P.ERA_BABBAGE
-    m -> unsupported ("protocol version " <> T.pack (show m) <> " runs TPraos")
+    m -> unsupported ("no header format at protocol version " <> T.pack (show m))
   spkp <- nonzero' "slots_per_kes_period" (req ^. #slotsPerKesPeriod)
   maxEvo <- nonzero' "max_kes_evolutions" (req ^. #maxKesEvolutions)
   entry <- poolEntry (BS.replicate 32 0)
@@ -377,8 +708,19 @@ vrfKeyRegistered :: PraosVrfKeyRegisteredRequest -> Result PraosVrfKeyRegistered
 vrfKeyRegistered req = do
   entries <- traverse entry (req ^. #poolDistribution)
   if Map.size (Map.fromList entries) /= length entries then unsupported "duplicate pool in the distribution" else pure ()
+  let era = if req ^. #era == P.ERA_UNSPECIFIED then P.ERA_CONWAY else req ^. #era
+  if isTPraos era then tpraosVrfKeyRegistered era entries (req ^. #header) else praosVrfKeyRegistered req era entries
+  where
+    entry p = do
+      pid <- hashArg "pool_id" 28 (p ^. #poolId)
+      kh <- maybe (badRequest "pool_id must be 28 bytes") (pure . KeyHash) (hashFromBytes pid)
+      e <- poolEntry =<< hashArg "vrf_key_hash" 32 (p ^. #vrfKeyHash)
+      pure (kh, e)
+
+praosVrfKeyRegistered :: PraosVrfKeyRegisteredRequest -> P.Era -> [(KeyHash Keys.StakePool, SL.IndividualPoolStake)] -> Result PraosVrfKeyRegisteredResponse
+praosVrfKeyRegistered req era entries = do
   f <- alwaysLeader
-  decoded <- decodeHeader P.ERA_CONWAY (req ^. #header)
+  decoded <- decodeHeader era (req ^. #header)
   pure $ case decoded of
     Left rej -> defMessage & #rejection .~ rej
     Right hdr ->
@@ -390,12 +732,6 @@ vrfKeyRegistered req = do
             Left e@(VRFKeyWrongVRFKey {}) -> defMessage & #rejection .~ praosRejection e
             Left _ -> registered
             Right () -> registered
-  where
-    entry p = do
-      pid <- hashArg "pool_id" 28 (p ^. #poolId)
-      kh <- maybe (badRequest "pool_id must be 28 bytes") (pure . KeyHash) (hashFromBytes pid)
-      e <- poolEntry =<< hashArg "vrf_key_hash" 32 (p ^. #vrfKeyHash)
-      pure (kh, e)
 
 -- | The era's nonce contribution of a block's VRF output: TPraos
 -- 'mkNonceFromOutputVRF', Praos 'vrfNonceValue'.

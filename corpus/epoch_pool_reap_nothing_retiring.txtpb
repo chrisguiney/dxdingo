@@ -1,0 +1,21 @@
+# no pool retires this epoch: nothing moves
+epoch_pool_reap:  {
+  epoch:  7
+  pools:  {
+    pool_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    stage:  POOL_STAGE_CURRENT
+    reward_account:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+    deposit:  500
+    retiring_epoch:  8
+  }
+  accounts:  {
+    credential:  {
+      kind:  CREDENTIAL_KIND_KEY
+      hash:  "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    }
+    pool_id:  "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+  }
+}

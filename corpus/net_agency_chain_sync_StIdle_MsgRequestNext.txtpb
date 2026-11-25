@@ -1,0 +1,6 @@
+# server gets agency to answer
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StIdle"
+  message_type: "MsgRequestNext"
+}

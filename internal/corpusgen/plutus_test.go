@@ -1,14 +1,17 @@
 package corpusgen
 
 import (
+	"slices"
 	"testing"
 
 	v1 "github.com/chrisguiney/dxdingo/gen/go/dxdingo/v1"
 )
 
 func TestGeneratePlutusCorpus(t *testing.T) {
-	writeCorpus(t, "", append(append(append(plutusCostModelCases(t), plutusChainCases(t)...), plutusEdgeCases(t)...), plutusContextCases(t)...))
-	writeCorpus(t, "divergences", append(append(plutusCostModelDivergences(t), plutusEvalDivergences(t)...), plutusContextDivergences(t)...))
+	writeCorpus(t, "", slices.Concat(plutusCostModelCases(t), plutusChainCases(t), plutusEdgeCases(t), plutusContextCases(t),
+		plutusMultiEvalCases(t), plutusCollectCases(t)))
+	writeCorpus(t, "divergences", slices.Concat(plutusCostModelDivergences(t), plutusEvalDivergences(t), plutusContextDivergences(t),
+		plutusMultiEvalDivergences(t)))
 }
 
 // plutusCostModelDivergences are confirmed mismatches, each pinned by a direct

@@ -1,0 +1,6 @@
+# client agency again
+net_agency: {
+  protocol: MINI_PROTOCOL_PEER_SHARING
+  state: "StBusy"
+  message_type: "MsgSharePeers"
+}

@@ -1,0 +1,8 @@
+# client terminates
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StIdle"
+    message: "\x81\x07"
+  }
+}

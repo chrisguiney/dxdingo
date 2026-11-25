@@ -1,0 +1,6 @@
+# a babbage MemPack output (ada): dingo writes the map format, the reference the array (TestDivergenceMempackTxOutIsMapFormat)
+codec_ledger_state: {
+  era: ERA_BABBAGE
+  format: LEDGER_STATE_FORMAT_MEMPACK_TXOUT
+  cbor: "\x00\x1da\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x00\xdb\xc6`"
+}

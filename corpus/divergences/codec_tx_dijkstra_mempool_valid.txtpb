@@ -1,0 +1,5 @@
+# mempool form with is_valid true: the reference re-encodes the three-element form, gouroboros keeps the four elements (TestDivergenceDijkstraMempoolTxKeepsWireBytes)
+codec_tx: {
+  era: ERA_DIJKSTRA
+  cbor: "\x84\xa3\x00\x80\x01\x80\x02\x00\xa0\xf5\xf6"
+}

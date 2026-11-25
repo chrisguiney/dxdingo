@@ -2,7 +2,11 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"testing"
+
+	"github.com/blinklabs-io/dingo/chain"
+	"github.com/chrisguiney/dxdingo/internal/praosfixtures"
 
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
 )
@@ -36,5 +40,29 @@ func TestDivergenceNeutralEvolvingIsHashed(t *testing.T) {
 	}
 	if want := b2b256(a, c); !bytes.Equal(folded.Bytes(), want) {
 		t.Fatalf("a ⭒ c = %x, want %x", folded.Bytes(), want)
+	}
+}
+
+// praos.header-envelope, header on the empty chain. The reference
+// (validateEnvelope at Origin) needs block number 0 and the genesis hash as
+// previous hash. Dingo's chain queues the first header of an empty chain
+// without a position check, whatever its block number and previous hash.
+// A real chain reaches it only as a chain that starts after Byron, such as a
+// devnet beginning in a later era.
+func TestDivergenceOriginHasNoPositionCheck(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"shelley", "conway_a"} {
+		h := praosfixtures.ByName(name)
+		d := decode(t, h)
+		if d.blockNo == 0 {
+			t.Fatalf("%s: fixture has block number 0", name)
+		}
+		cm, err := chain.NewManager(context.Background(), nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := cm.PrimaryChain().AddBlockHeader(context.Background(), d.hdr); err != nil {
+			t.Fatalf("%s: dingo now rejects a first header (%v); move the corpus cases out of corpus/divergences", name, err)
+		}
 	}
 }

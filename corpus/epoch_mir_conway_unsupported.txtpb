@@ -1,0 +1,8 @@
+# MIR does not exist from protocol 9: UNSUPPORTED on both
+epoch_mir:  {
+  protocol_version:  {
+    major:  9
+  }
+  reserves:  10
+  treasury:  10
+}

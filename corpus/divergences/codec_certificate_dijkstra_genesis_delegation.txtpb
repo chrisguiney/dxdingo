@@ -1,0 +1,5 @@
+# tag 5 certificate under Dijkstra: gouroboros decodes it, the reference has no genesis delegation (TestDivergenceDijkstraExpungedCertificates)
+codec_certificate: {
+  era: ERA_DIJKSTRA
+  cbor: "\x84\x05X\x1c\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11X\x1c\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"X 33333333333333333333333333333333"
+}

@@ -15,7 +15,7 @@ const (
 	MaxKESEvolutions  = 62
 )
 
-// Provenance: shelley, babbage and conway are the
+// Provenance: shelley, allegra, mary, alonzo, babbage and conway are the
 // headers of the gouroboros internal/testdata blocks of the same names (mainnet
 // blocks); babbage_m8 (protocol major 8), conway_a (block 10882991) and
 // conway_b (block 10873394) are the headers of mainnet blocks in
@@ -44,6 +44,9 @@ func mustHex(s string) []byte {
 func All() []Header {
 	return []Header{
 		{"shelley", v1.Era_ERA_SHELLEY, mustHex(shelleyBlockHeaderHex), mustHex("829749cb2701843214ae3aee67ae12ec9bdb3502e060ac0b75275d0f52af349c")},
+		{"allegra", v1.Era_ERA_ALLEGRA, mustHex(allegraBlockHeaderHex), mustHex("8d60fab791ae353486f176318d52501dc8f2d1843bfd69492b52ae724d2cb33d")},
+		{"mary", v1.Era_ERA_MARY, mustHex(maryBlockHeaderHex), mustHex("b9c6e9073b124c26f89556d2d7fbb99d8047787517c0ed5e4f0d323b480444b5")},
+		{"alonzo", v1.Era_ERA_ALONZO, mustHex(alonzoBlockHeaderHex), mustHex("d932efa15a43b37c7d3389bed5711b1ff4d1038ce9a864cb66d8ed0fe9129852")},
 		{"babbage", v1.Era_ERA_BABBAGE, mustHex(babbageBlockHeaderHex), nil},
 		{"conway", v1.Era_ERA_CONWAY, mustHex(conwayBlockHeaderHex), nil},
 		{"babbage_m8", v1.Era_ERA_BABBAGE, mustHex(babbageM8HeaderHex), mustHex("95d9b8cbdcde43708d2cf6d1b82e3e7455a6c7a1cc68096905d4d06a48a99159")},

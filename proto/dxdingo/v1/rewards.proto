@@ -21,8 +21,8 @@ message RewardsMonetaryExpansionRequest {
 }
 
 message RewardsMonetaryExpansionResponse {
+  reserved 2;
   Rejection rejection = 1;
-  Rational eta = 2;
   uint64 delta_r1 = 3;
   uint64 reward_pot = 4;
   uint64 treasury_cut = 5;
@@ -135,6 +135,12 @@ message RewardsApplyUpdateRequest {
   Pots pots = 2;
   RewardUpdate update = 3;
   repeated Credential registered = 4;
+  // The reward pot (incentives plus fees) and tau the update was built
+  // from. dingo derives the treasury cut from them instead of taking
+  // delta_t, so a request is UNSUPPORTED on both nodes unless
+  // delta_t == floor(treasury_expansion * total_reward_pot).
+  uint64 total_reward_pot = 5;
+  Rational treasury_expansion = 6;
 }
 
 message RewardsApplyUpdateResponse {
@@ -144,8 +150,12 @@ message RewardsApplyUpdateResponse {
   uint64 unregistered_to_treasury = 4;
 }
 
-// Non-myopic member rewards (pool ranking). Dingo computes this in float64,
-// so comparison is approximate; see the driver's tolerance.
+// Non-myopic member rewards (pool ranking): what a delegator holding
+// member_stake would earn from each pool. Both nodes compute in float64 and
+// the replies are compared exactly. A pool listed in performance has a
+// likelihood history and can be a top pool; the others rank with the
+// performance of an empty history. owner_stake is the stake the pool's
+// owners delegate to it, for the pledge check.
 message RewardsNonMyopicRequest {
   ProtocolParameters pparams = 1;
   uint64 total_stake = 2;
@@ -155,6 +165,7 @@ message RewardsNonMyopicRequest {
   // Per-pool likelihood-derived performance estimates.
   repeated PoolPerformance performance = 6;
   uint64 member_stake = 7;
+  repeated PoolOwnerStake owner_stake = 8;
 }
 
 message PoolPerformance {
@@ -162,7 +173,19 @@ message PoolPerformance {
   Rational performance = 2;
 }
 
+message PoolOwnerStake {
+  bytes pool_id = 1;
+  uint64 amount = 2;
+}
+
+message PoolMemberReward {
+  bytes pool_id = 1;
+  uint64 reward = 2;
+}
+
 message RewardsNonMyopicResponse {
+  reserved 2;
   Rejection rejection = 1;
-  repeated Credit member_rewards = 2;
+  // One entry per pool in effect, by pool id, zero rewards included.
+  repeated PoolMemberReward rewards = 3;
 }

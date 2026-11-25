@@ -2,11 +2,16 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"testing"
 
 	"github.com/blinklabs-io/gouroboros/cbor"
 	"github.com/blinklabs-io/gouroboros/ledger"
 	"github.com/blinklabs-io/gouroboros/ledger/alonzo"
+	"github.com/blinklabs-io/gouroboros/ledger/byron"
+	"github.com/blinklabs-io/gouroboros/ledger/common"
+
+	"github.com/chrisguiney/dxdingo/internal/byronfixture"
 )
 
 // Divergence confirmations call gouroboros directly, bypassing dxnode-go, so
@@ -67,5 +72,72 @@ func TestDivergenceCodecAlonzoCostModelLength(t *testing.T) {
 	}
 	if got := u.CostModels[0]; len(got) != 3 {
 		t.Fatalf("cost model = %v", got)
+	}
+}
+
+// A Dijkstra block body is three components in gouroboros, [transactions,
+// leios certificate, peras certificate]. The reference writes and reads four,
+// with the invalid-transaction set first, so no block is accepted by both.
+func TestDivergenceDijkstraBlockBodyComponents(t *testing.T) {
+	t.Parallel()
+	block := func(body ...byte) []byte {
+		return append(append([]byte{0x82}, dijkstraHeader(t)...), body...)
+	}
+	three := block(0x83, 0x80, 0xf6, 0xf6)
+	four := block(0x84, 0xf6, 0x80, 0xf6, 0xf6)
+	if _, err := ledger.NewBlockFromCbor(ledger.BlockTypeDijkstra, three, common.VerifyConfig{SkipBodyHashValidation: true}); err != nil {
+		t.Fatalf("three-component body: %v, want accepted", err)
+	}
+	if _, err := ledger.NewBlockFromCbor(ledger.BlockTypeDijkstra, four, common.VerifyConfig{SkipBodyHashValidation: true}); err == nil {
+		t.Fatal("four-component body accepted, want rejected")
+	}
+}
+
+// The Dijkstra CDDL drops the deposit-less registration and deregistration
+// (tags 0 and 1) and genesis delegation (tag 5). gouroboros decodes them as
+// certificates whatever the era; the reference rejects them in Dijkstra.
+func TestDivergenceDijkstraExpungedCertificates(t *testing.T) {
+	t.Parallel()
+	key := append([]byte{0x82, 0x00, 0x58, 0x1c}, h28...)
+	for name, wire := range map[string][]byte{
+		"tag 0 registration":     append([]byte{0x82, 0x00}, key...),
+		"tag 1 deregistration":   append([]byte{0x82, 0x01}, key...),
+		"tag 5 genesis delegate": unhex(t, "84 05 581c"+hex.EncodeToString(h28)+" 581c"+hex.EncodeToString(bytes.Repeat([]byte{0x22}, 28))+" 5820"+hex.EncodeToString(bytes.Repeat([]byte{0x33}, 32))),
+	} {
+		var w common.CertificateWrapper
+		if _, err := cbor.DecodeExact(wire, &w); err != nil {
+			t.Fatalf("%s: %v, want accepted", name, err)
+		}
+	}
+}
+
+// A Dijkstra transaction in the mempool form [body, witnesses, true, auxiliary
+// data] keeps its four elements in gouroboros; the reference re-encodes the
+// three-element transaction.
+func TestDivergenceDijkstraMempoolTxKeepsWireBytes(t *testing.T) {
+	t.Parallel()
+	wire := unhex(t, "84 a3 00 80 01 80 02 00 a0 f5 f6")
+	tx, err := ledger.NewTransactionFromCbor(ledger.TxTypeDijkstra, wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(tx.Cbor(), wire) {
+		t.Fatalf("Cbor() = %x, want the wire bytes %x", tx.Cbor(), wire)
+	}
+}
+
+// A Byron transaction with definite-length input and output lists decodes in
+// gouroboros; the reference reads both lists as indefinite-length only.
+func TestDivergenceByronTxDefiniteLists(t *testing.T) {
+	t.Parallel()
+	k := byronfixture.NewKey(1)
+	in := byronfixture.TxIn{ID: [32]byte{9}, Index: 1}
+	out := byronfixture.TxOut(k.Address(nil), 1_000_000)
+	inWire := byronfixture.Array(byronfixture.Uint(0), byronfixture.Tag24(byronfixture.Array(byronfixture.Bytes(in.ID[:]), byronfixture.Uint(1))))
+	body := byronfixture.Array(byronfixture.Array(inWire), byronfixture.Array(out), byronfixture.EmptyMap)
+	_, id := byronfixture.Tx([]byronfixture.TxIn{in}, [][]byte{out})
+	wire := byronfixture.TxAux(body, k.Witness(764824073, id))
+	if _, err := byron.NewByronTransactionFromCbor(wire); err != nil {
+		t.Fatalf("definite lists: %v, want accepted", err)
 	}
 }

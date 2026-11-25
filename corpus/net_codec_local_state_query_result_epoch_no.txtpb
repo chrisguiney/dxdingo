@@ -1,0 +1,9 @@
+# MsgResult decoded by the result type of Query_Conway_GetEpochNo
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StQuerying"
+    message: "\x82\x04\x81\n"
+  }
+  query: "\x82\x00\x82\x06\x81\x01"
+}

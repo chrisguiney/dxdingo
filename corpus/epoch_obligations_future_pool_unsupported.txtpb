@@ -1,0 +1,16 @@
+# a future-stage pool is outside the reference's pool map
+epoch_obligations: {
+  pools: {
+    pool_id: "\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+    stage: POOL_STAGE_FUTURE
+    margin: {
+      numerator: "1"
+      denominator: "100"
+    }
+    reward_account: {
+      kind: CREDENTIAL_KIND_KEY
+      hash: "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+    }
+    deposit: 5
+  }
+}

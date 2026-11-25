@@ -1,0 +1,8 @@
+# client asks whether a Byron transaction id is in the snapshot
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StAcquired"
+    message: "\x82\x07\x82\x00\x82\x00X K\xa89\xc4 \xb3ҽC\x950\xf8\x91\xca\xe9\xa5\xd4\xc4\xd8\x12\x04F0\xda\xc7.\x8e\tb\xfe\xee\xcc"
+  }
+}

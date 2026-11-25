@@ -1,0 +1,6 @@
+# the non-blocking request
+net_agency: {
+  protocol: MINI_PROTOCOL_TX_SUBMISSION2
+  state: "StIdle"
+  message_type: "MsgRequestTxIdsNonBlocking"
+}

@@ -1,0 +1,8 @@
+# submit a Conway transaction
+net_codec_local_tx_submission: {
+  codec: {
+    version: 32787
+    state: "StIdle"
+    message: "\x82\x00\x82\x06\xd8\x18N\x84\xa3\x00\xd9\x01\x02\x80\x01\x80\x02\x00\xa0\xf5\xf6"
+  }
+}

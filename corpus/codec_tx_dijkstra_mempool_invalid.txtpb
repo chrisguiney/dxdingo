@@ -1,0 +1,5 @@
+# the mempool form with is_valid false
+codec_tx: {
+  era: ERA_DIJKSTRA
+  cbor: "\x84\xa3\x00\x80\x01\x80\x02\x00\xa0\xf4\xf6"
+}

@@ -1,0 +1,6 @@
+# bodies delivered
+net_agency: {
+  protocol: MINI_PROTOCOL_TX_SUBMISSION2
+  state: "StTxs"
+  message_type: "MsgReplyTxs"
+}

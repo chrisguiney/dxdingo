@@ -1,0 +1,8 @@
+# MsgQuery carrying Query_Byron
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StAcquired"
+    message: "\x82\x03\x82\x00\x82\x00\x00"
+  }
+}

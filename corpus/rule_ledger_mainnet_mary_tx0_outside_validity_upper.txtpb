@@ -1,0 +1,74 @@
+# ledger tx 0 of the mary mainnet block: slot is past the ttl (equal to it from Allegra on, one more in Shelley whose ttl is inclusive)
+rule_ledger:  {
+  context:  {
+    era:  ERA_MARY
+    protocol_version:  {
+      major:  4
+    }
+    slot:  39926666
+    epoch:  600
+    network_id:  1
+  }
+  globals:  {
+    network_magic:  764824073
+    epoch_length:  432000
+    slot_length:  {
+      numerator:  "1"
+      denominator:  "1"
+    }
+    security_param:  2160
+    active_slot_coeff:  {
+      numerator:  "1"
+      denominator:  "20"
+    }
+    slots_per_kes_period:  129600
+    max_kes_evolutions:  62
+    max_lovelace_supply:  45000000000000000
+    system_start_unix:  1506203091
+    quorum:  5
+  }
+  pparams:  {
+    min_fee_a:  44
+    min_fee_b:  155381
+    max_block_body_size:  90112
+    max_tx_size:  16384
+    max_block_header_size:  1100
+    key_deposit:  2000000
+    pool_deposit:  500000000
+    max_epoch:  18
+    n_opt:  500
+    a0:  {
+      numerator:  "3"
+      denominator:  "10"
+    }
+    rho:  {
+      numerator:  "3"
+      denominator:  "1000"
+    }
+    tau:  {
+      numerator:  "2"
+      denominator:  "10"
+    }
+    d:  {
+      numerator:  "0"
+      denominator:  "1"
+    }
+    protocol_version:  {
+      major:  4
+    }
+    min_utxo_value:  1000000
+    min_pool_cost:  170000000
+  }
+  state:  {
+    utxo:  {
+      txin:  {
+        tx_id:  "\xd9U~\xfb\xf8O\xfam\xd3cf\x1c\x1b^s\x13\xed)\xe5\x08#\xda\x16\xba\xed\xc1yO/ab\x07"
+      }
+      txout:  "\x82X\x1da\xa8\xabL]U\xe8g\x95\xf3\xafh?\x10}\x14B\xecwv(B\xce_\xd9V\xa6\x9bC\x1a\x00$\x1a\xda"
+    }
+    pots:  {
+      treasury:  1000000000000
+    }
+  }
+  tx:  "\x83\xa5\x00\x81\x82X \xd9U~\xfb\xf8O\xfam\xd3cf\x1c\x1b^s\x13\xed)\xe5\x08#\xda\x16\xba\xed\xc1yO/ab\x07\x00\x01\x81\x82X9\x01]<\x84\xa4\xab4$L\xa8eG\\\x13\xea\xbf.\x86-Z0\xc6\x126\x0fO\x0b{$\x05\xfb\xcf\x0etVRx\xf9;+\x82\xabi\xbc\xb9\xf0\x87\x06\xddԠ\r\"]]g\x8f\x1a\x00!}\xad\x02\x1a\x00\x02\x9d-\x03\x1a\x02a;\x8a\x08\x00\xa1\x00\x81\x82X _VZf\xde蠒\xbd\x11\xe6\x19l\xe1\xf9t\x19[\xc4\x18<ȃi\x9d?\x04\xc8z`;oX@\x03Tĸ\x9dm.\xac\xec\x89\xeb+\x1c\xea@\x03\t\xed\xef\x1e\xd7\x07\xb4\x06E_\x8c@Z*||\xfd\xa4Ee\xc0\r\xfb\xb8\xa3\\:\x9dz\x80Mm\xfb\xea\x07N\xf1\x97\xd0\xdez\xd5\xf6l\x17]\xb1\x05\xf6"
+}

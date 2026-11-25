@@ -1,0 +1,9 @@
+# MsgResult decoded by the result type of Query_Mary_GetMaxMajorProtocolVersion
+net_codec_local_state_query: {
+  codec: {
+    version: 32787
+    state: "StQuerying"
+    message: "\x82\x04\x81\r"
+  }
+  query: "\x82\x00\x82\x03\x81\x18&"
+}

@@ -1,0 +1,8 @@
+# node-to-client RequestNext at the lowest version
+net_codec_chain_sync: {
+  codec: {
+    version: 32784
+    state: "StIdle"
+    message: "\x81\x00"
+  }
+}

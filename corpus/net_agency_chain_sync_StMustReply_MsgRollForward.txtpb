@@ -1,0 +1,6 @@
+# server's delayed answer
+net_agency: {
+  protocol: MINI_PROTOCOL_CHAIN_SYNC
+  state: "StMustReply"
+  message_type: "MsgRollForward"
+}

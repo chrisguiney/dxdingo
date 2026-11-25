@@ -1,0 +1,8 @@
+# the transaction is in the snapshot
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StBusyHasTx"
+    message: "\x82\x08\xf5"
+  }
+}

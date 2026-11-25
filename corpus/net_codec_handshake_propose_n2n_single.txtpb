@@ -1,0 +1,8 @@
+# a single version
+net_codec_handshake: {
+  codec: {
+    version: 14
+    state: "StPropose"
+    message: "\x82\x00\xa1\x0e\x84\x1a-\x96J\t\xf4\x01\xf5"
+  }
+}

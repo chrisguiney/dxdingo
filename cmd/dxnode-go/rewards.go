@@ -107,4 +107,9 @@ func registerRewards(r *dispatch.Registry) {
 	dispatch.Register(r, leaderReward)
 	dispatch.Register(r, maxPool)
 	dispatch.Register(r, apparentPerformance)
+	dispatch.Register(r, monetaryExpansion)
+	dispatch.Register(r, poolReward)
+	dispatch.Register(r, rewardUpdate)
+	dispatch.Register(r, applyUpdate)
+	dispatch.Register(r, nonMyopic)
 }

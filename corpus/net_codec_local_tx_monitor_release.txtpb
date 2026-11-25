@@ -1,0 +1,8 @@
+# client releases
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StAcquired"
+    message: "\x81\x03"
+  }
+}

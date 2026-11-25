@@ -283,9 +283,10 @@ func byronSortEntries(es []*v1.UtxoEntry) {
 
 // byronPBFTConfig builds gouroboros' Byron configuration from the request's
 // delegation set: every issuer is a genesis key, and its delegate signs
-// blocks for it. Epochs have 10k slots. A chain state carrying a signature
-// window or a previous slot cannot be modelled (the reference's PBftState
-// needs a slot per signer), so it is UNSUPPORTED rather than ignored.
+// blocks for it. Epochs have 10k slots. The signature window is the state's
+// signers with their slots. A previous slot, or the slotless recent_signers
+// the window superseded, cannot be modelled, so it is UNSUPPORTED rather than
+// ignored.
 func byronPBFTConfig(magic uint32, k uint64, st *v1.ByronChainState) (byronconsensus.ByronConfig, error) {
 	var zero byronconsensus.ByronConfig
 	if k == 0 {
@@ -295,7 +296,10 @@ func byronPBFTConfig(magic uint32, k uint64, st *v1.ByronChainState) (byronconse
 		return zero, dispatch.BadRequest(errors.New("chain_state missing"))
 	}
 	if len(st.GetRecentSigners()) > 0 || st.PrevSlot != nil {
-		return zero, dispatch.Unsupported(errors.New("a PBFT signature window and previous slot are not modelled"))
+		return zero, dispatch.Unsupported(errors.New("recent_signers and a previous slot are not modelled; the window is signers"))
+	}
+	if uint64(len(st.GetSigners())) > k {
+		return zero, dispatch.Unsupported(errors.New("more signers than the window holds"))
 	}
 	cfg := byronconsensus.ByronConfig{
 		ProtocolMagic:      magic,
@@ -335,6 +339,8 @@ func byronPBFTConfig(magic uint32, k uint64, st *v1.ByronChainState) (byronconse
 func byronPBFTFailureName(err error) string {
 	msg := err.Error()
 	switch {
+	case errors.Is(err, byronconsensus.ErrPBFTInvalidSlot):
+		return "PBftInvalidSlot"
 	case strings.Contains(msg, "signature verification failed"):
 		return "PBftInvalidSignature"
 	case strings.Contains(msg, "does not authorize delegate"), strings.Contains(msg, "is not configured"):
@@ -345,12 +351,33 @@ func byronPBFTFailureName(err error) string {
 	return "DingoError"
 }
 
+// byronWindowSigners reads the signature window. Slots must not decrease along
+// it (the reference's fromList precondition), or it is UNSUPPORTED.
+func byronWindowSigners(in []*v1.ByronSigner) ([]byronconsensus.PBFTSigner, error) {
+	out := make([]byronconsensus.PBFTSigner, 0, len(in))
+	for i, s := range in {
+		if len(s.GetKey()) != 28 {
+			return nil, dispatch.BadRequest(fmt.Errorf("signers[%d].key is not 28 bytes", i))
+		}
+		if i > 0 && s.GetSlot() < in[i-1].GetSlot() {
+			return nil, dispatch.Unsupported(fmt.Errorf("signers[%d] is in a slot before the signer before it", i))
+		}
+		var key lcommon.Blake2b224
+		copy(key[:], s.GetKey())
+		out = append(out, byronconsensus.PBFTSigner{Issuer: key, Slot: s.GetSlot(), SlotKnown: true})
+	}
+	return out, nil
+}
+
 // byronHeaderValidate maps to gouroboros ValidatePBFTHeader (delegate
-// signature and active delegation) followed by PBFTState.Transition on an
-// empty window, the checks of the reference's PBFT updateChainDepState for a
-// header with no earlier signers.
+// signature and active delegation) followed by PBFTState.TransitionAt on the
+// request's window, the checks of the reference's PBFT updateChainDepState.
 func byronHeaderValidate(_ context.Context, req *v1.ByronHeaderValidateRequest) (*v1.ByronHeaderValidateResponse, error) {
 	cfg, err := byronPBFTConfig(req.GetProtocolMagic(), req.GetSecurityParam(), req.GetChainState())
+	if err != nil {
+		return nil, err
+	}
+	signers, err := byronWindowSigners(req.GetChainState().GetSigners())
 	if err != nil {
 		return nil, err
 	}
@@ -362,11 +389,16 @@ func byronHeaderValidate(_ context.Context, req *v1.ByronHeaderValidateRequest) 
 	if err != nil {
 		return &v1.ByronHeaderValidateResponse{Rejection: byronRejection("PBFT", byronPBFTFailureName(err), err)}, nil
 	}
-	window, err := byronconsensus.NewPBFTStateFromConfig(nil, cfg)
+	window, err := byronconsensus.NewPBFTStateWithSlots(
+		signers, cfg.SecurityParam,
+		byronconsensus.DefaultPBFTSignatureThresholdNumerator,
+		byronconsensus.DefaultPBFTSignatureThresholdDenominator,
+	)
 	if err != nil {
-		return nil, err
+		return nil, dispatch.Unsupported(err)
 	}
-	if _, err := window.Transition(issuer.GenesisKeyHash); err != nil {
+	slotId := header.ConsensusData.SlotId
+	if _, err := window.TransitionAt(issuer.GenesisKeyHash, slotId.Epoch*cfg.SlotsPerEpoch+slotId.Slot); err != nil {
 		return &v1.ByronHeaderValidateResponse{Rejection: byronRejection("PBFT", byronPBFTFailureName(err), err)}, nil
 	}
 	return &v1.ByronHeaderValidateResponse{}, nil
@@ -376,4 +408,6 @@ func registerByron(r *dispatch.Registry) {
 	dispatch.Register(r, byronMinFee)
 	dispatch.Register(r, byronTxValidate)
 	dispatch.Register(r, byronHeaderValidate)
+	dispatch.Register(r, byronChainUpdate)
+	dispatch.Register(r, byronUpdateProposal)
 }

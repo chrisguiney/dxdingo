@@ -1,0 +1,8 @@
+# StDone has no agency
+net_codec_tx_submission2: {
+  codec: {
+    version: 14
+    state: "StDone"
+    message: "\x81\x04"
+  }
+}

@@ -1,0 +1,8 @@
+# client asks whether a Babbage transaction id is in the snapshot
+net_codec_local_tx_monitor: {
+  codec: {
+    version: 32787
+    state: "StAcquired"
+    message: "\x82\x07\x82\x05X 6\xfd\xffh\xdf\xe3f\x0f\x1c\xee\xa6\x0f\x01\x8a\x0fר=\xa1=\xef\"\x91\x08yL9z\x87\x9b\x046"
+  }
+}

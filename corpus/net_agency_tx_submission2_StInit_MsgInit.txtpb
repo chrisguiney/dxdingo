@@ -1,0 +1,6 @@
+# client agency in StIdle
+net_agency: {
+  protocol: MINI_PROTOCOL_TX_SUBMISSION2
+  state: "StInit"
+  message_type: "MsgInit"
+}

@@ -1,0 +1,8 @@
+# tag 9 is not a ChainSync message
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x81\t"
+  }
+}

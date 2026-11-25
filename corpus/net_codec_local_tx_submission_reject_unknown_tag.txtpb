@@ -1,0 +1,8 @@
+# tag 4 does not exist
+net_codec_local_tx_submission: {
+  codec: {
+    version: 32787
+    state: "StIdle"
+    message: "\x81\x04"
+  }
+}

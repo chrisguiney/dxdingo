@@ -1,0 +1,8 @@
+# cookie above Word16
+net_codec_keep_alive: {
+  codec: {
+    version: 14
+    state: "StClient"
+    message: "\x82\x00\x1a\x00\x01\x00\x00"
+  }
+}

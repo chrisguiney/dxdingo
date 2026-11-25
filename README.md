@@ -77,14 +77,34 @@ corpus.
 ## Divergences
 
 A mismatch is confirmed before it is recorded. Unit tests on both sides call
-dingo and the reference directly, bypassing the adapters, so the difference
-cannot come from request translation (`cmd/dxnode-go/divergence_test.go`
-and the divergence checks in `haskell/dxnode-hs/test/Spec.hs`). The
-replayable case goes in `corpus/divergences/`.
+dingo, gouroboros and the reference directly, bypassing the adapters, so the
+difference cannot come from request translation
+(`cmd/dxnode-go/divergence_*_test.go` and the `divergence:` checks in
+`haskell/dxnode-hs/test/Test/*.hs`). The replayable case goes in
+`corpus/divergences/`, which replays as all mismatches; `corpus/` itself
+replays clean.
 
-| Function | Divergence | Reachable |
+Reachable on a real chain:
+
+| Area | Divergence | Effect |
 |---|---|---|
-| `praos.nonce-epoch` | With a lab present, dingo hashes its neutral candidate (32 zero bytes, which `IsNeutralNonce` accepts) as a real nonce; the reference returns the lab (`NeutralNonce ⭒ x = x`). | No: the candidate starts from the genesis hash and is only ever a hash output. |
+| gov | dingo bumps DRep expiry for dormant epochs before RATIFY, so a DRep expired one epoch earlier still votes and dingo can enact a proposal the reference expires | ledger state |
+| gov | an already-expired DRep is bumped during dormant epochs | ledger state |
+| chainsel | Genesis density: no rival suppression, an idle peer with no blocks is mishandled, no latest-slot cap | chain selection |
+| stake | a DRep with zero stake is left out of the stake distribution | query |
+| net | LocalTxMonitor `GetMeasures` and LocalStateQuery `DebugLedgerConfig` are missing; handshake and TxSubmission2 accept messages the reference rejects; list encodings differ; Byron transactions rejected | protocol |
+| codec, rule | mainnet outputs and Babbage created outputs re-encode to different bytes; MemPack outputs use the map form | bytes only |
+| praos | an origin header gets no position check (devnet) | header validation |
+
+Unverified: dingo reads the UTxO-HD TxIx big-endian, the pinned ledger writes
+it little-endian. Check against a real node snapshot.
+
+The remaining cases need inputs a real chain does not produce, or differ only
+in which failures are reported or in what order: unresolved-input failure
+sets, Mary min-UTxO ignoring assets, ExUnits at 2^63, hard-fork pparam
+defaults, plutigo cost-model edges, neutral nonce hashing, encoding leniency
+(trailing bytes, definite-length Byron lists, Dijkstra body shape, expunged
+certificate tags), and dingo rejecting pre-Conway ledger states.
 
 `make proto` regenerates both bindings with buf, run through `go tool`.
 The Haskell plugin, `proto-lens-protoc`, is built by `make tools-hs`.

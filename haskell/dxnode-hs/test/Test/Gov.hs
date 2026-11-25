@@ -8,10 +8,10 @@ module Test.Gov (tests) where
 import Cardano.Crypto.Hash (hashFromBytes)
 import Cardano.Ledger.BaseTypes (BoundedRational (boundRational), EpochNo (..), ProtVer (..), StrictMaybe (..))
 import Cardano.Ledger.Coin (CompactForm (..))
-import Cardano.Ledger.Conway.Rules (updateDormantDRepExpiry)
+import Cardano.Ledger.Conway.Rules (dRepAcceptedRatio, updateDormantDRepExpiry)
 import Cardano.Ledger.Conway.State (VState (..))
 import Cardano.Ledger.Credential (Credential (..))
-import Cardano.Ledger.DRep (DRepState (..))
+import Cardano.Ledger.DRep (DRep (..), DRepState (..))
 import Cardano.Ledger.Keys (KeyHash (..))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -23,19 +23,22 @@ import Data.Ratio ((%))
 import Cardano.Ledger.Conway.Governance
 import Data.Default (def)
 import qualified Data.ByteString as BS
+import Data.Bits (shiftR)
+import Data.Foldable (toList)
 import Data.Char (digitToInt)
 import Data.ProtoLens (defMessage)
 import Data.ProtoLens.Labels ()
 import Data.Text (Text)
 import Lens.Micro ((&), (.~), (^.))
 import Proto.Dxdingo.V1.Envelope (HarnessErrorCode (..), Reply)
+import Proto.Dxdingo.V1.Gov (GovEnactResponse, GovRatifyRequest)
 import qualified Proto.Dxdingo.V1.State as S
 import qualified Proto.Dxdingo.V1.Types as P
 import Test.Util
 
 -- Same cases as dxnode-go (cmd/dxnode-go/gov_test.go).
 tests :: [Check]
-tests = thresholdTests ++ spoTests ++ drepTests ++ committeeTests ++ treeTests ++ expiryTests ++ divergenceTests
+tests = thresholdTests ++ spoTests ++ drepTests ++ committeeTests ++ treeTests ++ expiryTests ++ ratifyTests ++ enactTests ++ proposalExpiryTests ++ divergenceTests
 
 hex :: String -> BS.ByteString
 hex = BS.pack . go
@@ -484,6 +487,335 @@ expiryTests =
     )
   ]
 
+-- Ratify, enact and proposal expiry --------------------------------------------
+
+-- Same cases as dxnode-go (cmd/dxnode-go/gov_ratify_test.go and
+-- gov_enact_test.go).
+
+-- | A TreasuryWithdrawals action paying each (key, amount) to the key-hash
+-- reward account made of key repeated.
+withdrawalAction :: [(Int, Integer)] -> BS.ByteString
+withdrawalAction ps =
+  BS.concat
+    ( [BS.pack [0x83, 0x02, 0xa0 + fromIntegral (length ps)]]
+        ++ [BS.concat [BS.pack [0x58, 0x1d, 0xe0], BS.replicate 28 (fromIntegral k), BS.pack (0x1b : be64 a)] | (k, a) <- ps]
+        ++ [BS.pack [0xf6]]
+    )
+  where
+    be64 a = [fromIntegral (a `shiftR` (8 * i)) | i <- [7, 6 .. 0]]
+
+voteOn :: Int -> P.VoterRole -> P.Credential -> P.Vote -> S.VoteRecord
+voteOn i role c v =
+  defMessage & #actionId .~ actionId i & #voter .~ (defMessage & #role .~ role & #credential .~ c) & #vote .~ v
+
+allVote :: Int -> P.Vote -> [S.VoteRecord]
+allVote i v =
+  [ voteOn i P.VOTER_ROLE_DREP (cred 0xd1) v
+  , spoVote 0xb1 v (actionId i)
+  ]
+    ++ [voteOn i P.VOTER_ROLE_CONSTITUTIONAL_COMMITTEE (cred (0x20 + k)) v | k <- [1 .. 3]]
+
+ratifyProposal :: Int -> BS.ByteString -> Integer -> S.Proposal
+ratifyProposal i action expires = proposal i action & #expiresEpoch .~ fromInteger expires
+
+ratifyReq :: Integer -> Integer -> [S.Proposal] -> [S.VoteRecord] -> GovRatifyRequest
+ratifyReq epoch treasury props votes =
+  defMessage
+    & #context .~ (defMessage & #epoch .~ fromInteger epoch)
+    & #pparams .~ govParams 10
+    & #state
+      .~ ( defMessage
+             & #dreps .~ [defMessage & #credential .~ cred 0xd1 & #expiry .~ 100]
+             & #committee .~ testCommittee False
+             & #proposals .~ props
+             & #votes .~ votes
+             & #pots .~ (defMessage & #treasury .~ fromInteger treasury)
+         )
+    & #poolDistribution .~ [poolStake 0xb1 100]
+    & #drepDistribution .~ [defMessage & #drep .~ keyDRep 0xd1 & #stake .~ 100]
+
+ratifyCall :: GovRatifyRequest -> Reply
+ratifyCall r = call (#govRatify .~ r)
+
+ratifyTests :: [Check]
+ratifyTests =
+  [ ratifyIs
+      "no confidence accepted"
+      (ratifyReq 5 0 [ratifyProposal 1 actNoConfidence 9] [voteOn 1 P.VOTER_ROLE_DREP (cred 0xd1) P.VOTE_YES, spoVote 0xb1 P.VOTE_YES (actionId 1)])
+      [1]
+      []
+      True
+  , ratifyIs
+      "silent pool leaves the pool ratio at zero"
+      (ratifyReq 5 0 [ratifyProposal 1 actNoConfidence 9] [voteOn 1 P.VOTER_ROLE_DREP (cred 0xd1) P.VOTE_YES])
+      []
+      []
+      False
+  , ratifyIs
+      "a delaying action blocks the actions after it"
+      (ratifyReq 5 0 [ratifyProposal 1 (hfAction 0) 9, ratifyProposal 2 (pcAction 0) 9] (allVote 1 P.VOTE_YES ++ allVote 2 P.VOTE_YES))
+      [1]
+      []
+      True
+  , ratifyIs
+      "committee below quorum"
+      ( ratifyReq
+          5
+          0
+          [ratifyProposal 1 (hfAction 0) 9]
+          [ voteOn 1 P.VOTER_ROLE_DREP (cred 0xd1) P.VOTE_YES
+          , spoVote 0xb1 P.VOTE_YES (actionId 1)
+          , voteOn 1 P.VOTER_ROLE_CONSTITUTIONAL_COMMITTEE (cred 0x21) P.VOTE_YES
+          ]
+      )
+      []
+      []
+      False
+  , ratifyIs
+      "unaccepted action past its expiry expires"
+      (ratifyReq 5 0 [ratifyProposal 1 actInfo 4, ratifyProposal 2 actInfo 5] [])
+      []
+      [1]
+      False
+  , ratifyIs
+      "accepted action at its last chance is not expired"
+      (ratifyReq 5 0 [ratifyProposal 1 (hfAction 0) 4] (allVote 1 P.VOTE_YES))
+      [1]
+      []
+      True
+  , ratifyIs
+      "a parameter change chain is accepted in one pass"
+      (ratifyReq 5 0 [ratifyProposal 1 (pcAction 0) 9, ratifyProposal 2 (pcAction 1) 9] (allVote 1 P.VOTE_YES ++ allVote 2 P.VOTE_YES))
+      [1, 2]
+      []
+      False
+  , ratifyIs
+      "treasury withdrawals share one budget"
+      ( ratifyReq
+          5
+          1500
+          [ratifyProposal 1 (withdrawalAction [(0x61, 1000)]) 9, ratifyProposal 2 (withdrawalAction [(0x62, 1000)]) 9]
+          (allVote 1 P.VOTE_YES ++ allVote 2 P.VOTE_YES)
+      )
+      [1]
+      []
+      False
+  , ratifyError "epoch zero" (ratifyReq 0 0 [ratifyProposal 1 actInfo 9] []) HARNESS_ERROR_CODE_UNSUPPORTED
+  , ratifyError "no pool stake" (ratifyReq 5 0 [ratifyProposal 1 actInfo 9] [] & #poolDistribution .~ []) HARNESS_ERROR_CODE_UNSUPPORTED
+  , ratifyError "expired before the previous epoch" (ratifyReq 5 0 [ratifyProposal 1 actInfo 2] []) HARNESS_ERROR_CODE_UNSUPPORTED
+  , ratifyError
+      "proposals out of submission order"
+      (ratifyReq 5 0 [ratifyProposal 1 actInfo 9 & #proposedEpoch .~ 3, ratifyProposal 2 actInfo 9 & #proposedEpoch .~ 2] [])
+      HARNESS_ERROR_CODE_UNSUPPORTED
+  , ratifyError "parent that is not the root" (ratifyReq 5 0 [ratifyProposal 1 (pcAction 9) 9] []) HARNESS_ERROR_CODE_UNSUPPORTED
+  , ratifyError "undecodable action" (ratifyReq 5 0 [ratifyProposal 1 (BS.pack [0xff]) 9] []) HARNESS_ERROR_CODE_BAD_REQUEST
+  ]
+  where
+    ratifyIs name req enacted expired delayed =
+      let r = ratifyCall req ^. #govRatify
+       in ( "ratify: " ++ name
+          , null (r ^. #maybe'rejection) && firstBytes (r ^. #enacted) == enacted && firstBytes (r ^. #expired) == expired && r ^. #delayed == delayed
+          )
+    ratifyError name req code = ("ratify: " ++ name ++ " is a harness error", ratifyCall req ^. #error . #code == code)
+
+-- With every threshold 1 and nothing delegated, only expiry removes a
+-- proposal.
+proposalExpiryTests :: [Check]
+proposalExpiryTests =
+  [ ( "proposal expiry: expired subtrees leave, deposits are refunded or left to the treasury"
+    , let e =
+            expiryReq
+              5
+              [ mk 1 (pcAction 0) 3 1000 0xa1
+              , mk 2 (pcAction 1) 20 500 0xa2
+              , mk 3 actInfo 4 300 0xa3
+              , mk 4 actInfo 5 200 0xa1
+              ]
+              [defMessage & #credential .~ cred 0xa1 & #balance .~ 10]
+              ^. #govProposalExpiry
+         in firstBytes (e ^. #expired) == [1, 2, 3]
+              && [(BS.head (c ^. #credential . #hash), c ^. #amount) | c <- e ^. #refunds] == [(0xa1, 1000)]
+              && e ^. #unclaimedToTreasury == 800
+    )
+  , ( "proposal expiry: epoch zero is UNSUPPORTED"
+    , expiryReq 0 [] [] ^. #error . #code == HARNESS_ERROR_CODE_UNSUPPORTED
+    )
+  , ( "proposal expiry: a parent that is not a root is UNSUPPORTED"
+    , expiryReq 5 [proposal 1 (pcAction 9)] [] ^. #error . #code == HARNESS_ERROR_CODE_UNSUPPORTED
+    )
+  ]
+  where
+    mk i action expires deposit ret = proposal i action & #expiresEpoch .~ expires & #deposit .~ deposit & #returnAccount .~ cred ret
+    expiryReq epoch props accts =
+      call (#govProposalExpiry .~ (defMessage & #epoch .~ epoch & #proposals .~ props & #accounts .~ accts))
+
+-- Enact --------------------------------------------------------------------
+
+enactParams :: S.ProtocolParameters
+enactParams =
+  govParams 10
+    & #minFeeA .~ 44
+    & #minFeeB .~ 155381
+    & #maxBlockBodySize .~ 65536
+    & #maxTxSize .~ 16384
+    & #maxBlockHeaderSize .~ 1100
+    & #keyDeposit .~ 2000000
+    & #poolDeposit .~ 500000000
+    & #maxEpoch .~ 18
+    & #nOpt .~ 500
+    & #a0 .~ rat ("3", "10")
+    & #rho .~ rat ("3", "1000")
+    & #tau .~ rat ("1", "5")
+    & #minPoolCost .~ 170000000
+    & #coinsPerUtxoByte .~ 4310
+    & #priceMem .~ rat ("577", "10000")
+    & #priceSteps .~ rat ("721", "10000000")
+    & #maxTxExMem .~ 14000000
+    & #maxTxExSteps .~ 10000000000
+    & #maxBlockExMem .~ 62000000
+    & #maxBlockExSteps .~ 20000000000
+    & #maxValueSize .~ 5000
+    & #collateralPercentage .~ 150
+    & #maxCollateralInputs .~ 3
+    & #committeeMaxTermLength .~ 146
+    & #govActionLifetime .~ 6
+    & #govActionDeposit .~ 100000000000
+    & #drepDeposit .~ 500000000
+    & #drepActivity .~ 20
+    & #minFeeRefScriptCostPerByte .~ rat ("15", "1")
+
+enactCall :: Int -> BS.ByteString -> S.LedgerState -> Reply
+enactCall i action st =
+  call (#govEnact .~ (defMessage & #pparams .~ enactParams & #state .~ st & #actionId .~ actionId i & #action .~ action))
+
+-- 'Nothing' when the response carries a rejection or a harness error.
+enacted :: Reply -> Maybe GovEnactResponse
+enacted r
+  | null (r ^. #govEnact . #maybe'rejection) && r ^. #error . #code == HARNESS_ERROR_CODE_UNSPECIFIED = Just (r ^. #govEnact)
+  | otherwise = Nothing
+
+updateCommitteeAction :: BS.ByteString
+updateCommitteeAction =
+  BS.concat
+    [ hex "8504f6d90102818200581c"
+    , ids 0x11
+    , hex "a18200581c"
+    , ids 0x77
+    , hex "1864d81e820304"
+    ]
+
+enactTests :: [Check]
+enactTests =
+  [ ( "enact: parameter change"
+    , case enacted (enactCall 1 (pcAction 0) defMessage) of
+        Just r ->
+          let d = r ^. #delta
+           in d ^. #pparamsAfter . #maxBlockBodySize == 0x16000
+                && d ^. #pparamsAfter . #maxTxSize == 16384
+                && firstBytes (toList (d ^. #enactStateAfter . #maybe'prevPparamUpdate)) == [1]
+                && null (d ^. #enactStateAfter . #maybe'prevHardFork)
+                && null (r ^. #withdrawals)
+                && d ^. #treasuryDelta == 0
+        Nothing -> False
+    )
+  , ( "enact: hard fork"
+    , case enacted (enactCall 1 (hfAction 0) defMessage) of
+        Just r ->
+          let d = r ^. #delta
+           in d ^. #pparamsAfter . #protocolVersion . #major == 10
+                && d ^. #pparamsAfter . #protocolVersion . #minor == 0
+                && firstBytes (toList (d ^. #enactStateAfter . #maybe'prevHardFork)) == [1]
+        Nothing -> False
+    )
+  , ( "enact: treasury withdrawal pays registered accounts and leaves the rest"
+    , case enacted (enactCall 1 (withdrawalAction [(0x61, 500), (0x62, 300)]) withdrawalState) of
+        Just r ->
+          let d = r ^. #delta
+           in [(BS.head (c ^. #credential . #hash), c ^. #amount) | c <- r ^. #withdrawals] == [(0x61, 500)]
+                && [(BS.head (a ^. #credential . #hash), a ^. #balance) | a <- d ^. #accountsChanged] == [(0x61, 507)]
+                && d ^. #treasuryDelta == -500
+        Nothing -> False
+    )
+  , depositCase "registered" True 100 0
+  , depositCase "unregistered" False 0 100
+  , ( "enact: no confidence leaves no committee"
+    , case enacted (enactCall 1 actNoConfidence (defMessage & #committee .~ testCommittee False)) of
+        Just r ->
+          let d = r ^. #delta
+           in null (d ^. #committeeAfter . #members)
+                && null (d ^. #committeeAfter . #maybe'threshold)
+                && firstBytes (toList (d ^. #enactStateAfter . #maybe'prevCommittee)) == [1]
+                && null (d ^. #maybe'pparamsAfter)
+        Nothing -> False
+    )
+  , ( "enact: update committee"
+    , case enacted (enactCall 1 updateCommitteeAction (defMessage & #committee .~ testCommittee False)) of
+        Just r ->
+          let c = r ^. #delta . #committeeAfter
+           in [BS.head (m ^. #cold . #hash) | m <- c ^. #members] == [0x12, 0x13, 0x77]
+                && all (\m -> m ^. #expiry /= 0) (c ^. #members)
+                && ratIs ("3", "4") (c ^. #threshold)
+                && firstBytes (toList (r ^. #delta . #enactStateAfter . #maybe'prevCommittee)) == [1]
+        Nothing -> False
+    )
+  , ( "enact: new constitution"
+    , case enacted (enactCall 1 actConstitution defMessage) of
+        Just r ->
+          let es = r ^. #delta . #enactStateAfter
+           in es ^. #constitution . #anchorUrl == "x"
+                && es ^. #constitution . #anchorHash == BS.replicate 32 0
+                && firstBytes (toList (es ^. #maybe'prevConstitution)) == [1]
+        Nothing -> False
+    )
+  , ( "enact: the other purposes keep their roots"
+    , let st =
+            ( defMessage
+                & #committee .~ testCommittee False
+                & #enactState
+                  .~ ( defMessage
+                         & #prevHardFork .~ actionId 9
+                         & #prevCommittee .~ actionId 8
+                         & #constitution .~ (defMessage & #anchorUrl .~ "https://c" & #anchorHash .~ BS.replicate 32 3)
+                     )
+            ) ::
+            S.LedgerState
+       in case enacted (enactCall 1 (pcAction 0) st) of
+            Just r ->
+              let es = r ^. #delta . #enactStateAfter
+               in firstBytes (toList (es ^. #maybe'prevHardFork)) == [9]
+                    && firstBytes (toList (es ^. #maybe'prevCommittee)) == [8]
+                    && es ^. #constitution . #anchorUrl == "https://c"
+            Nothing -> False
+    )
+  , ( "enact: withdrawal above the treasury is UNSUPPORTED"
+    , enactCall 1 (withdrawalAction [(0x61, 500)]) (defMessage & #pots . #treasury .~ 499) ^. #error . #code == HARNESS_ERROR_CODE_UNSUPPORTED
+    )
+  , ( "enact: a parent that is not the root is UNSUPPORTED"
+    , enactCall 1 (pcAction 9) defMessage ^. #error . #code == HARNESS_ERROR_CODE_UNSUPPORTED
+    )
+  , ( "enact: an undecodable action is BAD_REQUEST"
+    , enactCall 1 (BS.pack [0xff]) defMessage ^. #error . #code == HARNESS_ERROR_CODE_BAD_REQUEST
+    )
+  ]
+  where
+    withdrawalState =
+      defMessage
+        & #pots . #treasury .~ 2000
+        & #accounts .~ [defMessage & #credential .~ cred 0x61 & #balance .~ 7]
+    depositCase name registered credit treasury =
+      ( "enact: the deposit goes to the " ++ name ++ " return account"
+      , let p = proposal 1 actInfo & #deposit .~ 100 & #returnAccount .~ cred 0x61
+            st =
+              defMessage
+                & #proposals .~ [p]
+                & (if registered then #accounts .~ [defMessage & #credential .~ cred 0x61 & #balance .~ 7] else id)
+         in case enacted (enactCall 1 actInfo st) of
+              Just r ->
+                sum [c ^. #amount | c <- r ^. #withdrawals] == credit
+                  && r ^. #delta . #treasuryDelta == treasury
+              Nothing -> False
+      )
+
 -- Divergences ----------------------------------------------------------------
 
 -- The reference library called directly, bypassing the adapter. The
@@ -507,7 +839,24 @@ divergenceTests =
             VState ConwayEra
        in map drepExpiry (Map.elems (vsDReps (updateDormantDRepExpiry (EpochNo 20) vs))) == [EpochNo 10]
     )
+  , ( "divergence: a DRep with expiry 0 is expired from epoch 1"
+    , drepRatio 0 0 == 1 && drepRatio 0 1 == 0
+    )
+  , ( "divergence: a DRep that expired one epoch earlier counts nothing at RATIFY"
+    , drepRatio 4 5 == 0 && drepRatio 5 5 == 1
+    )
   ]
   where
+    -- The accepted ratio of the only DRep (all the stake, voted yes) with
+    -- the given expiry at the given epoch.
+    drepRatio expiry epoch =
+      let c = KeyHashObj (KeyHash (maybe (error "hash") id (hashFromBytes (BS.replicate 28 0xd1))))
+          env =
+            (def :: RatifyEnv ConwayEra)
+              { reDRepDistr = Map.singleton (DRepCredential c) (CompactCoin 100)
+              , reDRepState = Map.singleton c (DRepState (EpochNo expiry) SNothing (CompactCoin 0) Set.empty)
+              , reCurrentEpoch = EpochNo epoch
+              }
+       in dRepAcceptedRatio env (Map.singleton c VoteYes) (InfoAction :: GovAction ConwayEra)
     pp = emptyPParams & ppDRepVotingThresholdsL .~ (def {dvtPPGovGroup = maybe minBound id (boundRational (69 % 100))})
     rs = RatifyState (def & ensCurPParamsL .~ (pp :: PParams ConwayEra)) mempty mempty False

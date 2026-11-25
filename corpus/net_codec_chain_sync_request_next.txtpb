@@ -1,0 +1,8 @@
+# client message in StIdle
+net_codec_chain_sync: {
+  codec: {
+    version: 14
+    state: "StIdle"
+    message: "\x81\x00"
+  }
+}

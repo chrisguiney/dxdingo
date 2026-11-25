@@ -1,0 +1,8 @@
+# bytes after the message
+net_codec_keep_alive: {
+  codec: {
+    version: 14
+    state: "StClient"
+    message: "\x82\x00\x01\x00"
+  }
+}

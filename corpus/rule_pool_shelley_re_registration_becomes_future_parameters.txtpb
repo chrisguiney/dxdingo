@@ -1,0 +1,80 @@
+# pool shelley re-registration becomes future parameters: accepted; the delta is compared field by field
+rule_pool: {
+  context: {
+    era: ERA_SHELLEY
+    protocol_version: {
+      major: 2
+    }
+    slot: 259201000
+    epoch: 600
+    network_id: 1
+  }
+  pparams: {
+    min_fee_a: 44
+    min_fee_b: 155381
+    max_block_body_size: 90112
+    max_tx_size: 16384
+    max_block_header_size: 1100
+    key_deposit: 2000000
+    pool_deposit: 500000000
+    max_epoch: 18
+    n_opt: 500
+    a0: {
+      numerator: "3"
+      denominator: "10"
+    }
+    rho: {
+      numerator: "3"
+      denominator: "1000"
+    }
+    tau: {
+      numerator: "2"
+      denominator: "10"
+    }
+    d: {
+      numerator: "0"
+      denominator: "1"
+    }
+    protocol_version: {
+      major: 2
+    }
+    min_utxo_value: 1000000
+    min_pool_cost: 170000000
+  }
+  state: {
+    accounts: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      deposit: 2000000
+      balance: 5000000
+      pool_id: "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+    }
+    accounts: {
+      credential: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2\xa2"
+      }
+      deposit: 2000000
+    }
+    pools: {
+      pool_id: "QQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+      stage: POOL_STAGE_CURRENT
+      vrf_key_hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      pledge: 100
+      cost: 170000000
+      margin: {
+        numerator: "1"
+        denominator: "20"
+      }
+      reward_account: {
+        kind: CREDENTIAL_KIND_KEY
+        hash: "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      }
+      owners: "\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1"
+      deposit: 500000000
+    }
+  }
+  tx: "\x83\xa5\x00\x81\x82X \t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\x00\x01\x81\x82X\x1dawwwwwwwwwwwwwwwwwwwwwwwwwwww\x1a\x00\x0fB@\x02\x1a\x00\x03\r@\x03\x1b\x00\x00\x01\x00\x00\x00\x00\x00\x04\x81\x8a\x03X\x1cQQQQQQQQQQQQQQQQQQQQQQQQQQQQX cccccccccccccccccccccccccccccccc\x18\xc8\x1a\n\xba\x95\x00\xd8\x1e\x82\x01\x14X\x1dᡡ\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\x81X\x1c\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\xa1\x80\xf6\xa0\xf6"
+}
