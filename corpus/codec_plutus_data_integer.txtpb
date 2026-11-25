@@ -1,0 +1,4 @@
+# a small integer
+codec_plutus_data: {
+  cbor: "\x1a\x00\x0fB@"
+}

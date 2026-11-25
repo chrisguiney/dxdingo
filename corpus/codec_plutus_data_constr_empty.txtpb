@@ -1,0 +1,4 @@
+# Constr 0 []
+codec_plutus_data: {
+  cbor: "\xd8y\x80"
+}

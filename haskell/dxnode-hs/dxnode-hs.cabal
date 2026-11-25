@@ -50,6 +50,7 @@ library
     , cardano-ledger-dijkstra
     , cardano-ledger-mary
     , cardano-ledger-shelley  ^>=1.19
+    , cardano-protocol
     , cardano-protocol-tpraos ^>=1.6
     , cardano-slotting
     , cardano-strict-containers
@@ -155,6 +156,8 @@ test-suite dxnode-hs-test
     , base
     , bytestring
     , cardano-crypto-class
+    , cardano-ledger-binary
+    , cardano-ledger-conway
     , cardano-ledger-core
     , dxnode-hs
     , dxnode-hs:proto

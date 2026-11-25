@@ -1,0 +1,4 @@
+# text is no Plutus data
+codec_plutus_data: {
+  cbor: "aa"
+}

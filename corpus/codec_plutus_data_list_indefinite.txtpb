@@ -1,0 +1,4 @@
+# indefinite list: the wire form decides the re-encoding
+codec_plutus_data: {
+  cbor: "\x9f\x01\x02\xff"
+}

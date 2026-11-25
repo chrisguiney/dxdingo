@@ -1,0 +1,4 @@
+# an indefinite byte string of two chunks
+codec_plutus_data: {
+  cbor: "_A\x01A\x02\xff"
+}

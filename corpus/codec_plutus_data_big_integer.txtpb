@@ -1,0 +1,4 @@
+# bignum above 64 bits keeps its tag-2 form
+codec_plutus_data: {
+  cbor: "\xc2I\x01\x01\x01\x01\x01\x01\x01\x01\x01"
+}

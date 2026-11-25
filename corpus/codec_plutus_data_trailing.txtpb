@@ -1,0 +1,4 @@
+# trailing byte after a valid datum
+codec_plutus_data: {
+  cbor: "\xd8y\x80\x00"
+}

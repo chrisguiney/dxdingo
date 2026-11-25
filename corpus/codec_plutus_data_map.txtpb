@@ -1,0 +1,4 @@
+# a definite map
+codec_plutus_data: {
+  cbor: "\xa1\x01\x02"
+}
