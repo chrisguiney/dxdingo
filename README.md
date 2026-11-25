@@ -84,28 +84,56 @@ difference cannot come from request translation
 `corpus/divergences/`, which replays as all mismatches; `corpus/` itself
 replays clean.
 
-Reachable on a real chain:
+Each class was then reviewed against the formal specs (the Conway Agda
+spec, the Shelley to Babbage spec documents, CIP-1694, the ouroboros-consensus
+and ouroboros-network documents) to decide whether it is real and which side
+is wrong. The reference can be wrong. No class was found where it is wrong in
+a way that affects the chain.
 
-| Area | Divergence | Effect |
+Real, dingo wrong, reachable on public networks:
+
+| Area | Divergence | Impact | Issue |
+|---|---|---|---|
+| gov, epoch | RATIFY reads DRep expiries after the boundary's dormancy bump; the spec and the reference read them before it. A DRep that expired the epoch before can enact or block an action | consensus | blinklabs-io/dingo#6789 |
+| chainsel | Genesis density disconnector keeps an idle peer that has no headers after the intersection, and has no latest-slot cap | sync liveness | blinklabs-io/dingo#6791 |
+| praos | a header added to an empty chain gets no position check (first block number, genesis previous hash) | header validation | blinklabs-io/dingo#6790 |
+
+Real, lower priority:
+
+| Area | Divergence | Impact |
 |---|---|---|
-| gov | dingo bumps DRep expiry for dormant epochs before RATIFY, so a DRep expired one epoch earlier still votes and dingo can enact a proposal the reference expires | ledger state |
-| gov | an already-expired DRep is bumped during dormant epochs | ledger state |
-| epoch | at the epoch boundary with no active proposal, dingo extends every DRep's expiry by one; the reference only counts a dormant epoch | ledger state |
-| chainsel | Genesis density: no rival suppression, an idle peer with no blocks is mishandled, no latest-slot cap | chain selection |
-| stake | a DRep with zero stake is left out of the stake distribution | query |
-| net | LocalTxMonitor `GetMeasures` and LocalStateQuery `DebugLedgerConfig` are missing; handshake and TxSubmission2 accept messages the reference rejects; list encodings differ; Byron transactions rejected | protocol |
-| codec, rule | mainnet outputs and Babbage created outputs re-encode to different bytes; MemPack outputs use the map form | bytes only |
-| praos | an origin header gets no position check (devnet) | header validation |
+| codec | gouroboros accepts Dijkstra bodies of three components, expunged certificate tags and empty asset maps | consensus, once Dijkstra is live |
+| rule | dingo applies the header protocol-version limit in every era; the reference only in Conway. No mainnet block from epochs 208 to 506 trips it | block acceptance |
+| plutus | plutigo rejects a zero CEK step cost, which the reference accepts | consensus, only if such a cost model is enacted |
+| stake | a DRep or the abstain entry with zero stake is left out of the DRep distribution | query |
+| net | LocalTxMonitor `GetMeasures`, LocalStateQuery `DebugLedgerConfig` and `MsgReplyVersions` are missing; handshake, LocalStateQuery and TxSubmission2 accept messages the reference rejects | wire interop |
+| rule | for an unresolved input, an unneeded script witness or an unregistered withdrawal, gouroboros reports a different set of failures; acceptance is the same | error reporting |
 
-Unverified: dingo reads the UTxO-HD TxIx big-endian, the pinned ledger writes
-it little-endian. Check against a real node snapshot.
+Real, both acceptable (bytes only, or the spec leaves it open): output and
+created-output re-encoding, MemPack map form, list encodings on the wire,
+ledger-state trailing bytes, rule order inside a failing block.
 
-The remaining cases need inputs a real chain does not produce, or differ only
-in which failures are reported or in what order: unresolved-input failure
-sets, Mary min-UTxO ignoring assets, ExUnits at 2^63, hard-fork pparam
-defaults, plutigo cost-model edges, neutral nonce hashing, encoding leniency
-(trailing bytes, definite-length Byron lists, Dijkstra body shape, expunged
-certificate tags), and dingo rejecting pre-Conway ledger states.
+Not real:
+
+- The dormant-epoch representation. dingo bumps expiries eagerly, as the Agda
+  spec does; the reference keeps a dormant-epoch counter. The effective expiry
+  is the same, so these cases should compare effective expiry.
+- An expired DRep is not revived during dormancy. The bump keeps its gap
+  constant, so only the stored value differs, which queries see.
+- UTxO TxIx byte order. Real UTxO-HD tables are written big-endian
+  (`BigEndianTxIn` in ouroboros-consensus-cardano), as dingo reads them; the
+  fixture used the ledger's little-endian encoder. Tables written before
+  consensus-cardano 0.26 are little-endian, and dingo would misread them.
+- Harness artifacts: the `rule_ppup` adapter drops a witness error; four
+  value-balance cases are duplicates; `plutus_cost_model_v1_extra_zeros` is a
+  second zero-cost case (V1 has 343 parameters, of which plutigo's 332 are a
+  prefix); opaque payload cases use a stale Dijkstra golden.
+
+The remaining cases need inputs no public chain produces: Mary min-UTxO
+ignoring assets, ExUnits at 2^63, hard-fork parameter defaults on devnets,
+zero DRep activity, neutral nonce hashing, Byron definite-length lists, the
+HARDFORK step on a minor bump at protocol version 10, and dingo rejecting
+pre-Conway ledger states from private networks.
 
 `make proto` regenerates both bindings with buf, run through `go tool`.
 The Haskell plugin, `proto-lens-protoc`, is built by `make tools-hs`.
